@@ -1,0 +1,12 @@
+AWS_SNS_ENDPOINT: http://localhost:4566
+AWS_FILE_UPDATES_SNS_TOPIC_ARN: arn:aws:sns:eu-central-1:000000000000:file-updates-topic-arn
+
+spring:
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+  datasource:
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    url: 'jdbc:tc:postgresql:15.2-alpine:///postgres?TC_DAEMON=true&currentSchema=sd_upload'
+    username: postgres
+    password: password
+    name: sd_upload

@@ -6,7 +6,6 @@ import { AdminLayout } from '../components/Layout/AdminLayout';
 
 import { LandingPage } from '../pages/Public/LandingPage';
 import { LoginPage } from '../pages/Public/LoginPage';
-import { OAuthRedirect } from '../pages/Public/OAuthRedirect';
 
 import { MyFilesPage } from '../pages/User/MyFilesPage';
 import { SharedFilesPage } from '../pages/User/SharedFilesPage';
@@ -24,7 +23,6 @@ export const AppRoutes = () => {
       <Route element={<PublicLayout />}>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/oauth/redirect" element={<OAuthRedirect />} />
       </Route>
 
       {/* User Routes */}

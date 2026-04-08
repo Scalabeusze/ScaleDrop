@@ -1,0 +1,25 @@
+package com.scaledrop.sddownload.application.service;
+
+import com.scaledrop.sddownload.application.port.in.ExampleUseCase;
+import com.scaledrop.sddownload.domain.example.ExampleObject;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class ExampleService implements ExampleUseCase {
+
+  @Override
+  public ExampleObject getExampleObject() {
+    log.warn("[EXAMPLE] Received request to get example object");
+    ExampleObject exampleObject = ExampleObject.builder()
+        .exampleId(UUID.randomUUID())
+        .exampleField("Some example value")
+        .build();
+
+    return exampleObject;
+  }
+}

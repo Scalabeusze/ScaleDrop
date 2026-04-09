@@ -32,56 +32,77 @@ public class ApiExceptionResponseDetailsResolver {
   public static final String SERVER_ERROR = "Server error";
   public static final String VALIDATION_ERROR = "Validation error";
 
-  private static final Map<Class<? extends Exception>, ApiExceptionResponseDetails> EXCEPTION_RESPONSE_DETAILS_MAP =
-      new Builder<Class<? extends Exception>, ApiExceptionResponseDetails>()
-          .put(HttpMessageNotReadableException.class, ApiExceptionResponseDetails.details("Not readable body", VALIDATION))
-          .put(HttpRequestMethodNotSupportedException.class, ApiExceptionResponseDetails.details("HTTP method not allowed", FORBIDDEN))
-          .put(MethodArgumentNotValidException.class, ApiExceptionResponseDetails.details(VALIDATION_ERROR, VALIDATION))
-          .put(MissingServletRequestParameterException.class, ApiExceptionResponseDetails.details(VALIDATION_ERROR, VALIDATION))
-          .put(ConstraintViolationException.class, ApiExceptionResponseDetails.details(VALIDATION_ERROR, VALIDATION))
-          .put(IllegalArgumentException.class, ApiExceptionResponseDetails.details(VALIDATION))
-          .put(MethodArgumentTypeMismatchException.class, ApiExceptionResponseDetails.details(VALIDATION))
-          .put(EntityNotFoundException.class, ApiExceptionResponseDetails.details(NOT_FOUND))
-          .put(JpaObjectRetrievalFailureException.class, ApiExceptionResponseDetails.details(NOT_FOUND))
+  private static final Map<Class<? extends Exception>, ApiExceptionResponseDetails>
+      EXCEPTION_RESPONSE_DETAILS_MAP =
+          new Builder<Class<? extends Exception>, ApiExceptionResponseDetails>()
+              .put(
+                  HttpMessageNotReadableException.class,
+                  ApiExceptionResponseDetails.details("Not readable body", VALIDATION))
+              .put(
+                  HttpRequestMethodNotSupportedException.class,
+                  ApiExceptionResponseDetails.details("HTTP method not allowed", FORBIDDEN))
+              .put(
+                  MethodArgumentNotValidException.class,
+                  ApiExceptionResponseDetails.details(VALIDATION_ERROR, VALIDATION))
+              .put(
+                  MissingServletRequestParameterException.class,
+                  ApiExceptionResponseDetails.details(VALIDATION_ERROR, VALIDATION))
+              .put(
+                  ConstraintViolationException.class,
+                  ApiExceptionResponseDetails.details(VALIDATION_ERROR, VALIDATION))
+              .put(IllegalArgumentException.class, ApiExceptionResponseDetails.details(VALIDATION))
+              .put(
+                  MethodArgumentTypeMismatchException.class,
+                  ApiExceptionResponseDetails.details(VALIDATION))
+              .put(EntityNotFoundException.class, ApiExceptionResponseDetails.details(NOT_FOUND))
+              .put(
+                  JpaObjectRetrievalFailureException.class,
+                  ApiExceptionResponseDetails.details(NOT_FOUND))
 
-          // Service specific exceptions
-          .put(SdAccountServiceException.class, ApiExceptionResponseDetails.details("Internal server error", INTERNAL_SERVER_ERROR))
-          .build();
+              // Service specific exceptions
+              .put(
+                  SdAccountServiceException.class,
+                  ApiExceptionResponseDetails.details(
+                      "Internal server error", INTERNAL_SERVER_ERROR))
+              .build();
 
   private List<ValidationError> resolveValidationErrors(Throwable ex) {
     if (ex instanceof BindException exception) {
-      return exception
-          .getBindingResult()
-          .getAllErrors().stream()
+      return exception.getBindingResult().getAllErrors().stream()
           .filter(objectError -> StringUtils.isNotBlank(objectError.getDefaultMessage()))
-          .map(objectError -> {
-            if (objectError instanceof FieldError fieldError) {
-              return new ValidationError(fieldError.getField(), fieldError.getDefaultMessage());
-            }
-            return new ValidationError(null, objectError.getDefaultMessage());
-          })
-          .sorted(Comparator.comparing(validationError -> {
-            if (validationError.field() != null) {
-              return validationError.field();
-            }
-            return validationError.error();
-          }))
+          .map(
+              objectError -> {
+                if (objectError instanceof FieldError fieldError) {
+                  return new ValidationError(fieldError.getField(), fieldError.getDefaultMessage());
+                }
+                return new ValidationError(null, objectError.getDefaultMessage());
+              })
+          .sorted(
+              Comparator.comparing(
+                  validationError -> {
+                    if (validationError.field() != null) {
+                      return validationError.field();
+                    }
+                    return validationError.error();
+                  }))
           .toList();
     }
 
     if (ex instanceof ConstraintViolationException exception) {
       return exception.getConstraintViolations().stream()
-          .map(objectError ->
-              new ValidationError(
-                  objectError.getPropertyPath().toString(),
-                  objectError.getMessage())
-          ).toList();
+          .map(
+              objectError ->
+                  new ValidationError(
+                      objectError.getPropertyPath().toString(), objectError.getMessage()))
+          .toList();
     }
     return List.of();
   }
 
   public ApiExceptionResponse buildApiExceptionResponse(Exception ex) {
-    ApiExceptionResponseDetails responseDetails = EXCEPTION_RESPONSE_DETAILS_MAP.getOrDefault(ex.getClass(), ApiExceptionResponseDetails.DEFAULT);
+    ApiExceptionResponseDetails responseDetails =
+        EXCEPTION_RESPONSE_DETAILS_MAP.getOrDefault(
+            ex.getClass(), ApiExceptionResponseDetails.DEFAULT);
     String message = Optional.ofNullable(responseDetails.defaultMessage).orElse(ex.getMessage());
     List<ValidationError> validationErrors = resolveValidationErrors(ex);
     ApiExceptionType type = responseDetails.exceptionType;
@@ -97,7 +118,8 @@ public class ApiExceptionResponseDetailsResolver {
   @AllArgsConstructor
   protected static class ApiExceptionResponseDetails {
 
-    protected static final ApiExceptionResponseDetails DEFAULT = details(SERVER_ERROR, INTERNAL_SERVER_ERROR);
+    protected static final ApiExceptionResponseDetails DEFAULT =
+        details(SERVER_ERROR, INTERNAL_SERVER_ERROR);
     protected Function<String, String> messageFunction;
 
     protected String defaultMessage;
@@ -108,12 +130,12 @@ public class ApiExceptionResponseDetailsResolver {
     }
 
     static ApiExceptionResponseDetails details(String message, ApiExceptionType exceptionType) {
-      return new ApiExceptionResponseDetails((String exceptionMessage) -> message, message, exceptionType);
+      return new ApiExceptionResponseDetails(
+          (String exceptionMessage) -> message, message, exceptionType);
     }
 
     static ApiExceptionResponseDetails details(ApiExceptionType exceptionType) {
       return new ApiExceptionResponseDetails(exceptionType);
     }
-
   }
 }

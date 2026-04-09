@@ -9,5 +9,4 @@ public class SdAccountApplication {
   public static void main(String[] args) {
     SpringApplication.run(SdAccountApplication.class, args);
   }
-
 }

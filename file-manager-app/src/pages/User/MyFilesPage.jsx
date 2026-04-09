@@ -4,7 +4,7 @@ import { DiskUsageBar } from '../../components/Shared/DiskUsageBar';
 
 export const MyFilesPage = () => {
   // Mock usage: ~2.5 GB
-  const usedBytes = 4.5 * 1024 * 1024 * 1024;
+  const usedBytes = 4.8 * 1024 * 1024 * 1024;
 
   return (
     <Box>

@@ -3,21 +3,18 @@ import { createTheme } from '@mui/material/styles';
 const lightPalette = {
   mode: 'light',
   primary: {
-    main: '#5550F2',
+    main: '#4B75F2',
   },
   secondary: {
-    main: '#04BF9D',
-  },
-  error: {
-    main: '#F2B33D',
+    main: '#578BF2',
   },
   background: {
-    default: '#F2F2F2',
+    default: '#C5D0D9',
     paper: '#FFFFFF',
   },
   text: {
-    primary: '#027368',
-    secondary: '#5550F2',
+    primary: '#5550F2',
+    secondary: '#2d4ba6',
   },
 };
 

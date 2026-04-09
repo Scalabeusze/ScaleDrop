@@ -17,7 +17,6 @@ export const DiskUsageBar = ({ usedBytes = 0 }) => {
         Disk Usage: {formattedUsed} GB / 5 GB
       </Typography>
       <Box sx={{ position: 'relative', width: '100%', height: '70px' }}>
-        {/* We use the viewBox provided by the raw SVG so it scales perfectly into our 400x40 box via preserveAspectRatio */}
         <svg viewBox="0 0 612 710" width="100%" height="100%" preserveAspectRatio="none">
           <defs>
             <linearGradient id="progress-gradient" x1="0%" y1="0%" x2="100%" y2="0%">

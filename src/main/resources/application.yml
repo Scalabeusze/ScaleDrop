@@ -1,0 +1,57 @@
+spring:
+  application:
+    name: sd-bff
+  data:
+    redis:
+      connect-timeout: 2s
+      host: ${REDIS_HOST:localhost}
+      password: ${REDIS_PASSWORD:password}
+      ssl:
+        enabled: false
+      port: 6379
+      timeout: 2s
+  main.banner-mode: off
+
+server:
+  port: 8080
+  servlet:
+    context-path: ${SERVER_SERVLET_CONTEXT_PATH:/sd-bff}
+management:
+  info:
+    git:
+      mode: full
+  endpoints:
+    web:
+      exposure.include: health, prometheus, info
+  tracing:
+    propagation:
+      consume: [ B3_MULTI, W3C, B3 ]
+      produce: B3_MULTI
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+logback:
+  log:
+    dir: log
+
+security:
+  access:
+    documentation:
+      username: ${SECURITY_ACCESS_DOCUMENTATION_USERNAME:documentation}
+      password: ${SECURITY_ACCESS_DOCUMENTATION_PASSWORD:password}
+    internal:
+      username: scaledrop
+      password: ${SECURITY_ACCESS_INTERNAL_PASSWORD:scaledrop}
+
+example-service:
+  url: ${EXAMPLE_SERVICE_URL:http://localhost:8081/sd-example-service}
+  username: ${EXAMPLE_SERVICE_USERNAME:scaledrop}
+  password: ${EXAMPLE_SERVICE_PASSWORD:scaledrop}
+
+springdoc:
+  use-fqn: true
+  show-actuator: true
+  api-docs:
+    version: openapi_3_0

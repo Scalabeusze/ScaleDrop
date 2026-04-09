@@ -1,4 +1,3 @@
-import React from 'react';
 import { Box, Typography, Grid, Paper } from '@mui/material';
 
 export const AdminDashboard = () => {

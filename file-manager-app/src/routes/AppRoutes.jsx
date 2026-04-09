@@ -1,4 +1,3 @@
-import React from 'react';
 import { Routes, Route, Navigate } from 'react-router';
 import { PublicLayout } from '../components/Layout/PublicLayout';
 import { UserLayout } from '../components/Layout/UserLayout';

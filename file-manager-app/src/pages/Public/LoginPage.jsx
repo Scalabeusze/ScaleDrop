@@ -1,4 +1,3 @@
-import React from 'react';
 import { Typography, Box, Button, Paper, Divider } from '@mui/material';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../../context/AuthContext';

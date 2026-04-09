@@ -1,4 +1,3 @@
-import React from 'react';
 import { Box, Typography, Paper, Avatar, Divider, Button } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
 

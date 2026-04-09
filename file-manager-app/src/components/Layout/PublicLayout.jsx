@@ -11,7 +11,7 @@ export const PublicLayout = () => {
       <AppBar position="static" color="transparent" elevation={0}>
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
-            FileManager Cloud
+            ScaleDrop FM
           </Typography>
           <FormControlLabel
             control={<Switch checked={isDarkMode} onChange={toggleTheme} color="primary" />}

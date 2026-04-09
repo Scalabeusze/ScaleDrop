@@ -6,7 +6,7 @@ export const LandingPage = () => {
   return (
     <Box sx={{ textAlign: 'center', mt: 10 }}>
       <Typography variant="h2" gutterBottom color="primary">
-        Welcome to FileManager Cloud
+        Welcome to ScaleDrop FM
       </Typography>
       <Typography variant="h5" color="text.secondary" paragraph>
         Securely store, encrypt, and share your files with ease.

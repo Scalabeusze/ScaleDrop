@@ -19,7 +19,7 @@ export const UserLayout = () => {
       <AppBar position="static">
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            FileManager - User Area
+            ScaleDrop FM - User Area
           </Typography>
           
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>

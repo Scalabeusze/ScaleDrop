@@ -1,17 +1,17 @@
 spring:
   application:
-    name: sd-account
+    name: sd-iam
   flyway:
     enabled: true
     locations: classpath:db/migration
     validate-on-migrate: true
-    schemas: sd_account
+    schemas: sd_iam
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://${DB_URL:localhost:5432/postgres?currentSchema=sd_account}
+    url: jdbc:postgresql://${DB_URL:localhost:5432/postgres?currentSchema=sd_iam}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:password}
-    name: sd_account
+    name: sd_iam
   jpa:
     show-sql: false
     hibernate:
@@ -24,15 +24,15 @@ spring:
     properties:
       hibernate:
         format-sql: false
-        default_schema: sd_account
+        default_schema: sd_iam
         jdbc:
           time_zone: UTC
   main.banner-mode: off
 
 server:
-  port: 8080
+  port: 7300
   servlet:
-    context-path: ${SERVER_SERVLET_CONTEXT_PATH:/sd-account}
+    context-path: ${SERVER_SERVLET_CONTEXT_PATH:/sd-iam}
 management:
   info:
     git:

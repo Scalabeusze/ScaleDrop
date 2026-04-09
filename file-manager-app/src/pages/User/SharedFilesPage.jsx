@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Typography, Paper, List, ListItem, ListItemText, ListItemIcon } from '@mui/material';
-import DescriptionIcon from '@mui/material/Icon'; // fallback generic icon or standard MUI icon like FolderIcon
+import { FilePresent } from '@mui/icons-material';
 
 export const SharedFilesPage = () => {
   return (
@@ -13,8 +13,7 @@ export const SharedFilesPage = () => {
           {/* Mocked empty state or single item */}
           <ListItem divider>
             <ListItemIcon>
-              {/* Temporary placeholder for an icon */}
-              <Box sx={{ width: 24, height: 24, bgcolor: 'primary.main', borderRadius: 1 }} />
+              <FilePresent />
             </ListItemIcon>
             <ListItemText primary="Project_Proposal_v2.pdf" secondary="Shared by: Alice (alice@example.com)" />
           </ListItem>

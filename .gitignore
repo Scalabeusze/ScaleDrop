@@ -1,0 +1,5 @@
+.idea
+terraform/template/plan-file
+.terraform
+**/plan-file
+**/**/.terraform.lock.hcl

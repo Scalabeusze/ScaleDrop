@@ -19,18 +19,23 @@ package com.scaledrop.sdiam.configuration.exception.api;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCauseMessage;
 import static org.springframework.core.Ordered.HIGHEST_PRECEDENCE;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.CONFLICT;
+import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.METHOD_NOT_ALLOWED;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
+import com.scaledrop.sdiam.configuration.exception.AccountConflictException;
+import com.scaledrop.sdiam.configuration.exception.AccountNotFoundException;
+import com.scaledrop.sdiam.configuration.exception.AccountServiceException;
+import com.scaledrop.sdiam.configuration.exception.AccountValidationException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.Strings;
 import org.springframework.core.annotation.Order;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.orm.jpa.JpaObjectRetrievalFailureException;
 import org.springframework.security.access.AccessDeniedException;
@@ -65,8 +70,21 @@ public class GlobalExceptionHandler {
   @ExceptionHandler({
     EntityNotFoundException.class,
     JpaObjectRetrievalFailureException.class,
+    AccountNotFoundException.class,
   })
   public ApiExceptionResponse handleNotFound(Exception ex) {
+    return buildApiExceptionResponse(ex);
+  }
+
+  @ResponseStatus(CONFLICT)
+  @ExceptionHandler(AccountConflictException.class)
+  public ApiExceptionResponse handleConflict(Exception ex) {
+    return buildApiExceptionResponse(ex);
+  }
+
+  @ResponseStatus(BAD_REQUEST)
+  @ExceptionHandler(AccountValidationException.class)
+  public ApiExceptionResponse handleValidation(Exception ex) {
     return buildApiExceptionResponse(ex);
   }
 
@@ -82,7 +100,13 @@ public class GlobalExceptionHandler {
     return buildApiExceptionResponse(ex);
   }
 
-  @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+  @ResponseStatus(INTERNAL_SERVER_ERROR)
+  @ExceptionHandler(AccountServiceException.class)
+  public ApiExceptionResponse handleServiceException(Exception ex) {
+    return buildApiExceptionResponse(ex);
+  }
+
+  @ResponseStatus(INTERNAL_SERVER_ERROR)
   @ExceptionHandler(Exception.class)
   public ApiExceptionResponse handleGenericException(Exception ex) {
     return buildApiExceptionResponse(ex);

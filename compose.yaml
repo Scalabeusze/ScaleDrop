@@ -1,0 +1,20 @@
+services:
+  sd-iam:
+    image: sd-iam:local
+    build:
+      context: .
+    container_name: sd_iam
+    ports:
+      - "7300:7300"
+    environment:
+      DB_URL: ${DB_URL:?DB_URL must point to an external PostgreSQL instance}
+      DB_USERNAME: ${DB_USERNAME:?DB_USERNAME is required}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      SECURITY_ACCESS_DOCUMENTATION_PASSWORD: ${SECURITY_ACCESS_DOCUMENTATION_PASSWORD:?SECURITY_ACCESS_DOCUMENTATION_PASSWORD is required}
+      SECURITY_ACCESS_INTERNAL_PASSWORD: ${SECURITY_ACCESS_INTERNAL_PASSWORD:?SECURITY_ACCESS_INTERNAL_PASSWORD is required}
+    healthcheck:
+      test: [ "CMD-SHELL", "curl --fail --silent http://127.0.0.1:7300/sd-iam/actuator/health >/dev/null" ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 45s

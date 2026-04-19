@@ -1,3 +1,7 @@
+app:
+  db:
+    schema: ${DB_SCHEMA:sd_iam}
+
 spring:
   application:
     name: sd-iam
@@ -5,13 +9,13 @@ spring:
     enabled: true
     locations: classpath:db/migration
     validate-on-migrate: true
-    schemas: sd_iam
+    schemas: ${app.db.schema}
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://${DB_URL:localhost:5432/postgres?currentSchema=sd_iam}
+    url: jdbc:postgresql://${DB_URL:localhost:5432/postgres}?currentSchema=${app.db.schema}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:password}
-    name: sd_iam
+    name: ${app.db.schema}
   jpa:
     show-sql: false
     hibernate:
@@ -24,7 +28,7 @@ spring:
     properties:
       hibernate:
         format-sql: false
-        default_schema: sd_iam
+        default_schema: ${app.db.schema}
         jdbc:
           time_zone: UTC
   main.banner-mode: off

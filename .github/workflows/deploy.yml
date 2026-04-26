@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main # Automatically deploy on push to main
+  workflow_dispatch:
 
 jobs:
   deploy-to-ecs:

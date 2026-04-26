@@ -67,7 +67,7 @@ resource "aws_ecs_task_definition" "sd_iam" {
       {
         name  = "DB_URL"
         # Endpoint from database.tf
-        value = "jdbc:postgresql://${aws_db_instance.postgres.endpoint}/sd_database?currentSchema=sd_iam"
+        value = "${aws_db_instance.postgres.endpoint}/sd_database?currentSchema=sd_iam"
       },
       {
         name  = "DB_USERNAME"

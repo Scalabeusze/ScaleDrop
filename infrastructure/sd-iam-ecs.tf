@@ -108,7 +108,7 @@ resource "aws_ecs_service" "sd_iam_service" {
   name            = "sd-iam-service"
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.sd_iam.arn
-  desired_count   = 1 # One instance of this app
+  desired_count   = 0 # DROP to 0 since the service isn't set up yet
   launch_type     = "FARGATE"
 
   network_configuration {

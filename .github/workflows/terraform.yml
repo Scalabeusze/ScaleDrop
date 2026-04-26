@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-  # Apply manually with param
   workflow_dispatch:
     inputs:
       run_apply:
@@ -41,12 +40,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tfplan
-          path: tfplan
+          path: ./infrastructure/tfplan
 
   apply:
     name: "Terraform Apply"
     needs: plan
-    # Run only on manual workflow call and marking checkbox
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.run_apply == 'true'
     runs-on: ubuntu-latest
     env:
@@ -62,6 +60,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: tfplan
+          path: ./infrastructure/
 
       - name: "Setup Terraform"
         uses: hashicorp/setup-terraform@v3

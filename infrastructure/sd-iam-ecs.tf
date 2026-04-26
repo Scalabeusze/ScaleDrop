@@ -36,7 +36,7 @@ resource "aws_ssm_parameter" "internal_password_param" {
 # Logs (CloudWatch)
 resource "aws_cloudwatch_log_group" "sd_iam_logs" {
   name              = "/ecs/sd-iam"
-  retention_in_days = 2 # Cost saving
+  retention_in_days = 3 # Cost saving
 }
 
 # Task definition

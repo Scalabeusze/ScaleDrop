@@ -1,0 +1,98 @@
+name: "Reusable ECS Deploy"
+
+on:
+  workflow_call:
+    inputs:
+      ecr_repository:
+        description: 'ECR repository name (eg. sd-iam)'
+        required: true
+        type: string
+      ecs_cluster:
+        description: 'ECS cluster name'
+        required: true
+        type: string
+      ecs_service:
+        description: 'ECS service name'
+        required: true
+        type: string
+      container_name:
+        description: 'task-definition container name (eg. sd-iam)'
+        required: true
+        type: string
+      task_family:
+        description: 'ECS task family (eg. sd-iam-task)'
+        required: true
+        type: string
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy to ECS
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      # 1. Configure Java and Gradle
+      - name: Set up Temurin JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build with Gradle
+        run: ./gradlew --no-daemon build
+
+      # 2. Login to AWS
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-north-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # 3. Build docker image and send to ECR
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }} # Use commit hash as tag
+        run: |
+          # Budujemy i tagujemy najnowszego commita oraz tag 'latest'
+          docker build -t $ECR_REGISTRY/${{ inputs.ecr_repository }}:$IMAGE_TAG -t $ECR_REGISTRY/${{ inputs.ecr_repository }}:latest .
+          docker push -a $ECR_REGISTRY/${{ inputs.ecr_repository }}
+          echo "image=$ECR_REGISTRY/${{ inputs.ecr_repository }}:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      # 4. Download current ECS task definition from AWS
+      - name: Download current ECS task definition
+        run: |
+          aws ecs describe-task-definition --task-definition ${{ inputs.task_family }} --query taskDefinition > task-definition.json
+
+      # 5. Swap docker images
+      - name: Render new task definition with new image ID
+        id: render-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ inputs.container_name }}
+          image: ${{ steps.build-image.outputs.image }}
+
+      # 6. Deploy updated app to ECS
+      - name: Deploy to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render-task-def.outputs.task-definition }}
+          service: ${{ inputs.ecs_service }}
+          cluster: ${{ inputs.ecs_cluster }}
+          wait-for-service-stability: true # GitHub will wait until app starts successfully

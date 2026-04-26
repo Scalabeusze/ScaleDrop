@@ -1,4 +1,10 @@
 terraform {
+  backend "s3" {
+    bucket = "sd-fileserver-dev" # Reusing bucket for state backup
+    key    = "terraform.tfstate"
+    region = "eu-north-1"
+  }
+  
   required_providers {
     aws = {
       source  = "hashicorp/aws"

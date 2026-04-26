@@ -21,6 +21,7 @@ module "vpc" {
 
   # Automatically creates a subnet group, wchis will be attached to the database resource
   create_database_subnet_group = true
+  create_database_subnet_route_table = true
 
   # Make sure that the paid address translation mechanism is DISABLED (cost cutting)
   enable_nat_gateway = false

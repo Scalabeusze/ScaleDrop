@@ -3,3 +3,24 @@ terraform/template/plan-file
 .terraform
 **/plan-file
 **/**/.terraform.lock.hcl
+
+# Local .terraform directories
+**/.terraform/*
+
+# .tfstate files
+*.tfstate
+*.tfstate.*
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Ignore any .tfvars files that are generated automatically
+*.tfvars
+*.tfvars.json
+
+# Ignore override files as they are usually used to override resources locally and not pushed to shared team environments
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json

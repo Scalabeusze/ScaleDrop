@@ -23,7 +23,7 @@ public class SpringDocConfiguration {
   @Bean
   public OpenAPI springDocsOpenAPI(BuildProperties buildProperties) {
     Info info = new Info()
-        .title("TRX Adapter API")
+        .title("ScaleDrop Upload Service API")
         .version(buildProperties.getVersion());
     info.addExtension("x-build-time", buildProperties.getTime());
 

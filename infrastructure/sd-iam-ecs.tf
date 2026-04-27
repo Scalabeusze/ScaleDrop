@@ -56,10 +56,9 @@ resource "aws_ecs_task_definition" "sd_iam" {
     image     = "${aws_ecr_repository.sd_iam_repo.repository_url}:latest" # use latest image from ECR
     essential = true
 
-    # server.port in application.yml
     portMappings = [{
-      containerPort = 8080
-      hostPort      = 8080
+      containerPort = 7300
+      hostPort      = 7300
     }]
 
     # ENV variables
@@ -111,12 +110,22 @@ resource "aws_ecs_service" "sd_iam_service" {
   desired_count   = 1 # 1 running instance is expected
   launch_type     = "FARGATE"
 
+  # Give the app 2 minutes to start and then kill it if it doesn't become healthy, to avoid being stuck in a bad state
+  health_check_grace_period_seconds = 120
+
   network_configuration {
     subnets          = module.vpc.public_subnets
     security_groups  = [aws_security_group.app_sg.id]
 
     # Public IP because NAT Gateway is disabled for cost saving, so containers need public IP to pull Docker image from the internet.
     assign_public_ip = true
+  }
+
+  # Register container in ALB
+  load_balancer {
+    target_group_arn = aws_lb_target_group.sd_iam_tg.arn
+    container_name   = "sd-iam"
+    container_port   = 7300
   }
 
   # ---------------------------------------------------------

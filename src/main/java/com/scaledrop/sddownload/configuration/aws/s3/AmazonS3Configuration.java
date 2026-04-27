@@ -23,7 +23,7 @@ import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider
 @EnableConfigurationProperties(AmazonS3Properties.class)
 public class AmazonS3Configuration {
 
-  private static final String SESSION_ROLE_NAME = "trx-adapter-service";
+  private static final String SESSION_ROLE_NAME = "sd-download-service";
 
   private final AmazonS3Properties amazonS3Properties;
   private final AmazonProperties amazonProperties;

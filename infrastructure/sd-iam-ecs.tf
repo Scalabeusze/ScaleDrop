@@ -111,7 +111,7 @@ resource "aws_ecs_service" "sd_iam_service" {
   launch_type     = "FARGATE"
 
   # Give the app 2 minutes to start and then kill it if it doesn't become healthy, to avoid being stuck in a bad state
-  health_check_grace_period_seconds = 120
+  health_check_grace_period_seconds = 240
 
   network_configuration {
     subnets          = module.vpc.public_subnets

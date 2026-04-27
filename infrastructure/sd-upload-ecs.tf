@@ -123,7 +123,7 @@ resource "aws_ecs_service" "sd_upload_service" {
   desired_count   = 1
   
   launch_type     = "FARGATE"
-  health_check_grace_period_seconds = 120
+  health_check_grace_period_seconds = 240
 
   network_configuration {
     subnets          = module.vpc.public_subnets

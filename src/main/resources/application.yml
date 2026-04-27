@@ -75,12 +75,12 @@ security:
       password: ${SECURITY_ACCESS_INTERNAL_PASSWORD:scaledrop}
 
 aws:
-  region: ${AWS_REGION:eu-central-1}
+  region: ${AWS_REGION:eu-north-1}
   s3:
     assume-role:
     fileserver:
       endpoint: ${AWS_S3_ENDPOINT:} # should stay blank end set as environment variable if needed
-      region: ${AWS_S3_BUCKET_REGION:eu-central-1}
+      region: ${AWS_S3_BUCKET_REGION:eu-north-1}
       bucket: ${AWS_S3_BUCKET_NAME:sd-fileserver}
   sns:
     endpoint: ${AWS_SNS_ENDPOINT:}

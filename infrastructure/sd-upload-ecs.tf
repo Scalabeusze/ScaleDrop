@@ -120,7 +120,7 @@ resource "aws_ecs_service" "sd_upload_service" {
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.sd_upload.arn
   
-  desired_count   = 0 
+  desired_count   = 1
   
   launch_type     = "FARGATE"
   health_check_grace_period_seconds = 120

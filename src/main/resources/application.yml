@@ -45,10 +45,25 @@ security:
       username: scaledrop
       password: ${SECURITY_ACCESS_INTERNAL_PASSWORD:scaledrop}
 
-example-service:
+example-service: # TODO: REMOVE
   url: ${EXAMPLE_SERVICE_URL:http://localhost:8081/sd-example-service}
   username: ${EXAMPLE_SERVICE_USERNAME:scaledrop}
   password: ${EXAMPLE_SERVICE_PASSWORD:scaledrop}
+
+iam-service:
+  url: ${IAM_SERVICE_URL:http://localhost:8081/sd-iam}
+  username: ${IAM_SERVICE_USERNAME:scaledrop}
+  password: ${IAM_SERVICE_PASSWORD:scaledrop}
+
+upload-service:
+  url: ${UPLOAD_SERVICE_URL:http://localhost:8081/sd-upload}
+  username: ${UPLOAD_SERVICE_USERNAME:scaledrop}
+  password: ${UPLOAD_SERVICE_PASSWORD:scaledrop}
+
+download-service:
+  url: ${DOWNLOAD_SERVICE_URL:http://localhost:8081/sd-download}
+  username: ${DOWNLOAD_SERVICE_USERNAME:scaledrop}
+  password: ${DOWNLOAD_SERVICE_PASSWORD:scaledrop}
 
 springdoc:
   use-fqn: true

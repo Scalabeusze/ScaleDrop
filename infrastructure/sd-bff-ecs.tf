@@ -107,8 +107,10 @@ resource "aws_ecs_service" "sd_bff_service" {
   name            = "sd-bff-service"
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.sd_bff.arn
+  
   desired_count   = 0 
 
+  launch_type     = "FARGATE"
   health_check_grace_period_seconds = 240
 
   network_configuration {

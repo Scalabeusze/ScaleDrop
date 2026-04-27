@@ -6,9 +6,9 @@ export const LoginPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleMockLogin = (role) => {
-    login(role);
-    navigate(role === 'admin' ? '/admin/dashboard' : '/user/my-files');
+  const handleMockLogin = () => {
+    login('user');
+    navigate('/user/my-files');
   };
 
   const handleOAuthLogin = () => {
@@ -38,9 +38,6 @@ export const LoginPage = () => {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 4 }}>
           <Button variant="contained" color="primary" onClick={() => handleMockLogin('user')}>
             Login as User
-          </Button>
-          <Button variant="contained" color="secondary" onClick={() => handleMockLogin('admin')}>
-            Login as Admin
           </Button>
           
           <Divider sx={{ my: 1 }}>OR</Divider>

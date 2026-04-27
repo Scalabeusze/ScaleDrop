@@ -5,11 +5,11 @@ import { lightTheme, darkTheme } from '../config/theme';
 
 export const ThemeContext = createContext({
   toggleTheme: () => {},
-  isDarkMode: false,
+  isDarkMode: true,
 });
 
 export const ThemeContextProvider = ({ children }) => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   const toggleTheme = () => {
     setIsDarkMode((prevMode) => !prevMode);

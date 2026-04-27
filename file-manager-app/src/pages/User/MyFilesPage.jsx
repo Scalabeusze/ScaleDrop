@@ -1,5 +1,6 @@
 import { Typography, Box, Paper, Button } from '@mui/material';
 import { DiskUsageBar } from '../../components/Shared/DiskUsageBar';
+import { FileUpload } from '../../components/FileUpload';
 
 export const MyFilesPage = () => {
   // Mock usage: ~2.5 GB
@@ -16,8 +17,8 @@ export const MyFilesPage = () => {
         <Typography variant="h6" gutterBottom>
           Actions
         </Typography>
-        <Button variant="contained" sx={{ mr: 2 }}>Upload File</Button>
         <Button variant="outlined">New Folder</Button>
+      <FileUpload />
       </Box>
 
       <Paper sx={{ mt: 4, p: 3 }}>

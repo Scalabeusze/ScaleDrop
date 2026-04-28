@@ -12,7 +12,7 @@ spring:
     schemas: ${app.db.schema}
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://${DB_URL:localhost:5432/postgres?currentSchema=sd_iam}
+    url: jdbc:postgresql://${DB_URL:localhost:5432/postgres?currentSchema=${app.db.schema}}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:password}
     name: ${app.db.schema}

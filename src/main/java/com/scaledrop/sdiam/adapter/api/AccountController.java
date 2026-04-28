@@ -34,7 +34,6 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
@@ -49,7 +48,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-@Slf4j
 @Validated
 @RestController
 @RequiredArgsConstructor
@@ -71,7 +69,6 @@ public class AccountController {
   @ApiResponse(responseCode = "201", description = "Successfully created account")
   @ResponseStatus(HttpStatus.CREATED)
   public AccountAPIResponse createAccount(@Valid @RequestBody CreateAccountAPIRequest request) {
-    log.info("[ACCOUNT] Received a request to create an account");
     return accountResponseMapper.toResponse(accountService.createAccount(request));
   }
 
@@ -82,7 +79,6 @@ public class AccountController {
   @ApiResponse(responseCode = "200", description = "Successfully fetched accounts")
   @ResponseStatus(HttpStatus.OK)
   public List<AccountAPIResponse> getAccounts() {
-    log.info("[ACCOUNT] Received a request to fetch all accounts");
     return accountService.getAccounts().stream().map(accountResponseMapper::toResponse).toList();
   }
 
@@ -93,7 +89,6 @@ public class AccountController {
   @ApiResponse(responseCode = "200", description = "Successfully fetched account")
   @ResponseStatus(HttpStatus.OK)
   public AccountAPIResponse getAccount(@PathVariable UUID accountId) {
-    log.info("[ACCOUNT] Received a request to fetch account {}", accountId);
     return accountResponseMapper.toResponse(accountService.getAccountById(accountId));
   }
 
@@ -108,7 +103,6 @@ public class AccountController {
   @ResponseStatus(HttpStatus.OK)
   public AccountAPIResponse updateAccount(
       @PathVariable UUID accountId, @Valid @RequestBody UpdateAccountAPIRequest request) {
-    log.info("[ACCOUNT] Received a request to update account {}", accountId);
     return accountResponseMapper.toResponse(accountService.updateAccount(accountId, request));
   }
 
@@ -123,7 +117,6 @@ public class AccountController {
   @ResponseStatus(HttpStatus.OK)
   public AccountAPIResponse updatePassword(
       @PathVariable UUID accountId, @Valid @RequestBody UpdatePasswordAPIRequest request) {
-    log.info("[ACCOUNT] Received a request to update password for account {}", accountId);
     return accountResponseMapper.toResponse(accountService.updatePassword(accountId, request));
   }
 
@@ -134,7 +127,6 @@ public class AccountController {
   @ApiResponse(responseCode = "204", description = "Successfully deleted account")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void deleteAccount(@PathVariable UUID accountId) {
-    log.info("[ACCOUNT] Received a request to delete account {}", accountId);
     accountService.deleteAccount(accountId);
   }
 }

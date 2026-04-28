@@ -32,6 +32,14 @@ spring:
         jdbc:
           time_zone: UTC
   main.banner-mode: off
+  spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_SECRET}
 
 server:
   port: 7300
@@ -53,11 +61,10 @@ management:
       export:
         enabled: true
 
-logback:
-  log:
-    dir: log
-
 security:
+  jwt:
+    secret: ${SECURITY_JWT_SECRET}
+    ttl: ${SECURITY_JWT_TTL:PT24H}
   access:
     documentation:
       username: ${SECURITY_ACCESS_DOCUMENTATION_USERNAME:documentation}

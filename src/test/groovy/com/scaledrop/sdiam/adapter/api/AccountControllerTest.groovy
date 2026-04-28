@@ -337,7 +337,7 @@ class AccountControllerTest extends WiremockTestBase {
     response.message == "Account not found"
   }
 
-  def "should delete account"() {
+  def "should disable account instead of delete"() {
     given:
     def account = persistAccount("test_username")
 
@@ -347,7 +347,9 @@ class AccountControllerTest extends WiremockTestBase {
         .andExpect(status().isNoContent())
 
     then:
-    !accountRepository.existsByUsername(account.username)
+    accountRepository.existsByUsername(account.username)
+    def deletedAccount = accountRepository.findById(account.id).orElseThrow()
+    deletedAccount.status == AccountStatus.DISABLED
   }
 
   def "should return not found when deleting missing account"() {

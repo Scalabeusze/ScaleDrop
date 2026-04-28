@@ -30,6 +30,7 @@ import com.scaledrop.sdiam.configuration.exception.AccountConflictException;
 import com.scaledrop.sdiam.configuration.exception.AccountNotFoundException;
 import com.scaledrop.sdiam.configuration.exception.AccountServiceException;
 import com.scaledrop.sdiam.configuration.exception.AccountValidationException;
+import com.scaledrop.sdiam.configuration.exception.AuthenticationFailedException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import java.io.IOException;
@@ -89,7 +90,7 @@ public class GlobalExceptionHandler {
   }
 
   @ResponseStatus(UNAUTHORIZED)
-  @ExceptionHandler(AccessDeniedException.class)
+  @ExceptionHandler({AccessDeniedException.class, AuthenticationFailedException.class})
   public ApiExceptionResponse handleUnauthorizedException(Exception ex) {
     return buildApiExceptionResponse(ex);
   }

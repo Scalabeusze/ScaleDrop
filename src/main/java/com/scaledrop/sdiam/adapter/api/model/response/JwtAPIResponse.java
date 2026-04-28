@@ -14,11 +14,10 @@
  * permissions and limitations under the License.
  */
 
-package com.scaledrop.sdiam.adapter.api.model.request;
+package com.scaledrop.sdiam.adapter.api.model.response;
 
-import com.scaledrop.sdiam.configuration.annotations.ValidPassword;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
 
-public record UpdatePasswordAPIRequest(
-    @Schema(example = "password1A!", description = "New plain text password to hash") @ValidPassword
-        String plainPassword) {}
+public record JwtAPIResponse(
+    @Schema(description = "Signed JWT containing account_id and expires_at claims") @NotBlank String jwt) {}

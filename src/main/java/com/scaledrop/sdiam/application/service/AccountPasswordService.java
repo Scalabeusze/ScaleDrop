@@ -18,6 +18,7 @@ package com.scaledrop.sdiam.application.service;
 
 import com.scaledrop.sdiam.configuration.exception.AccountServiceException;
 import com.scaledrop.sdiam.configuration.exception.AccountValidationException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
@@ -48,7 +49,10 @@ public class AccountPasswordService {
   public PasswordData hashPassword(String plainPassword) {
     byte[] salt = new byte[SALT_LENGTH_BYTES];
     secureRandom.nextBytes(salt);
+    return hashPassword(plainPassword, salt);
+  }
 
+  private PasswordData hashPassword(String plainPassword, byte[] salt) {
     byte[] hash;
     try {
       PBEKeySpec keySpec =
@@ -60,6 +64,18 @@ public class AccountPasswordService {
 
     var base64Encoder = Base64.getEncoder();
     return new PasswordData(base64Encoder.encodeToString(hash), base64Encoder.encodeToString(salt));
+  }
+
+  public boolean matchesPassword(String plainPassword, String expectedHash, String salt) {
+    try {
+      PasswordData actualPasswordData =
+          hashPassword(plainPassword, Base64.getDecoder().decode(salt));
+      return MessageDigest.isEqual(
+          Base64.getDecoder().decode(actualPasswordData.hash()),
+          Base64.getDecoder().decode(expectedHash));
+    } catch (IllegalArgumentException exception) {
+      return false;
+    }
   }
 
   public record PasswordData(String hash, String salt) {}

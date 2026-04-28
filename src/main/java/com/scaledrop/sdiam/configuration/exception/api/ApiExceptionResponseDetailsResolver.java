@@ -20,6 +20,7 @@ import static com.scaledrop.sdiam.configuration.exception.api.ApiExceptionType.C
 import static com.scaledrop.sdiam.configuration.exception.api.ApiExceptionType.FORBIDDEN;
 import static com.scaledrop.sdiam.configuration.exception.api.ApiExceptionType.INTERNAL_SERVER_ERROR;
 import static com.scaledrop.sdiam.configuration.exception.api.ApiExceptionType.NOT_FOUND;
+import static com.scaledrop.sdiam.configuration.exception.api.ApiExceptionType.UNAUTHORIZED;
 import static com.scaledrop.sdiam.configuration.exception.api.ApiExceptionType.VALIDATION;
 
 import com.google.common.collect.ImmutableMap.Builder;
@@ -27,6 +28,7 @@ import com.scaledrop.sdiam.configuration.exception.AccountConflictException;
 import com.scaledrop.sdiam.configuration.exception.AccountNotFoundException;
 import com.scaledrop.sdiam.configuration.exception.AccountServiceException;
 import com.scaledrop.sdiam.configuration.exception.AccountValidationException;
+import com.scaledrop.sdiam.configuration.exception.AuthenticationFailedException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import java.util.Comparator;
@@ -89,6 +91,9 @@ public class ApiExceptionResponseDetailsResolver {
               .put(
                   AccountValidationException.class,
                   ApiExceptionResponseDetails.details(VALIDATION_ERROR, VALIDATION))
+              .put(
+                  AuthenticationFailedException.class,
+                  ApiExceptionResponseDetails.details(UNAUTHORIZED))
               .put(
                   AccountServiceException.class,
                   ApiExceptionResponseDetails.details(

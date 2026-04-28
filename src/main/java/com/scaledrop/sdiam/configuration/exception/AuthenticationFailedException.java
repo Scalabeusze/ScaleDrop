@@ -14,11 +14,11 @@
  * permissions and limitations under the License.
  */
 
-package com.scaledrop.sdiam.adapter.api.model.request;
+package com.scaledrop.sdiam.configuration.exception;
 
-import com.scaledrop.sdiam.configuration.annotations.ValidPassword;
-import io.swagger.v3.oas.annotations.media.Schema;
+public class AuthenticationFailedException extends RuntimeException {
 
-public record UpdatePasswordAPIRequest(
-    @Schema(example = "password1A!", description = "New plain text password to hash") @ValidPassword
-        String plainPassword) {}
+  public AuthenticationFailedException(String message) {
+    super(message);
+  }
+}

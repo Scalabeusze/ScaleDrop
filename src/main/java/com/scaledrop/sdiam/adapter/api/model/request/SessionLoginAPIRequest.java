@@ -16,9 +16,10 @@
 
 package com.scaledrop.sdiam.adapter.api.model.request;
 
-import com.scaledrop.sdiam.configuration.annotations.ValidPassword;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
 
-public record UpdatePasswordAPIRequest(
-    @Schema(example = "password1A!", description = "New plain text password to hash") @ValidPassword
-        String plainPassword) {}
+public record SessionLoginAPIRequest(
+    @Schema(example = "Tomasz Testowy", description = "Username for local account login") @NotBlank String username,
+    @Schema(example = "test_password1A!", description = "Plain password for local account login")
+        @NotBlank String password) {}

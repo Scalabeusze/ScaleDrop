@@ -84,10 +84,10 @@ class AccountServiceTest extends IntegrationTestBase {
 
   def "should get account by id"() {
     given:
-    def existingAccount = persistAccount("test_username")
+    def account = persistAccount("test_username")
 
     expect:
-    accountService.getAccountById(existingAccount.id).id == existingAccount.id
+    accountService.getAccountById(account.id).id == account.id
   }
 
   def "should get account by username"() {
@@ -116,12 +116,12 @@ class AccountServiceTest extends IntegrationTestBase {
 
   def "should update only provided fields"() {
     given:
-    def existingAccount = persistAccount("test_username")
-    def originalLastLoginAt = existingAccount.lastLoginAt
+    def account = persistAccount("test_username")
+    def lastLoginAt = account.lastLoginAt
 
     when:
     def updatedAccount = accountService.updateAccount(
-        existingAccount.id,
+        account.id,
         new UpdateAccountAPIRequest(
         "test_username1",
         AccountStatus.DISABLED,
@@ -134,17 +134,17 @@ class AccountServiceTest extends IntegrationTestBase {
     updatedAccount.status == AccountStatus.DISABLED
     updatedAccount.failedLoginAttempts == 2
     updatedAccount.lockedUntil == OffsetDateTime.parse("2026-04-20T11:00:00Z")
-    updatedAccount.lastLoginAt == originalLastLoginAt
+    updatedAccount.lastLoginAt == lastLoginAt
   }
 
   def "should reject duplicate username during update"() {
     given:
-    def existingAccount = persistAccount("test_username")
+    def account = persistAccount("test_username")
     persistAccount("test_username1")
 
     when:
     accountService.updateAccount(
-        existingAccount.id,
+        account.id,
         new UpdateAccountAPIRequest("test_username1", null, null, null, null))
 
     then:
@@ -153,13 +153,13 @@ class AccountServiceTest extends IntegrationTestBase {
 
   def "should update password and password updated timestamp"() {
     given:
-    def existingAccount = persistAccount("test_username")
-    def previousHash = existingAccount.passwordHash
-    def previousSalt = existingAccount.passwordSalt
+    def account = persistAccount("test_username")
+    def previousHash = account.passwordHash
+    def previousSalt = account.passwordSalt
 
     when:
     def updatedAccount =
-        accountService.updatePassword(existingAccount.id, new UpdatePasswordAPIRequest("test_password2A!"))
+        accountService.updatePassword(account.id, new UpdatePasswordAPIRequest("test_password2A!"))
 
     then:
     updatedAccount.passwordHash != previousHash
@@ -167,15 +167,17 @@ class AccountServiceTest extends IntegrationTestBase {
     updatedAccount.passwordUpdatedAt.toInstant() == OffsetDateTime.parse("2022-10-10T15:00:00Z").toInstant()
   }
 
-  def "should delete account"() {
+  def "should disable account instead of delete"() {
     given:
-    def existingAccount = persistAccount("test_username")
+    def account = persistAccount("test_username")
 
     when:
-    accountService.deleteAccount(existingAccount.id)
+    accountService.deleteAccount(account.id)
 
     then:
-    !accountRepository.existsByUsername(existingAccount.username)
+    accountRepository.existsByUsername(account.username)
+    def deletedAccount = accountRepository.findById(account.id).orElseThrow()
+    deletedAccount.status == AccountStatus.DISABLED
   }
 
   def "should throw not found for missing account by id"() {

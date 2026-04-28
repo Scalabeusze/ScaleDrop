@@ -14,11 +14,20 @@
  * permissions and limitations under the License.
  */
 
-package com.scaledrop.sdiam.adapter.api.model.request;
+package com.scaledrop.sdiam.configuration.security.properties;
 
-import com.scaledrop.sdiam.configuration.annotations.ValidPassword;
-import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.Duration;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
 
-public record UpdatePasswordAPIRequest(
-    @Schema(example = "password1A!", description = "New plain text password to hash") @ValidPassword
-        String plainPassword) {}
+@Setter
+@Getter
+@Component
+@ConfigurationProperties("security.jwt")
+public class JwtProperties {
+
+  private String secret;
+  private Duration ttl = Duration.ofHours(24);
+}

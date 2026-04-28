@@ -24,7 +24,7 @@ import java.time.OffsetDateTime;
 
 public record CreateAccountAPIRequest(
     @Schema(example = "Tomasz Testowy", description = "Unique username for the account") @NotBlank String username,
-    @Schema(example = "plain-text-password", description = "Plain-text password to be hashed")
+    @Schema(example = "password1A!", description = "Plain text password to be hashed")
         @ValidPassword
         String plainPassword,
     @Schema(example = "ACTIVE", description = "Account lifecycle status") AccountStatus status,

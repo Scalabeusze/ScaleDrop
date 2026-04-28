@@ -16,6 +16,8 @@
 
 package com.scaledrop.sdiam.configuration.security;
 
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scaledrop.sdiam.configuration.exception.api.ApiExceptionResponse;
 import com.scaledrop.sdiam.configuration.exception.api.ApiExceptionType;
@@ -23,31 +25,31 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.stereotype.Component;
 
+@Component
 @RequiredArgsConstructor
-public class CustomAccessDeniedHandler implements AccessDeniedHandler {
+public class SessionAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
-  private final ObjectMapper mapper;
+  private final ObjectMapper objectMapper;
 
   @Override
-  public void handle(
+  public void commence(
       HttpServletRequest request,
       HttpServletResponse response,
-      AccessDeniedException accessDeniedException)
+      AuthenticationException authException)
       throws IOException {
     var apiExceptionResponse =
         ApiExceptionResponse.builder()
-            .message(accessDeniedException.getMessage())
-            .type(ApiExceptionType.FORBIDDEN)
+            .exception(authException)
+            .message(authException.getMessage())
+            .type(ApiExceptionType.UNAUTHORIZED)
             .build();
 
-    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-    response.setCharacterEncoding("UTF-8");
-    response.getWriter().write(mapper.writeValueAsString(apiExceptionResponse));
-    response.getWriter().flush();
+    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+    response.setContentType(APPLICATION_JSON_VALUE);
+    response.getWriter().write(objectMapper.writeValueAsString(apiExceptionResponse));
   }
 }

@@ -14,11 +14,14 @@
  * permissions and limitations under the License.
  */
 
-package com.scaledrop.sdiam.adapter.api.model.request;
+package com.scaledrop.sdiam.adapter.db;
 
-import com.scaledrop.sdiam.configuration.annotations.ValidPassword;
-import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.Optional;
+import java.util.UUID;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public record UpdatePasswordAPIRequest(
-    @Schema(example = "password1A!", description = "New plain text password to hash") @ValidPassword
-        String plainPassword) {}
+public interface IdentityRepository extends JpaRepository<IdentityEntity, UUID> {
+
+  Optional<IdentityEntity> findByProviderAndProviderSubject(
+      IdentityProvider provider, String providerSubject);
+}

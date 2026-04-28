@@ -26,6 +26,7 @@ import com.scaledrop.sdiam.configuration.exception.AccountConflictException;
 import com.scaledrop.sdiam.configuration.exception.AccountNotFoundException;
 import com.scaledrop.sdiam.configuration.exception.AccountServiceException;
 import com.scaledrop.sdiam.configuration.exception.AccountValidationException;
+import com.scaledrop.sdiam.configuration.exception.AuthenticationFailedException;
 import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -191,6 +192,26 @@ public class AccountService {
   @Transactional
   public void deleteAccount(UUID accountId) {
     var accountEntity = getAccountById(accountId);
-    accountRepository.delete(accountEntity);
+    accountEntity.setStatus(AccountStatus.DISABLED);
+    accountRepository.save(accountEntity);
+  }
+
+  // Utility
+
+  /**
+   * Validates account expiry status
+   *
+   * @param authenticationService
+   * @param account
+   */
+  void validateAccountState(AuthenticationService authenticationService, AccountEntity account) {
+    if (account.getStatus() == AccountStatus.DISABLED) {
+      throw new AuthenticationFailedException(AuthenticationService.ACCOUNT_DISABLED);
+    }
+    if (account.getStatus() == AccountStatus.LOCKED
+        && account.getLockedUntil() != null
+        && account.getLockedUntil().isAfter(OffsetDateTime.now(authenticationService.clock))) {
+      throw new AuthenticationFailedException(AuthenticationService.ACCOUNT_LOCKED);
+    }
   }
 }

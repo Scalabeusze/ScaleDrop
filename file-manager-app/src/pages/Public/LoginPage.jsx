@@ -14,7 +14,7 @@ export const LoginPage = () => {
   const handleOAuthLogin = () => {
     const clientId = '393425779945-5hhvuddp5l97dokdl6kshg7gtdceo1lq.apps.googleusercontent.com'; 
     const redirectUri = 'http://sd-alb-dev-1442333574.eu-north-1.elb.amazonaws.com/sd-iam/login/oauth2/code/google';
-    const scope = encodeURIComponent('openid email profile');
+    const scope = 'https://www.googleapis.com/auth/admin.directory.user.alias.readonly';
     const responseType = 'token';
     const state = 'standard_oauth_state_string_mock'; 
 

@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { Box, Button, Typography, CircularProgress } from '@mui/material';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+const USERNAME = import.meta.env.VITE_USERNAME;
+const PASSWORD = import.meta.env.VITE_PASSWORD;
+
 export const FileUpload = () => {
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -17,9 +21,12 @@ export const FileUpload = () => {
 
     try {
       // 1. Send metadata to backend to request a signed URL
-      const requestResponse = await fetch('/api/files/upload-request', {
+      const requestResponse = await fetch(`${API_BASE_URL}/api/files/upload-request`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${btoa(`${USERNAME}:${PASSWORD}`)}`,
+        },
         body: JSON.stringify({
           filename: file.name,
           contentType: file.type,

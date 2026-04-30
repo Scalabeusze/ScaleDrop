@@ -12,8 +12,7 @@ export const LoginPage = () => {
   };
 
   const handleOAuthLogin = () => {
-    // Replace with actual Google OAuth 2.0 Client ID
-    const clientId = 'YOUR_GOOGLE_CLIENT_ID'; 
+    const clientId = '393425779945-5hhvuddp5l97dokdl6kshg7gtdceo1lq.apps.googleusercontent.com'; 
     const redirectUri = encodeURIComponent(window.location.origin + '/oauth-callback');
     const scope = encodeURIComponent('openid email profile');
     const responseType = 'code';

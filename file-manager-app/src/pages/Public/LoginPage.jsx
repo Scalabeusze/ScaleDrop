@@ -13,7 +13,7 @@ export const LoginPage = () => {
 
   const handleOAuthLogin = () => {
     // Redirect the user to the backend's OAuth2 authorization endpoint.
-    window.location.href = 'http://sd-alb-dev-1442333574.eu-north-1.elb.amazonaws.com/sd-iam//api/v1/session/google';
+    window.location.href = 'http://sd-alb-dev-1442333574.eu-north-1.elb.amazonaws.com/sd-iam/api/v1/session/google';
   };
 
   return (

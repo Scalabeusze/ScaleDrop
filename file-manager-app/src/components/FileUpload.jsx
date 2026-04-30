@@ -17,11 +17,11 @@ export const FileUpload = () => {
 
   const handleUpload = async () => {
     if (!file) return;
-    setUploading(true);
+    setUploading(true); 
 
     try {
       // 1. Send metadata to backend to request a signed URL
-      const requestResponse = await fetch(`${API_BASE_URL}/api/files/upload-request`, {
+      const requestResponse = await fetch(`${API_BASE_URL}/api/v1/example`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

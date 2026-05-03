@@ -22,6 +22,4 @@ public class TimeProvider {
   public OffsetDateTime now() {
     return OffsetDateTime.now(clock);
   }
-
-
 }

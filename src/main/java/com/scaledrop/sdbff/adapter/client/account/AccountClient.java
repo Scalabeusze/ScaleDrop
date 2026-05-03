@@ -10,10 +10,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 @FeignClient(
     name = "iam-service-client",
     url = "${iam-service.url}",
-    configuration = {ScaleDropFeignConfiguration.class, AccountClientConfiguration.class}
-)
+    configuration = {ScaleDropFeignConfiguration.class, AccountClientConfiguration.class})
 public interface AccountClient {
-    
+
   String ACCOUNT_URL = "/internal/api/v1/account";
 
   @GetMapping(ACCOUNT_URL + "/{id}")

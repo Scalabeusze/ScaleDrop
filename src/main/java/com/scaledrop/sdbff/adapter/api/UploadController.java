@@ -38,15 +38,21 @@ public class UploadController {
   private final UploadRequestMapper uploadRequestMapper;
 
   @PostMapping(value = UPLOAD_ENDPOINT, consumes = MediaType.APPLICATION_JSON_VALUE)
-  @Operation(summary = "Initialize upload", description = "Generates a pre-signed URL. Owner ID is automatically extracted from JWT token.")
+  @Operation(
+      summary = "Initialize upload",
+      description =
+          "Generates a pre-signed URL. Owner ID is automatically extracted from JWT token.")
   @SecurityRequirement(name = BEARER_AUTH)
   @DefaultApiExceptionResponses
   @ApiResponse(responseCode = "200", description = "Successfully generated pre-signed URL")
   @ResponseStatus(HttpStatus.OK)
-  public String getUploadUrl(@Valid @RequestBody UploadAPIRequest request, @AuthenticationPrincipal Jwt jwt) {
+  public String getUploadUrl(
+      @Valid @RequestBody UploadAPIRequest request, @AuthenticationPrincipal Jwt jwt) {
     UUID ownerId = UUID.fromString(jwt.getSubject());
-    log.info("[UPLOAD-CONTROLLER] Received upload initialization for file: {} by owner: {}",
-        request.getFileName(), ownerId);
+    log.info(
+        "[UPLOAD-CONTROLLER] Received upload initialization for file: {} by owner: {}",
+        request.getFileName(),
+        ownerId);
     var uploadObject = uploadRequestMapper.toDomain(request);
     uploadObject.setOwnerId(ownerId);
     return uploadUseCase.getUploadUrl(uploadObject);

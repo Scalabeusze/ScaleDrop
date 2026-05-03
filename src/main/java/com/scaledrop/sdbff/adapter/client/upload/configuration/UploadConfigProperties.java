@@ -4,8 +4,4 @@ import jakarta.validation.constraints.NotBlank;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties("upload-service")
-public record UploadConfigProperties(
-    @NotBlank String username,
-    @NotBlank String password
-) {
-}
+public record UploadConfigProperties(@NotBlank String username, @NotBlank String password) {}

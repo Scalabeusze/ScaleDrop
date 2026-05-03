@@ -18,6 +18,7 @@ public enum ApiExceptionType {
   private final ExceptionTypeSeverity severity;
 
   public enum ExceptionTypeSeverity {
-    ERROR, WARN
+    ERROR,
+    WARN
   }
 }

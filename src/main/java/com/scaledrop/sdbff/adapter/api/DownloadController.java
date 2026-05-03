@@ -3,8 +3,6 @@ package com.scaledrop.sdbff.adapter.api;
 import static com.scaledrop.sdbff.configuration.Constants.API_V1_PREFIX;
 import static com.scaledrop.sdbff.configuration.Constants.BASIC_AUTH;
 
-import java.util.UUID;
-
 import com.scaledrop.sdbff.adapter.api.mapper.DownloadResponseMapper;
 import com.scaledrop.sdbff.adapter.api.model.response.DownloadAPIResponse;
 import com.scaledrop.sdbff.application.port.in.DownloadUseCase;
@@ -13,6 +11,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -35,7 +34,9 @@ public class DownloadController {
   private final DownloadResponseMapper downloadResponseMapper;
 
   @GetMapping(value = DOWNLOAD_ENDPOINT)
-  @Operation(summary = "Download file", description = "Streams file from download service by its ID")
+  @Operation(
+      summary = "Download file",
+      description = "Streams file from download service by its ID")
   @SecurityRequirement(name = BASIC_AUTH)
   @DefaultApiExceptionResponses
   @ApiResponse(responseCode = "200", description = "Successfully fetched file")

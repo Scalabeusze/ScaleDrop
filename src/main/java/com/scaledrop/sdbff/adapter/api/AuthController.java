@@ -34,7 +34,9 @@ public class AuthController {
   private final AuthResponseMapper authResponseMapper;
 
   @PostMapping(value = AUTH_ENDPOINT + "/login", produces = MediaType.APPLICATION_JSON_VALUE)
-  @Operation(summary = "Login via Google Code", description = "Exchanges Google Authorization Code for JWT Access and Refresh tokens")
+  @Operation(
+      summary = "Login via Google Code",
+      description = "Exchanges Google Authorization Code for JWT Access and Refresh tokens")
   @DefaultApiExceptionResponses
   @ApiResponse(responseCode = "200", description = "Successfully logged in and generated tokens")
   @ResponseStatus(HttpStatus.OK)

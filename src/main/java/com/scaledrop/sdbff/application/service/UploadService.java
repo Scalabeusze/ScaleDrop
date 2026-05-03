@@ -16,7 +16,7 @@ public class UploadService implements UploadUseCase {
 
   @Override
   public String getUploadUrl(UploadObject uploadObject) {
-    log.warn("[UPLOAD-SERVICE] Handling upload for hash: {}", uploadObject.getHash() );
+    log.warn("[UPLOAD-SERVICE] Handling upload for hash: {}", uploadObject.getHash());
     return uploadRepository.getUploadUrl(uploadObject);
   }
 }

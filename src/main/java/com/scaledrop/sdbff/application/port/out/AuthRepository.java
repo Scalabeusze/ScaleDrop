@@ -4,5 +4,5 @@ import com.scaledrop.sdbff.domain.auth.TokenObject;
 
 public interface AuthRepository {
 
-    TokenObject getTokenObject(String gcode);
+  TokenObject getTokenObject(String gcode);
 }

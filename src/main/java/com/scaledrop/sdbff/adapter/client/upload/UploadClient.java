@@ -10,8 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 @FeignClient(
     name = "upload-service-client",
     url = "${upload-service.url}",
-    configuration = {ScaleDropFeignConfiguration.class, UploadClientConfiguration.class }
-)
+    configuration = {ScaleDropFeignConfiguration.class, UploadClientConfiguration.class})
 public interface UploadClient {
 
   String UPLOAD_URL = "/internal/api/v1/upload";

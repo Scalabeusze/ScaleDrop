@@ -5,8 +5,4 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties("download-service")
 public record DownloadConfigProperties(
-    @NotBlank String url,
-    @NotBlank String username,
-    @NotBlank String password
-) {
-}
+    @NotBlank String url, @NotBlank String username, @NotBlank String password) {}

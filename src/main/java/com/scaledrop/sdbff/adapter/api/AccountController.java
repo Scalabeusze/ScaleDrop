@@ -2,8 +2,6 @@ package com.scaledrop.sdbff.adapter.api;
 
 import static com.scaledrop.sdbff.configuration.Constants.API_V1_PREFIX;
 
-import java.util.UUID;
-
 import com.scaledrop.sdbff.adapter.api.mapper.AccountResponseMapper;
 import com.scaledrop.sdbff.adapter.api.model.response.AccountAPIResponse;
 import com.scaledrop.sdbff.application.port.in.AccountUseCase;
@@ -12,6 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

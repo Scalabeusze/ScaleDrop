@@ -18,14 +18,20 @@ public record UploadErrorDecoder(ObjectMapper objectMapper) implements ErrorDeco
 
   public Exception decode(String methodKey, Response response) {
     return Optional.ofNullable(response)
-        .map(res -> {
-          String requestUrl = response.request().url();
-          HttpStatus status = HttpStatus.resolve(res.status());
+        .map(
+            res -> {
+              String requestUrl = response.request().url();
+              HttpStatus status = HttpStatus.resolve(res.status());
 
-          ApiExceptionResponse apiExceptionResponse = parseBody(res.body());
-          log.info("Error on url: {}, status: {}, body: {}", requestUrl, status, apiExceptionResponse);
-          return new SdBffServiceException(apiExceptionResponse.getMessage());
-        }).orElseThrow(() -> new SdBffServiceException("Empty error body"));
+              ApiExceptionResponse apiExceptionResponse = parseBody(res.body());
+              log.info(
+                  "Error on url: {}, status: {}, body: {}",
+                  requestUrl,
+                  status,
+                  apiExceptionResponse);
+              return new SdBffServiceException(apiExceptionResponse.getMessage());
+            })
+        .orElseThrow(() -> new SdBffServiceException("Empty error body"));
   }
 
   private ApiExceptionResponse parseBody(Body body) {
@@ -35,5 +41,4 @@ public record UploadErrorDecoder(ObjectMapper objectMapper) implements ErrorDeco
       throw new SdBffServiceException("Error on parsing body", ex);
     }
   }
-
 }

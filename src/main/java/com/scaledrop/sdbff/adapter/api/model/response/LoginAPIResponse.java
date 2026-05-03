@@ -12,18 +12,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class LoginAPIResponse {
 
-    @Schema(
-        description = "JWT Access Token"
-    )
-    private String accessToken;
+  @Schema(description = "JWT Access Token")
+  private String accessToken;
 
-    @Schema(
-        description = "JWT Refresh Token"
-    )
-    private String refreshToken;
+  @Schema(description = "JWT Refresh Token")
+  private String refreshToken;
 
-    @Schema(
-        description = "Token expiration time in seconds"
-    )
-    private Long expiresIn;
+  @Schema(description = "Token expiration time in seconds")
+  private Long expiresIn;
 }

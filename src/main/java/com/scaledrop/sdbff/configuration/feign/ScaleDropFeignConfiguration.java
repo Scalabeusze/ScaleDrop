@@ -61,7 +61,8 @@ public class ScaleDropFeignConfiguration {
       private String collectHeaders(Request request) {
         return request.headers().entrySet().stream()
             .filter(header -> !header.getKey().equalsIgnoreCase(AUTHORIZATION))
-            .toList().toString();
+            .toList()
+            .toString();
       }
     };
   }

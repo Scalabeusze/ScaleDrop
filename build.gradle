@@ -5,6 +5,7 @@ plugins {
 //  id "com.gorylenko.gradle-git-properties" version "${gradleGitPropertiesVersion}"
   id 'org.springframework.boot' version "${springBootVersion}"
   id 'io.spring.dependency-management' version "${springDependencyManagementVersion}"
+  id 'com.diffplug.spotless' version "8.4.0"
 }
 
 group = 'com.scaledrop'
@@ -120,3 +121,16 @@ tasks.register('copyToLib', Copy) {
   from configurations.compileClasspath
 }
 build.dependsOn(copyToLib)
+
+spotless {
+  format 'misc', {
+    target '*.gradle', '.gitattributes', '.gitignore'
+    trimTrailingWhitespace()
+    endWithNewline()
+  }
+  java {
+    removeUnusedImports()
+    googleJavaFormat().reflowLongStrings().reorderImports(true).skipJavadocFormatting()
+    formatAnnotations()
+  }
+}

@@ -22,44 +22,39 @@ import lombok.extern.slf4j.Slf4j;
 @AllArgsConstructor
 public class ApiExceptionResponse {
 
-  @NotNull
-  @Schema(
+  @NotNull @Schema(
       requiredMode = RequiredMode.REQUIRED,
       example = "09abed2a-0a2b-48d5-b9e8-9da6ea309e44",
       description = "Error identification code")
   private UUID uuid;
 
-  @NotNull
-  @Schema(
+  @NotNull @Schema(
       requiredMode = RequiredMode.REQUIRED,
       example = "Incorrect process status, expected: [X] received: Y",
       description = "String message error")
   private String message;
 
-  @NotNull
-  @Schema(
+  @NotNull @Schema(
       requiredMode = RequiredMode.REQUIRED,
       example = "One of [UNAUTHORIZED, VALIDATION, NOT_FOUND, INTERNAL_SERVER_ERROR]",
       description = "Type of api exception error")
   private ApiExceptionType type;
 
-  @NotNull
-  @Schema(
+  @NotNull @Schema(
       requiredMode = RequiredMode.REQUIRED,
       example = "2020-05-27T11:17:22.439Z",
       description = "Error occurrence timestamp")
   private OffsetDateTime timestamp;
 
-  @Schema(
-      description = "List of validation errors")
+  @Schema(description = "List of validation errors")
   private List<ValidationError> errors;
 
   @Builder
   public ApiExceptionResponse(
-    @NonNull String message,
-    @NonNull ApiExceptionType type,
-    Exception exception,
-    List<ValidationError> errors) {
+      @NonNull String message,
+      @NonNull ApiExceptionType type,
+      Exception exception,
+      List<ValidationError> errors) {
     this.message = message;
     this.type = type;
     this.errors = errors;

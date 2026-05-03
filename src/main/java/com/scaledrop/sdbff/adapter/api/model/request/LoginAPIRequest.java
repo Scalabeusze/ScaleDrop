@@ -13,10 +13,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class LoginAPIRequest {
 
-    @NotBlank
-    @Schema(
-        description = "Authorization code received from Google OAuth2",
-        example = "4/0AdQt8qh..."
-    )
-    private String gcode;
+  @NotBlank @Schema(description = "Authorization code received from Google OAuth2", example = "4/0AdQt8qh...")
+  private String gcode;
 }

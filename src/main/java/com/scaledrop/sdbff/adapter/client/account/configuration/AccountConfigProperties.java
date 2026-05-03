@@ -4,8 +4,4 @@ import jakarta.validation.constraints.NotBlank;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties("iam-service")
-public record AccountConfigProperties(
-    @NotBlank String username,
-    @NotBlank String password
-) {
-}
+public record AccountConfigProperties(@NotBlank String username, @NotBlank String password) {}

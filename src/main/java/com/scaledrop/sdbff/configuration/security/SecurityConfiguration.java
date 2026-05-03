@@ -13,9 +13,7 @@ import com.scaledrop.sdbff.configuration.security.properties.SecurityProperties;
 import com.scaledrop.sdbff.configuration.security.properties.SecurityProperties.BasicAuthorization;
 import java.util.Optional;
 import java.util.function.Function;
-
 import javax.crypto.spec.SecretKeySpec;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -44,9 +42,12 @@ public class SecurityConfiguration {
   @RequiredArgsConstructor
   public static class AuthSecurityConfiguration {
 
-    private static final String EXTRACTING_API_CREDENTIALS_ERROR_MESSAGE = "Error extracting API credentials";
+    private static final String EXTRACTING_API_CREDENTIALS_ERROR_MESSAGE =
+        "Error extracting API credentials";
 
-    private static final String[] DOCS_PATHS = {"/swagger-ui/**", "/swagger-resources/**", "/v3/api-docs/**"};
+    private static final String[] DOCS_PATHS = {
+      "/swagger-ui/**", "/swagger-resources/**", "/v3/api-docs/**"
+    };
     private static final String[] ACTUATOR_PATHS = {"/actuator/**"};
     private final SecurityProperties securityProperties;
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
@@ -55,8 +56,7 @@ public class SecurityConfiguration {
     @Bean
     @Order(0)
     public SecurityFilterChain securityFilterChainActuator(HttpSecurity http) throws Exception {
-      return http
-          .securityMatcher(ACTUATOR_PATHS)
+      return http.securityMatcher(ACTUATOR_PATHS)
           .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
           .csrf(AbstractHttpConfigurer::disable) // NOSONAR
           .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -66,10 +66,10 @@ public class SecurityConfiguration {
     @Bean
     @Order(1)
     public SecurityFilterChain securityFilterChainDocs(HttpSecurity http) throws Exception {
-      return http
-          .securityMatcher(DOCS_PATHS)
+      return http.securityMatcher(DOCS_PATHS)
           .authorizeHttpRequests(r -> r.requestMatchers(DOCS_PATHS).hasRole(DOCUMENTATION.name()))
-          .httpBasic(customizer -> customizer.authenticationEntryPoint(basicAuthenticationEntryPoint))
+          .httpBasic(
+              customizer -> customizer.authenticationEntryPoint(basicAuthenticationEntryPoint))
           .csrf(AbstractHttpConfigurer::disable)
           .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
           .exceptionHandling(eh -> eh.accessDeniedHandler(customAccessDeniedHandler))
@@ -79,27 +79,34 @@ public class SecurityConfiguration {
     @Bean
     @Order(2)
     protected SecurityFilterChain securityFilterChainEndpoints(HttpSecurity http) throws Exception {
-      return http
-          .cors(AbstractHttpConfigurer::disable)
+      return http.cors(AbstractHttpConfigurer::disable)
           .csrf(AbstractHttpConfigurer::disable)
           .requestCache(AbstractHttpConfigurer::disable)
           .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
           .logout(AbstractHttpConfigurer::disable)
           .anonymous(Customizer.withDefaults())
-          .authorizeHttpRequests(r -> r
-              .requestMatchers(POST, API_V1_PREFIX + "/auth/**").permitAll()
-              .requestMatchers(GET, API_V1_PREFIX + "/example").hasAnyRole(INTERNAL.name())
-              .requestMatchers(GET, API_V1_PREFIX + "/account/**").hasAnyRole(INTERNAL.name())
-              .requestMatchers(POST, API_V1_PREFIX + "/upload/**").hasAnyRole(INTERNAL.name())
-              .requestMatchers(GET, API_V1_PREFIX + "/download/**").hasAnyRole(INTERNAL.name())
-          )
-          .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
+          .authorizeHttpRequests(
+              r ->
+                  r.requestMatchers(POST, API_V1_PREFIX + "/auth/**")
+                      .permitAll()
+                      .requestMatchers(GET, API_V1_PREFIX + "/example")
+                      .hasAnyRole(INTERNAL.name())
+                      .requestMatchers(GET, API_V1_PREFIX + "/account/**")
+                      .hasAnyRole(INTERNAL.name())
+                      .requestMatchers(POST, API_V1_PREFIX + "/upload/**")
+                      .hasAnyRole(INTERNAL.name())
+                      .requestMatchers(GET, API_V1_PREFIX + "/download/**")
+                      .hasAnyRole(INTERNAL.name()))
+          .oauth2ResourceServer(
+              oauth2 ->
+                  oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
           .exceptionHandling(eh -> eh.accessDeniedHandler(customAccessDeniedHandler))
           .build();
     }
 
     @Autowired
-    private void configureInMemoryAuthentication(AuthenticationManagerBuilder auth) throws Exception {
+    private void configureInMemoryAuthentication(AuthenticationManagerBuilder auth)
+        throws Exception {
       BasicAuthorization documentation = securityProperties.getDocumentation();
       BasicAuthorization internal = securityProperties.getInternal();
 
@@ -118,10 +125,12 @@ public class SecurityConfiguration {
     }
 
     private String getEncodedPassword(BasicAuthorization basicAuthorization) {
-      return createDelegatingPasswordEncoder().encode(getCredential(basicAuthorization, BasicAuthorization::getPassword));
+      return createDelegatingPasswordEncoder()
+          .encode(getCredential(basicAuthorization, BasicAuthorization::getPassword));
     }
 
-    private String getCredential(BasicAuthorization basicAuthorization,
+    private String getCredential(
+        BasicAuthorization basicAuthorization,
         Function<BasicAuthorization, String> credentialExtractor) {
       return Optional.ofNullable(basicAuthorization)
           .map(credentialExtractor)
@@ -146,13 +155,9 @@ public class SecurityConfiguration {
 
   @Bean
   public JwtDecoder jwtDecoder() {
-      String secretKey = "scaledrop-super-secret-key-32chars"; 
-      
-      SecretKeySpec secretKeySpec = new SecretKeySpec(
-          secretKey.getBytes(), 
-          "HmacSHA256"
-      );
-      return NimbusJwtDecoder.withSecretKey(secretKeySpec).build();
+    String secretKey = "scaledrop-super-secret-key-32chars";
+
+    SecretKeySpec secretKeySpec = new SecretKeySpec(secretKey.getBytes(), "HmacSHA256");
+    return NimbusJwtDecoder.withSecretKey(secretKeySpec).build();
   }
 }
-

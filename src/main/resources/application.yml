@@ -45,11 +45,6 @@ security:
       username: scaledrop
       password: ${SECURITY_ACCESS_INTERNAL_PASSWORD:scaledrop}
 
-example-service: # TODO: REMOVE
-  url: ${EXAMPLE_SERVICE_URL:http://localhost:8081/sd-example-service}
-  username: ${EXAMPLE_SERVICE_USERNAME:scaledrop}
-  password: ${EXAMPLE_SERVICE_PASSWORD:scaledrop}
-
 iam-service:
   url: ${IAM_SERVICE_URL:http://localhost:8081/sd-iam}
   username: ${IAM_SERVICE_USERNAME:scaledrop}

@@ -16,7 +16,7 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TokenObject {
-    private String accessToken;
-    private String refreshToken;
-    private Long expiresIn;
+  private String accessToken;
+  private String refreshToken;
+  private Long expiresIn;
 }

@@ -2,10 +2,10 @@ package com.scaledrop.sdbff.adapter.client.download;
 
 import com.scaledrop.sdbff.application.port.out.DownloadRepository;
 import com.scaledrop.sdbff.domain.download.DownloadObject;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import java.util.UUID;
 
 @Slf4j
 @Component
@@ -26,5 +26,4 @@ public class DownloadRepositoryAdapter implements DownloadRepository {
         .downloadUrl(remoteResponse.getDownloadUrl())
         .build();
   }
-
 }

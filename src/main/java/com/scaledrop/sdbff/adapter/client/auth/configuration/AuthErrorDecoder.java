@@ -18,14 +18,20 @@ public record AuthErrorDecoder(ObjectMapper objectMapper) implements ErrorDecode
 
   public Exception decode(String methodKey, Response response) {
     return Optional.ofNullable(response)
-        .map(res -> {
-          String requestUrl = res.request().url();
-          HttpStatus status = HttpStatus.resolve(res.status());
+        .map(
+            res -> {
+              String requestUrl = res.request().url();
+              HttpStatus status = HttpStatus.resolve(res.status());
 
-          ApiExceptionResponse apiExceptionResponse = parseBody(res.body());
-          log.info("Error on url: {}, status: {}, body: {}", requestUrl, status, apiExceptionResponse);
-          return new SdBffServiceException(apiExceptionResponse.getMessage());
-        }).orElseThrow(() -> new SdBffServiceException("Empty error response from IAM"));
+              ApiExceptionResponse apiExceptionResponse = parseBody(res.body());
+              log.info(
+                  "Error on url: {}, status: {}, body: {}",
+                  requestUrl,
+                  status,
+                  apiExceptionResponse);
+              return new SdBffServiceException(apiExceptionResponse.getMessage());
+            })
+        .orElseThrow(() -> new SdBffServiceException("Empty error response from IAM"));
   }
 
   private ApiExceptionResponse parseBody(Body body) {

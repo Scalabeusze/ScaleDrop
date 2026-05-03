@@ -24,8 +24,11 @@ public class CustomBasicAuthenticationEntryPoint extends BasicAuthenticationEntr
   private final ObjectMapper objectMapper;
 
   @Override
-  public void commence(HttpServletRequest request, HttpServletResponse response,
-      AuthenticationException authException) throws IOException {
+  public void commence(
+      HttpServletRequest request,
+      HttpServletResponse response,
+      AuthenticationException authException)
+      throws IOException {
 
     ApiExceptionResponse apiExceptionResponse = buildUnauthorizedResponse(authException);
     String unauthorizedResponse = objectMapper.writeValueAsString(apiExceptionResponse);

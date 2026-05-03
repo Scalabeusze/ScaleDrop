@@ -15,21 +15,14 @@ import lombok.Setter;
 @AllArgsConstructor
 public class AccountAPIResponse {
 
-    @Schema(
-        example = "550e8400-e29b-41d4-a716-446655440000",
-        description = "Unique identifier of the account"
-    )
-    private UUID accountId;
+  @Schema(
+      example = "550e8400-e29b-41d4-a716-446655440000",
+      description = "Unique identifier of the account")
+  private UUID accountId;
 
-    @Schema(
-        example = "test_user",
-        description = "Username of the account holder"
-    )
-    private String username;
+  @Schema(example = "test_user", description = "Username of the account holder")
+  private String username;
 
-    @Schema(
-        example = "test@scaledrop.com",
-        description = "Email address of the account holder"
-    )
-    private String email;
+  @Schema(example = "test@scaledrop.com", description = "Email address of the account holder")
+  private String email;
 }

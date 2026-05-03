@@ -15,12 +15,16 @@ public class UploadRepositoryAdapter implements UploadRepository {
 
   @Override
   public String getUploadUrl(UploadObject metadata) {
-    log.info("[UPLOAD-ADAPTER] Requesting pre-signed URL for file: {} (owner: {})",
-        metadata.getFileName(), metadata.getOwnerId());
+    log.info(
+        "[UPLOAD-ADAPTER] Requesting pre-signed URL for file: {} (owner: {})",
+        metadata.getFileName(),
+        metadata.getOwnerId());
 
     String preSignedUrl = uploadClient.getUploadUrl(metadata);
 
-    log.info("[UPLOAD-ADAPTER] Successfully retrieved pre-signed URL for file: {}", metadata.getFileName());
+    log.info(
+        "[UPLOAD-ADAPTER] Successfully retrieved pre-signed URL for file: {}",
+        metadata.getFileName());
 
     return preSignedUrl;
   }

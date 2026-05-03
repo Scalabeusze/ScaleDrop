@@ -8,5 +8,5 @@ import org.mapstruct.Mapper;
 @Mapper(config = MapperConfiguration.class)
 public interface AuthResponseMapper {
 
-    LoginAPIResponse toResponse(TokenObject tokenObject);
+  LoginAPIResponse toResponse(TokenObject tokenObject);
 }

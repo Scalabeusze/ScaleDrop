@@ -1,7 +1,6 @@
 package com.scaledrop.sdbff.configuration.cache;
 
 import com.scaledrop.sdbff.domain.account.AccountObject;
-import com.scaledrop.sdbff.domain.example.ExampleObject;
 import java.time.Duration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
@@ -22,16 +21,13 @@ public class RedisCacheConfig {
 
   public static final String AUDIENCE_CACHE = "audienceCache";
   public static final String REDIS_CACHE_MANAGER = "redisCacheManager";
-  public static final String EXAMPLE_OBJECT_CACHE = "exampleObjectCache";
   public static final String ACCOUNT_OBJECT_CACHE = "accountObjectCache";
 
   private final StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
-  private final Jackson2JsonRedisSerializer<Integer> integerJackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer<>(
-      Integer.class);
-  private final Jackson2JsonRedisSerializer<ExampleObject> ExampleObjectRedisSerializer = new Jackson2JsonRedisSerializer<>(
-      ExampleObject.class);
-  private final Jackson2JsonRedisSerializer<AccountObject> accountObjectRedisSerializer = new Jackson2JsonRedisSerializer<>(
-      AccountObject.class);
+  private final Jackson2JsonRedisSerializer<Integer> integerJackson2JsonRedisSerializer =
+      new Jackson2JsonRedisSerializer<>(Integer.class);
+  private final Jackson2JsonRedisSerializer<AccountObject> accountObjectRedisSerializer =
+      new Jackson2JsonRedisSerializer<>(AccountObject.class);
 
   @Primary
   @Bean(name = REDIS_CACHE_MANAGER)
@@ -42,33 +38,34 @@ public class RedisCacheConfig {
       @Value("${app.config.cache.account-object-ttl-hours:12}") Long accountObjectCacheHours,
       @Value("${app.config.cache.upload-object-ttl-hours:12}") Long uploadObjectCacheHours,
       RedisConnectionFactory redisConnectionFactory) {
-    final RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
-        .serializeKeysWith(SerializationPair.fromSerializer(new StringRedisSerializer()))
-        .serializeValuesWith(SerializationPair.fromSerializer(new Jackson2JsonRedisSerializer<>(Object.class)))
-        .entryTtl(Duration.ofHours(defaultCacheHours));
+    final RedisCacheConfiguration config =
+        RedisCacheConfiguration.defaultCacheConfig()
+            .serializeKeysWith(SerializationPair.fromSerializer(new StringRedisSerializer()))
+            .serializeValuesWith(
+                SerializationPair.fromSerializer(new Jackson2JsonRedisSerializer<>(Object.class)))
+            .entryTtl(Duration.ofHours(defaultCacheHours));
     return RedisCacheManager.builder(redisConnectionFactory)
         .cacheDefaults(config)
-        .withCacheConfiguration(EXAMPLE_OBJECT_CACHE, RedisCacheConfiguration
-            .defaultCacheConfig()
-            .serializeKeysWith(SerializationPair.fromSerializer(stringRedisSerializer))
-            .serializeValuesWith(SerializationPair.fromSerializer(ExampleObjectRedisSerializer))
-            .entryTtl(Duration.ofHours(exampleObjectCacheHours)))
-        .withCacheConfiguration(ACCOUNT_OBJECT_CACHE, RedisCacheConfiguration.defaultCacheConfig()
-          .serializeKeysWith(SerializationPair.fromSerializer(stringRedisSerializer))
-          .serializeValuesWith(SerializationPair.fromSerializer(accountObjectRedisSerializer))
-          .entryTtl(Duration.ofHours(accountObjectCacheHours)))
-        .withCacheConfiguration(AUDIENCE_CACHE, RedisCacheConfiguration
-            .defaultCacheConfig()
-            .serializeKeysWith(SerializationPair.fromSerializer(stringRedisSerializer))
-            .serializeValuesWith(
-                SerializationPair.fromSerializer(integerJackson2JsonRedisSerializer))
-            .entryTtl(Duration.ofHours(audienceCacheHours)))
+        .withCacheConfiguration(
+            ACCOUNT_OBJECT_CACHE,
+            RedisCacheConfiguration.defaultCacheConfig()
+                .serializeKeysWith(SerializationPair.fromSerializer(stringRedisSerializer))
+                .serializeValuesWith(SerializationPair.fromSerializer(accountObjectRedisSerializer))
+                .entryTtl(Duration.ofHours(accountObjectCacheHours)))
+        .withCacheConfiguration(
+            AUDIENCE_CACHE,
+            RedisCacheConfiguration.defaultCacheConfig()
+                .serializeKeysWith(SerializationPair.fromSerializer(stringRedisSerializer))
+                .serializeValuesWith(
+                    SerializationPair.fromSerializer(integerJackson2JsonRedisSerializer))
+                .entryTtl(Duration.ofHours(audienceCacheHours)))
         .cacheWriter(RedisCacheWriter.nonLockingRedisCacheWriter(redisConnectionFactory))
         .build();
   }
 
   @Bean
-  public RedisTemplate<String, Integer> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
+  public RedisTemplate<String, Integer> redisTemplate(
+      RedisConnectionFactory redisConnectionFactory) {
     final RedisTemplate<String, Integer> redisTemplate = new RedisTemplate<>();
     redisTemplate.setConnectionFactory(redisConnectionFactory);
     redisTemplate.setKeySerializer(stringRedisSerializer);

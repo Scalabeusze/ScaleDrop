@@ -20,5 +20,4 @@ public class AccountService implements AccountUseCase {
     log.warn("[ACCOUNT-SERVICE] Routing request to fetch account details for ID: {}", accountId);
     return accountRepository.getAccountObject(accountId);
   }
-
 }

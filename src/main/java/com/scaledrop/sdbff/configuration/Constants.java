@@ -11,7 +11,8 @@ public class Constants {
 
   public static final String API_V1_PREFIX = "/api/v1";
 
-  public static final String INVALID_REQUEST_VALIDATION_FAILED = "Invalid request, validation failed";
+  public static final String INVALID_REQUEST_VALIDATION_FAILED =
+      "Invalid request, validation failed";
   public static final String INVALID_AUTHORIZATION = "Invalid basic authorization";
   public static final String NOT_FOUND = "Resource not found";
 }

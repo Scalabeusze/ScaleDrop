@@ -4,6 +4,7 @@ import static com.scaledrop.sdbff.configuration.Constants.API_V1_PREFIX;
 import static com.scaledrop.sdbff.configuration.security.role.ApiUserRole.DOCUMENTATION;
 import static com.scaledrop.sdbff.configuration.security.role.ApiUserRole.INTERNAL;
 import static org.springframework.http.HttpMethod.GET;
+import static org.springframework.http.HttpMethod.POST;
 import static org.springframework.security.crypto.factory.PasswordEncoderFactories.createDelegatingPasswordEncoder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,16 +13,24 @@ import com.scaledrop.sdbff.configuration.security.properties.SecurityProperties;
 import com.scaledrop.sdbff.configuration.security.properties.SecurityProperties.BasicAuthorization;
 import java.util.Optional;
 import java.util.function.Function;
+
+import javax.crypto.spec.SecretKeySpec;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -76,11 +85,15 @@ public class SecurityConfiguration {
           .requestCache(AbstractHttpConfigurer::disable)
           .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
           .logout(AbstractHttpConfigurer::disable)
-          .anonymous(AbstractHttpConfigurer::disable)
+          .anonymous(Customizer.withDefaults())
           .authorizeHttpRequests(r -> r
+              .requestMatchers(POST, API_V1_PREFIX + "/auth/**").permitAll()
               .requestMatchers(GET, API_V1_PREFIX + "/example").hasAnyRole(INTERNAL.name())
+              .requestMatchers(GET, API_V1_PREFIX + "/account/**").hasAnyRole(INTERNAL.name())
+              .requestMatchers(POST, API_V1_PREFIX + "/upload/**").hasAnyRole(INTERNAL.name())
+              .requestMatchers(GET, API_V1_PREFIX + "/download/**").hasAnyRole(INTERNAL.name())
           )
-          .httpBasic(customizer -> customizer.authenticationEntryPoint(basicAuthenticationEntryPoint))
+          .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
           .exceptionHandling(eh -> eh.accessDeniedHandler(customAccessDeniedHandler))
           .build();
     }
@@ -114,11 +127,32 @@ public class SecurityConfiguration {
           .map(credentialExtractor)
           .orElseThrow(() -> new SdBffServiceException(EXTRACTING_API_CREDENTIALS_ERROR_MESSAGE));
     }
+
+    private JwtAuthenticationConverter jwtAuthenticationConverter() {
+      JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
+      authoritiesConverter.setAuthorityPrefix("ROLE_");
+      authoritiesConverter.setAuthoritiesClaimName("roles");
+
+      JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+      converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
+      return converter;
+    }
   }
 
   @Bean
   public CustomAccessDeniedHandler customAccessDeniedHandler() {
     return new CustomAccessDeniedHandler(objectMapper);
+  }
+
+  @Bean
+  public JwtDecoder jwtDecoder() {
+      String secretKey = "scaledrop-super-secret-key-32chars"; 
+      
+      SecretKeySpec secretKeySpec = new SecretKeySpec(
+          secretKey.getBytes(), 
+          "HmacSHA256"
+      );
+      return NimbusJwtDecoder.withSecretKey(secretKeySpec).build();
   }
 }
 

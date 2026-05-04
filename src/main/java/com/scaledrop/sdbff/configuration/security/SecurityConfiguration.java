@@ -87,16 +87,16 @@ public class SecurityConfiguration {
           .anonymous(Customizer.withDefaults())
           .authorizeHttpRequests(
               r ->
-                  r.requestMatchers(POST, API_V1_PREFIX + "/auth/**")
+                  r.requestMatchers(POST, API_V1_PREFIX + "/session/login")
                       .permitAll()
-                      .requestMatchers(GET, API_V1_PREFIX + "/example")
-                      .hasAnyRole(INTERNAL.name())
-                      .requestMatchers(GET, API_V1_PREFIX + "/account/**")
+                      .requestMatchers(API_V1_PREFIX + "/accounts/**")
                       .hasAnyRole(INTERNAL.name())
                       .requestMatchers(POST, API_V1_PREFIX + "/upload/**")
                       .hasAnyRole(INTERNAL.name())
                       .requestMatchers(GET, API_V1_PREFIX + "/download/**")
-                      .hasAnyRole(INTERNAL.name()))
+                      .hasAnyRole(INTERNAL.name())
+                      .anyRequest()
+                      .authenticated())
           .oauth2ResourceServer(
               oauth2 ->
                   oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))

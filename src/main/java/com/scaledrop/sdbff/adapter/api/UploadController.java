@@ -4,8 +4,8 @@ import static com.scaledrop.sdbff.configuration.Constants.API_V1_PREFIX;
 import static com.scaledrop.sdbff.configuration.Constants.BEARER_AUTH;
 
 import com.scaledrop.sdbff.adapter.api.mapper.UploadRequestMapper;
-import com.scaledrop.sdbff.adapter.api.model.request.UploadAPIRequest;
-import com.scaledrop.sdbff.application.port.in.UploadUseCase;
+import com.scaledrop.sdbff.adapter.api.model.upload.request.UploadAPIRequest;
+import com.scaledrop.sdbff.application.port.in.upload.UploadUseCase;
 import com.scaledrop.sdbff.configuration.annotations.DefaultApiExceptionResponses;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

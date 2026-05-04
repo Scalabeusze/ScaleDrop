@@ -4,8 +4,8 @@ import static com.scaledrop.sdbff.configuration.Constants.API_V1_PREFIX;
 import static com.scaledrop.sdbff.configuration.Constants.BASIC_AUTH;
 
 import com.scaledrop.sdbff.adapter.api.mapper.DownloadResponseMapper;
-import com.scaledrop.sdbff.adapter.api.model.response.DownloadAPIResponse;
-import com.scaledrop.sdbff.application.port.in.DownloadUseCase;
+import com.scaledrop.sdbff.adapter.api.model.download.response.DownloadAPIResponse;
+import com.scaledrop.sdbff.application.port.in.download.DownloadUseCase;
 import com.scaledrop.sdbff.configuration.annotations.DefaultApiExceptionResponses;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;

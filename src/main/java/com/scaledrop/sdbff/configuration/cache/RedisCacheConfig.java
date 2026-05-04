@@ -1,6 +1,9 @@
 package com.scaledrop.sdbff.configuration.cache;
 
-import com.scaledrop.sdbff.domain.account.AccountObject;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.scaledrop.sdbff.adapter.api.model.iam.response.AccountIAMResponse;
 import java.time.Duration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
@@ -21,23 +24,27 @@ public class RedisCacheConfig {
 
   public static final String AUDIENCE_CACHE = "audienceCache";
   public static final String REDIS_CACHE_MANAGER = "redisCacheManager";
-  public static final String ACCOUNT_OBJECT_CACHE = "accountObjectCache";
+  public static final String ACCOUNT_DETAILS_CACHE = "accountDetails";
 
   private final StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
   private final Jackson2JsonRedisSerializer<Integer> integerJackson2JsonRedisSerializer =
       new Jackson2JsonRedisSerializer<>(Integer.class);
-  private final Jackson2JsonRedisSerializer<AccountObject> accountObjectRedisSerializer =
-      new Jackson2JsonRedisSerializer<>(AccountObject.class);
 
   @Primary
   @Bean(name = REDIS_CACHE_MANAGER)
   public CacheManager redisCacheManager(
       @Value("${app.config.cache.default-ttl-hours:1}") Long defaultCacheHours,
       @Value("${app.config.cache.audience-ttl-hours:12}") Long audienceCacheHours,
-      @Value("${app.config.cache.example-object-ttl-hours:12}") Long exampleObjectCacheHours,
-      @Value("${app.config.cache.account-object-ttl-hours:12}") Long accountObjectCacheHours,
-      @Value("${app.config.cache.upload-object-ttl-hours:12}") Long uploadObjectCacheHours,
+      @Value("${app.config.cache.account-object-ttl-hours:12}") Long accountDetailsCacheHours,
       RedisConnectionFactory redisConnectionFactory) {
+
+    ObjectMapper objectMapper = new ObjectMapper();
+    objectMapper.registerModule(new JavaTimeModule());
+    objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+    Jackson2JsonRedisSerializer<AccountIAMResponse> accountResponseRedisSerializer =
+        new Jackson2JsonRedisSerializer<>(objectMapper, AccountIAMResponse.class);
+
     final RedisCacheConfiguration config =
         RedisCacheConfiguration.defaultCacheConfig()
             .serializeKeysWith(SerializationPair.fromSerializer(new StringRedisSerializer()))
@@ -47,11 +54,12 @@ public class RedisCacheConfig {
     return RedisCacheManager.builder(redisConnectionFactory)
         .cacheDefaults(config)
         .withCacheConfiguration(
-            ACCOUNT_OBJECT_CACHE,
+            ACCOUNT_DETAILS_CACHE,
             RedisCacheConfiguration.defaultCacheConfig()
                 .serializeKeysWith(SerializationPair.fromSerializer(stringRedisSerializer))
-                .serializeValuesWith(SerializationPair.fromSerializer(accountObjectRedisSerializer))
-                .entryTtl(Duration.ofHours(accountObjectCacheHours)))
+                .serializeValuesWith(
+                    SerializationPair.fromSerializer(accountResponseRedisSerializer))
+                .entryTtl(Duration.ofHours(accountDetailsCacheHours)))
         .withCacheConfiguration(
             AUDIENCE_CACHE,
             RedisCacheConfiguration.defaultCacheConfig()

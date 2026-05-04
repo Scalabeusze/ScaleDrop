@@ -1,6 +1,6 @@
 package com.scaledrop.sdbff.application.service;
 
-import com.scaledrop.sdbff.application.port.in.DownloadUseCase;
+import com.scaledrop.sdbff.application.port.in.download.DownloadUseCase;
 import com.scaledrop.sdbff.application.port.out.DownloadRepository;
 import com.scaledrop.sdbff.domain.download.DownloadObject;
 import java.util.UUID;

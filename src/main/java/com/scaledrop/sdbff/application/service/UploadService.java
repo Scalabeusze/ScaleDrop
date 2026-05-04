@@ -1,6 +1,6 @@
 package com.scaledrop.sdbff.application.service;
 
-import com.scaledrop.sdbff.application.port.in.UploadUseCase;
+import com.scaledrop.sdbff.application.port.in.upload.UploadUseCase;
 import com.scaledrop.sdbff.application.port.out.UploadRepository;
 import com.scaledrop.sdbff.domain.upload.UploadObject;
 import lombok.RequiredArgsConstructor;

@@ -15,6 +15,13 @@ export const LoginPage = () => {
     // Redirect the user to the backend's OAuth2 authorization endpoint.
     window.location.href = 'http://sd-alb-dev-1442333574.eu-north-1.elb.amazonaws.com/sd-iam/api/v1/session/google';
   };
+  /* https://accounts.google.com/o/oauth2/v2/auth?
+  scope=https%3A//www.googleapis.com/auth/drive.metadata.readonly%20https%3A//www.googleapis.com/auth/calendar.readonly&
+  include_granted_scopes=true&
+  response_type=token&
+  state=state_parameter_passthrough_value&
+  redirect_uri=https%3A//developers.google.com/oauthplayground&
+  client_id=client_id   */
 
   return (
     <Box sx={{ display: 'flex', justifyContent: 'center', mt: 10 }}>

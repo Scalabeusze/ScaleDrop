@@ -7,7 +7,7 @@ resource "aws_lb_target_group" "sd_admin_tg" {
   target_type = "ip"
 
   health_check {
-    path                = "/healthz" # Streamlit healthcheck
+    path                = "/admin/healthz" # Streamlit healthcheck
     matcher             = "200"
     interval            = 30
     timeout             = 5

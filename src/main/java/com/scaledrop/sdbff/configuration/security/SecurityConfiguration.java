@@ -107,6 +107,8 @@ public class SecurityConfiguration {
                           "ROLE_INTERNAL", "SCOPE_openid", "SCOPE_email", "SCOPE_profile")
                       .anyRequest()
                       .authenticated())
+          .httpBasic(
+              customizer -> customizer.authenticationEntryPoint(basicAuthenticationEntryPoint))
           .oauth2ResourceServer(
               oauth2 ->
                   oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))

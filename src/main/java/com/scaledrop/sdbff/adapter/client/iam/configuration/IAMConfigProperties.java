@@ -9,4 +9,6 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties("iam-service")
 public class IAMConfigProperties {
   private String url;
+  private String username;
+  private String password;
 }

@@ -6,8 +6,8 @@ import com.scaledrop.sdbff.adapter.api.model.iam.request.*;
 import com.scaledrop.sdbff.adapter.api.model.iam.response.*;
 import com.scaledrop.sdbff.application.port.in.iam.*;
 import com.scaledrop.sdbff.configuration.annotations.DefaultApiExceptionResponses;
+import com.scaledrop.sdbff.configuration.annotations.DefaultApiSecurity;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.UUID;
@@ -43,7 +43,7 @@ public class IAMController {
 
   @GetMapping(value = API_V1_PREFIX + "/accounts")
   @Operation(summary = "Get all accounts")
-  @SecurityRequirement(name = "bearerAuth")
+  @DefaultApiSecurity
   @DefaultApiExceptionResponses
   @ResponseStatus(HttpStatus.OK)
   public List<AccountIAMResponse> getAccounts() {
@@ -52,7 +52,7 @@ public class IAMController {
 
   @GetMapping(value = API_V1_PREFIX + "/accounts/{accountId}")
   @Operation(summary = "Get account by ID")
-  @SecurityRequirement(name = "bearerAuth")
+  @DefaultApiSecurity
   @DefaultApiExceptionResponses
   @ResponseStatus(HttpStatus.OK)
   public AccountIAMResponse getAccount(@PathVariable UUID accountId) {
@@ -69,7 +69,7 @@ public class IAMController {
 
   @PutMapping(value = API_V1_PREFIX + "/accounts/{accountId}")
   @Operation(summary = "Update account")
-  @SecurityRequirement(name = "bearerAuth")
+  @DefaultApiSecurity
   @DefaultApiExceptionResponses
   @ResponseStatus(HttpStatus.OK)
   public AccountIAMResponse updateAccount(
@@ -79,7 +79,7 @@ public class IAMController {
 
   @PatchMapping(value = API_V1_PREFIX + "/accounts/{accountId}/password")
   @Operation(summary = "Change password")
-  @SecurityRequirement(name = "bearerAuth")
+  @DefaultApiSecurity
   @DefaultApiExceptionResponses
   @ResponseStatus(HttpStatus.OK)
   public AccountIAMResponse updatePassword(
@@ -89,7 +89,7 @@ public class IAMController {
 
   @DeleteMapping(value = API_V1_PREFIX + "/accounts/{accountId}")
   @Operation(summary = "Delete account")
-  @SecurityRequirement(name = "bearerAuth")
+  @DefaultApiSecurity
   @DefaultApiExceptionResponses
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void deleteAccount(@PathVariable UUID accountId) {

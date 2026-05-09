@@ -26,6 +26,10 @@ resource "aws_ssm_parameter" "bff_internal_password_param" {
   value = random_password.bff_internal_password.result
 }
 
+data "aws_ssm_parameter" "bff_google_client_id" {
+  name = "/dev/bff/oauth/google-client-id"
+}
+
 resource "aws_cloudwatch_log_group" "sd_bff_logs" {
   name              = "/ecs/sd-bff"
   retention_in_days = 3
@@ -71,7 +75,8 @@ resource "aws_ecs_task_definition" "sd_bff" {
         { name = "SECURITY_ACCESS_INTERNAL_PASSWORD", valueFrom = aws_ssm_parameter.bff_internal_password_param.arn },
         { name = "IAM_SERVICE_PASSWORD", valueFrom = aws_ssm_parameter.internal_password_param.arn },
         { name = "UPLOAD_SERVICE_PASSWORD", valueFrom = aws_ssm_parameter.upload_internal_password_param.arn },
-        { name = "DOWNLOAD_SERVICE_PASSWORD", valueFrom = aws_ssm_parameter.download_internal_password_param.arn }
+        { name = "DOWNLOAD_SERVICE_PASSWORD", valueFrom = aws_ssm_parameter.download_internal_password_param.arn },
+        { name = "GOOGLE_CLIENT_ID", valueFrom = data.aws_ssm_parameter.bff_google_client_id.arn }
       ]
 
       logConfiguration = {

@@ -33,6 +33,18 @@ resource "aws_ssm_parameter" "internal_password_param" {
   value = random_password.internal_password.result
 }
 
+# Generate security JWT secret
+resource "random_password" "jwt_secret" {
+  length  = 48
+  special = true
+}
+
+resource "aws_ssm_parameter" "jwt_secret_param" {
+  name  = "/dev/iam/security/jwt-secret"
+  type  = "SecureString"
+  value = random_password.jwt_secret.result
+}
+
 data "aws_ssm_parameter" "google_client_id" {
   name = "/dev/iam/oauth/google_client_id"
 }
@@ -95,6 +107,10 @@ resource "aws_ecs_task_definition" "sd_iam" {
       {
         name      = "SECURITY_ACCESS_INTERNAL_PASSWORD"
         valueFrom = aws_ssm_parameter.internal_password_param.arn
+      },
+      {
+        name      = "SECURITY_JWT_SECRET"
+        valueFrom = aws_ssm_parameter.jwt_secret_param.arn
       },
       {
         name      = "GOOGLE_CLIENT_ID"

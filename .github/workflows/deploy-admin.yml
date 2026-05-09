@@ -9,7 +9,7 @@ on:
 env:
   AWS_REGION: eu-north-1
   ECR_REPOSITORY: sd-admin
-  ECS_CLUSTER: main
+  ECS_CLUSTER: sd-cluster-dev
   ECS_SERVICE: sd-admin-service
   ECS_TASK_FAMILY: sd-admin-task
   CONTAINER_NAME: sd-admin

@@ -33,6 +33,14 @@ resource "aws_ssm_parameter" "internal_password_param" {
   value = random_password.internal_password.result
 }
 
+data "aws_ssm_parameter" "google_client_id" {
+  name = "/dev/iam/oauth/google_client_id"
+}
+
+data "aws_ssm_parameter" "google_secret" {
+  name = "/dev/iam/oauth/google_secret"
+}
+
 # Logs (CloudWatch)
 resource "aws_cloudwatch_log_group" "sd_iam_logs" {
   name              = "/ecs/sd-iam"
@@ -87,6 +95,14 @@ resource "aws_ecs_task_definition" "sd_iam" {
       {
         name      = "SECURITY_ACCESS_INTERNAL_PASSWORD"
         valueFrom = aws_ssm_parameter.internal_password_param.arn
+      },
+      {
+        name      = "GOOGLE_CLIENT_ID"
+        valueFrom = data.aws_ssm_parameter.google_client_id.arn
+      },
+      {
+        name      = "GOOGLE_SECRET"
+        valueFrom = data.aws_ssm_parameter.google_secret.arn
       }
     ]
 

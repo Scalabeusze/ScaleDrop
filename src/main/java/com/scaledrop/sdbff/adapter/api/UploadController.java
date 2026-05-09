@@ -1,15 +1,14 @@
 package com.scaledrop.sdbff.adapter.api;
 
 import static com.scaledrop.sdbff.configuration.Constants.API_V1_PREFIX;
-import static com.scaledrop.sdbff.configuration.Constants.BEARER_AUTH;
 
 import com.scaledrop.sdbff.adapter.api.mapper.UploadRequestMapper;
 import com.scaledrop.sdbff.adapter.api.model.upload.request.UploadAPIRequest;
 import com.scaledrop.sdbff.application.port.in.upload.UploadUseCase;
 import com.scaledrop.sdbff.configuration.annotations.DefaultApiExceptionResponses;
+import com.scaledrop.sdbff.configuration.annotations.DefaultApiSecurity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -42,7 +41,7 @@ public class UploadController {
       summary = "Initialize upload",
       description =
           "Generates a pre-signed URL. Owner ID is automatically extracted from JWT token.")
-  @SecurityRequirement(name = BEARER_AUTH)
+  @DefaultApiSecurity
   @DefaultApiExceptionResponses
   @ApiResponse(responseCode = "200", description = "Successfully generated pre-signed URL")
   @ResponseStatus(HttpStatus.OK)

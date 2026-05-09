@@ -1,7 +1,7 @@
 package com.scaledrop.sdbff.configuration;
 
 import static com.scaledrop.sdbff.configuration.Constants.BASIC_AUTH;
-import static com.scaledrop.sdbff.configuration.Constants.BEARER_AUTH;
+import static com.scaledrop.sdbff.configuration.Constants.BEARER_JWT;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.servers.Server;
@@ -28,9 +28,11 @@ public class SpringDocConfiguration {
     info.addExtension("x-build-time", buildProperties.getTime());
 
     return new OpenAPI()
-        .components(new Components().addSecuritySchemes(BASIC_AUTH, getBasicAuthScheme())
-            .addSecuritySchemes(BEARER_AUTH, getJwtTokenAuthScheme()))
-        .addSecurityItem(new SecurityRequirement().addList(BASIC_AUTH).addList(BEARER_AUTH))
+        .components(
+            new Components()
+                .addSecuritySchemes(BASIC_AUTH, getBasicAuthScheme())
+                .addSecuritySchemes(BEARER_JWT, getJwtTokenAuthScheme()))
+        .addSecurityItem(new SecurityRequirement().addList(BASIC_AUTH).addList(BEARER_JWT))
         .info(info);
   }
 
@@ -39,10 +41,6 @@ public class SpringDocConfiguration {
   }
 
   private SecurityScheme getJwtTokenAuthScheme() {
-    return new SecurityScheme()
-        .type(Type.HTTP)
-        .in(In.HEADER)
-        .scheme("bearer")
-        .bearerFormat("JWT");
+    return new SecurityScheme().type(Type.HTTP).in(In.HEADER).scheme("bearer").bearerFormat("JWT");
   }
 }

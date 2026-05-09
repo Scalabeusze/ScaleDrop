@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 public class Constants {
 
   public static final String BASIC_AUTH = "basic-auth";
-  public static final String BEARER_AUTH = "bearer-auth";
+  public static final String BEARER_JWT = "bearer-jwt";
 
   public static final String API_V1_PREFIX = "/api/v1";
 

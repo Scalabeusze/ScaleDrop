@@ -99,7 +99,7 @@ public class SecurityConfiguration {
                       .requestMatchers(API_V1_PREFIX + "/accounts/**")
                       .hasAnyAuthority(
                           "ROLE_INTERNAL", "SCOPE_openid", "SCOPE_email", "SCOPE_profile")
-                      .requestMatchers(POST, API_V1_PREFIX + "/upload/**")
+                      .requestMatchers(POST, API_V1_PREFIX + "/uploads/**")
                       .hasAnyAuthority(
                           "ROLE_INTERNAL", "SCOPE_openid", "SCOPE_email", "SCOPE_profile")
                       .requestMatchers(GET, API_V1_PREFIX + "/download/**")

@@ -6,6 +6,7 @@ import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -26,6 +27,7 @@ public class JacksonConfiguration {
         .disable(FAIL_ON_UNKNOWN_PROPERTIES)
         .configure(WRITE_BIGDECIMAL_AS_PLAIN, TRUE)
         .configure(WRITE_DATES_AS_TIMESTAMPS, FALSE)
-        .setSerializationInclusion(Include.NON_NULL);
+        .setDefaultPropertyInclusion(
+            JsonInclude.Value.construct(Include.NON_NULL, Include.NON_NULL));
   }
 }

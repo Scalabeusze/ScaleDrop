@@ -18,10 +18,11 @@ public class ExampleService implements ExampleUseCase {
   @Override
   public ExampleObject getExampleObject() {
     log.warn("[EXAMPLE] Received request to get example object");
-    ExampleObject exampleObject = ExampleObject.builder()
-        .exampleId(UUID.randomUUID())
-        .exampleField("Some example value")
-        .build();
+    ExampleObject exampleObject =
+        ExampleObject.builder()
+            .exampleId(UUID.randomUUID())
+            .exampleField("Some example value")
+            .build();
 
     examplePublisher.publishEvent(exampleObject);
     return exampleObject;

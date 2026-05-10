@@ -15,7 +15,9 @@ public class TransactionOutboxScheduler {
 
   private final TransactionOutbox transactionOutbox;
 
-  @Scheduled(fixedDelayString = "${app.scheduling.publish-event.fixed-delay}", initialDelayString = "10s")
+  @Scheduled(
+      fixedDelayString = "${app.scheduling.publish-event.fixed-delay}",
+      initialDelayString = "10s")
   public void transactionOutboxScheduledTask() {
     if (!Thread.interrupted()) {
       try {

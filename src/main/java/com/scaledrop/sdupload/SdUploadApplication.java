@@ -9,5 +9,4 @@ public class SdUploadApplication {
   public static void main(String[] args) {
     SpringApplication.run(SdUploadApplication.class, args);
   }
-
 }

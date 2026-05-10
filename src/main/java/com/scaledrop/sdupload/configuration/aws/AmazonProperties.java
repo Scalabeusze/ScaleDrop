@@ -20,8 +20,7 @@ public class AmazonProperties {
 
   private String region;
   private String accessKeyId;
-  @ToString.Exclude
-  private String secretKey;
+  @ToString.Exclude private String secretKey;
 
   @PostConstruct
   public void init() {

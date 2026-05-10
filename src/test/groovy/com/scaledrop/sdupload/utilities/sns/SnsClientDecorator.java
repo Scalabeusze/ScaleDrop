@@ -15,8 +15,7 @@ public class SnsClientDecorator implements SnsClient {
 
   private final List<PublishRequest> publishedRequests = new CopyOnWriteArrayList<>();
 
-  @Delegate
-  private final SnsClient snsClient;
+  @Delegate private final SnsClient snsClient;
 
   @Override
   public PublishResponse publish(PublishRequest publishRequest) throws SdkException {

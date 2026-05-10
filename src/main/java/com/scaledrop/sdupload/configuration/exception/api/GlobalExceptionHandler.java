@@ -35,10 +35,10 @@ public class GlobalExceptionHandler {
   @Order(HIGHEST_PRECEDENCE)
   @ResponseStatus(BAD_REQUEST)
   @ExceptionHandler({
-      ConstraintViolationException.class,
-      MethodArgumentNotValidException.class,
-      HttpMessageNotReadableException.class,
-      MissingServletRequestParameterException.class
+    ConstraintViolationException.class,
+    MethodArgumentNotValidException.class,
+    HttpMessageNotReadableException.class,
+    MissingServletRequestParameterException.class
   })
   public ApiExceptionResponse handleBadRequest(Exception ex) {
     return buildApiExceptionResponse(ex);
@@ -47,8 +47,8 @@ public class GlobalExceptionHandler {
   @Order(HIGHEST_PRECEDENCE)
   @ResponseStatus(NOT_FOUND)
   @ExceptionHandler({
-      EntityNotFoundException.class,
-      JpaObjectRetrievalFailureException.class,
+    EntityNotFoundException.class,
+    JpaObjectRetrievalFailureException.class,
   })
   public ApiExceptionResponse handleNotFound(Exception ex) {
     return buildApiExceptionResponse(ex);
@@ -97,5 +97,4 @@ public class GlobalExceptionHandler {
   private boolean checkForBrokenPipe(IOException ex) {
     return Strings.CI.contains(getRootCauseMessage(ex), "Broken pipe");
   }
-
 }

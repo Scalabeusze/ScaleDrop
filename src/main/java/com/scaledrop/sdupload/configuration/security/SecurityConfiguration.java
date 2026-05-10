@@ -3,7 +3,6 @@ package com.scaledrop.sdupload.configuration.security;
 import static com.scaledrop.sdupload.configuration.Constants.API_V1_PREFIX;
 import static com.scaledrop.sdupload.configuration.security.role.ApiUserRole.DOCUMENTATION;
 import static com.scaledrop.sdupload.configuration.security.role.ApiUserRole.INTERNAL;
-import static org.springframework.http.HttpMethod.GET;
 import static org.springframework.security.crypto.factory.PasswordEncoderFactories.createDelegatingPasswordEncoder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,9 +34,12 @@ public class SecurityConfiguration {
   @RequiredArgsConstructor
   public static class AuthSecurityConfiguration {
 
-    private static final String EXTRACTING_API_CREDENTIALS_ERROR_MESSAGE = "Error extracting API credentials";
+    private static final String EXTRACTING_API_CREDENTIALS_ERROR_MESSAGE =
+        "Error extracting API credentials";
 
-    private static final String[] DOCS_PATHS = {"/swagger-ui/**", "/swagger-resources/**", "/v3/api-docs/**"};
+    private static final String[] DOCS_PATHS = {
+      "/swagger-ui/**", "/swagger-resources/**", "/v3/api-docs/**"
+    };
     private static final String[] ACTUATOR_PATHS = {"/actuator/**"};
     private final SecurityProperties securityProperties;
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
@@ -46,8 +48,7 @@ public class SecurityConfiguration {
     @Bean
     @Order(0)
     public SecurityFilterChain securityFilterChainActuator(HttpSecurity http) throws Exception {
-      return http
-          .securityMatcher(ACTUATOR_PATHS)
+      return http.securityMatcher(ACTUATOR_PATHS)
           .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
           .csrf(AbstractHttpConfigurer::disable) // NOSONAR
           .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -57,10 +58,10 @@ public class SecurityConfiguration {
     @Bean
     @Order(1)
     public SecurityFilterChain securityFilterChainDocs(HttpSecurity http) throws Exception {
-      return http
-          .securityMatcher(DOCS_PATHS)
+      return http.securityMatcher(DOCS_PATHS)
           .authorizeHttpRequests(r -> r.requestMatchers(DOCS_PATHS).hasRole(DOCUMENTATION.name()))
-          .httpBasic(customizer -> customizer.authenticationEntryPoint(basicAuthenticationEntryPoint))
+          .httpBasic(
+              customizer -> customizer.authenticationEntryPoint(basicAuthenticationEntryPoint))
           .csrf(AbstractHttpConfigurer::disable)
           .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
           .exceptionHandling(eh -> eh.accessDeniedHandler(customAccessDeniedHandler))
@@ -70,23 +71,25 @@ public class SecurityConfiguration {
     @Bean
     @Order(2)
     protected SecurityFilterChain securityFilterChainEndpoints(HttpSecurity http) throws Exception {
-      return http
-          .cors(AbstractHttpConfigurer::disable)
+      return http.cors(AbstractHttpConfigurer::disable)
           .csrf(AbstractHttpConfigurer::disable)
           .requestCache(AbstractHttpConfigurer::disable)
           .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
           .logout(AbstractHttpConfigurer::disable)
           .anonymous(AbstractHttpConfigurer::disable)
-          .authorizeHttpRequests(r -> r
-              .requestMatchers(GET, API_V1_PREFIX + "/example").hasAnyRole(INTERNAL.name())
-          )
-          .httpBasic(customizer -> customizer.authenticationEntryPoint(basicAuthenticationEntryPoint))
+          .authorizeHttpRequests(
+              r ->
+                  r.requestMatchers(API_V1_PREFIX + "/uploads/**")
+                      .hasAnyRole(INTERNAL.name(), DOCUMENTATION.name()))
+          .httpBasic(
+              customizer -> customizer.authenticationEntryPoint(basicAuthenticationEntryPoint))
           .exceptionHandling(eh -> eh.accessDeniedHandler(customAccessDeniedHandler))
           .build();
     }
 
     @Autowired
-    private void configureInMemoryAuthentication(AuthenticationManagerBuilder auth) throws Exception {
+    private void configureInMemoryAuthentication(AuthenticationManagerBuilder auth)
+        throws Exception {
       BasicAuthorization documentation = securityProperties.getDocumentation();
       BasicAuthorization internal = securityProperties.getInternal();
 
@@ -105,14 +108,17 @@ public class SecurityConfiguration {
     }
 
     private String getEncodedPassword(BasicAuthorization basicAuthorization) {
-      return createDelegatingPasswordEncoder().encode(getCredential(basicAuthorization, BasicAuthorization::getPassword));
+      return createDelegatingPasswordEncoder()
+          .encode(getCredential(basicAuthorization, BasicAuthorization::getPassword));
     }
 
-    private String getCredential(BasicAuthorization basicAuthorization,
+    private String getCredential(
+        BasicAuthorization basicAuthorization,
         Function<BasicAuthorization, String> credentialExtractor) {
       return Optional.ofNullable(basicAuthorization)
           .map(credentialExtractor)
-          .orElseThrow(() -> new SdUploadServiceException(EXTRACTING_API_CREDENTIALS_ERROR_MESSAGE));
+          .orElseThrow(
+              () -> new SdUploadServiceException(EXTRACTING_API_CREDENTIALS_ERROR_MESSAGE));
     }
   }
 
@@ -121,4 +127,3 @@ public class SecurityConfiguration {
     return new CustomAccessDeniedHandler(objectMapper);
   }
 }
-

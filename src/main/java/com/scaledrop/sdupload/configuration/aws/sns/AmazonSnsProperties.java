@@ -16,5 +16,6 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "aws.sns")
 public class AmazonSnsProperties {
   private URI endpoint;
+  private String region;
   private String fileUpdatesTopicArn;
 }

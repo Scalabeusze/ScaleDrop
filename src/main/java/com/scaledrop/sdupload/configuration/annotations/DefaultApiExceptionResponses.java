@@ -16,9 +16,16 @@ import java.lang.annotation.Target;
 
 @Target({PARAMETER, METHOD, FIELD, ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-@ApiResponse(responseCode = "400", description = Constants.INVALID_REQUEST_VALIDATION_FAILED, content = @Content(schema = @Schema(implementation = ApiExceptionResponse.class)))
-@ApiResponse(responseCode = "401", description = Constants.INVALID_AUTHORIZATION, content = @Content(schema = @Schema(implementation = ApiExceptionResponse.class)))
-@ApiResponse(responseCode = "404", description = Constants.NOT_FOUND, content = @Content(schema = @Schema(implementation = ApiExceptionResponse.class)))
-public @interface DefaultApiExceptionResponses {
-
-}
+@ApiResponse(
+    responseCode = "400",
+    description = Constants.INVALID_REQUEST_VALIDATION_FAILED,
+    content = @Content(schema = @Schema(implementation = ApiExceptionResponse.class)))
+@ApiResponse(
+    responseCode = "401",
+    description = Constants.INVALID_AUTHORIZATION,
+    content = @Content(schema = @Schema(implementation = ApiExceptionResponse.class)))
+@ApiResponse(
+    responseCode = "404",
+    description = Constants.NOT_FOUND,
+    content = @Content(schema = @Schema(implementation = ApiExceptionResponse.class)))
+public @interface DefaultApiExceptionResponses {}

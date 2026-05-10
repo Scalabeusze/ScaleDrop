@@ -22,21 +22,17 @@ public class SpringDocConfiguration {
 
   @Bean
   public OpenAPI springDocsOpenAPI(BuildProperties buildProperties) {
-    Info info = new Info()
-        .title("ScaleDrop Upload Service API")
-        .version(buildProperties.getVersion());
+    Info info =
+        new Info().title("ScaleDrop Upload Service API").version(buildProperties.getVersion());
     info.addExtension("x-build-time", buildProperties.getTime());
 
     return new OpenAPI()
-        .components(new Components()
-            .addSecuritySchemes(BASIC_AUTH, getBasicAuthScheme()))
+        .components(new Components().addSecuritySchemes(BASIC_AUTH, getBasicAuthScheme()))
         .addSecurityItem(new SecurityRequirement().addList(BASIC_AUTH))
         .info(info);
   }
 
   private SecurityScheme getBasicAuthScheme() {
-    return new SecurityScheme()
-        .type(Type.HTTP)
-        .scheme("basic");
+    return new SecurityScheme().type(Type.HTTP).scheme("basic");
   }
 }

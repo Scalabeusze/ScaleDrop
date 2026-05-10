@@ -6,7 +6,9 @@ import static org.mapstruct.ReportingPolicy.WARN;
 
 import org.mapstruct.MapperConfig;
 
-@MapperConfig(unmappedTargetPolicy = ERROR, unmappedSourcePolicy = WARN, componentModel = "spring", injectionStrategy = CONSTRUCTOR)
-public class MapperConfiguration {
-
-}
+@MapperConfig(
+    unmappedTargetPolicy = ERROR,
+    unmappedSourcePolicy = WARN,
+    componentModel = "spring",
+    injectionStrategy = CONSTRUCTOR)
+public class MapperConfiguration {}

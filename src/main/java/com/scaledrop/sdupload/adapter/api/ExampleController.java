@@ -42,5 +42,4 @@ public class ExampleController {
     log.info("[EXAMPLE] Received a request");
     return exampleResponseMapper.toResponse(exampleUseCase.getExampleObject());
   }
-
 }

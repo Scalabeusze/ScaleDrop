@@ -37,28 +37,33 @@ public class TransactionOutboxConfiguration {
   }
 
   private Submitter submitter() {
-    SemaphoreBoundedExecutor boundedExecutor = new SemaphoreBoundedExecutor(Executors.newVirtualThreadPerTaskExecutor(), properties.getMaxConcurrentTasks());
+    SemaphoreBoundedExecutor boundedExecutor =
+        new SemaphoreBoundedExecutor(
+            Executors.newVirtualThreadPerTaskExecutor(), properties.getMaxConcurrentTasks());
     return Submitter.withExecutor(boundedExecutor);
   }
 
-  private TransactionOutbox transactionOutbox(SchedulingProperties schedulingProperties, Submitter submitter) {
-    DefaultPersistor persistor = DefaultPersistor.builder()
-        .dialect(Dialect.POSTGRESQL_9)
-        .tableName(schedulingProperties.getTableName())
-        .migrate(false)
-        .serializer(JacksonInvocationSerializer.builder().mapper(objectMapper).build())
-        .build();
+  private TransactionOutbox transactionOutbox(
+      SchedulingProperties schedulingProperties, Submitter submitter) {
+    DefaultPersistor persistor =
+        DefaultPersistor.builder()
+            .dialect(Dialect.POSTGRESQL_9)
+            .tableName(schedulingProperties.getTableName())
+            .migrate(false)
+            .serializer(JacksonInvocationSerializer.builder().mapper(objectMapper).build())
+            .build();
 
-    TransactionOutboxBuilder builder = TransactionOutbox.builder()
-        .instantiator(instantiator)
-        .transactionManager(transactionManager)
-        .attemptFrequency(schedulingProperties.getAttemptFrequency())
-        .blockAfterAttempts(schedulingProperties.getBlockAfterAttempts())
-        .flushBatchSize(schedulingProperties.getFlushBatchSize())
-        .persistor(persistor)
-        .serializeMdc(true)
-        .submitter(submitter)
-        .clockProvider(() -> clock);
+    TransactionOutboxBuilder builder =
+        TransactionOutbox.builder()
+            .instantiator(instantiator)
+            .transactionManager(transactionManager)
+            .attemptFrequency(schedulingProperties.getAttemptFrequency())
+            .blockAfterAttempts(schedulingProperties.getBlockAfterAttempts())
+            .flushBatchSize(schedulingProperties.getFlushBatchSize())
+            .persistor(persistor)
+            .serializeMdc(true)
+            .submitter(submitter)
+            .clockProvider(() -> clock);
 
     return builder.build();
   }

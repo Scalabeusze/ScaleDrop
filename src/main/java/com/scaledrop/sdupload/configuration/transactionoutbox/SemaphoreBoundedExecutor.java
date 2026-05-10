@@ -18,13 +18,14 @@ public class SemaphoreBoundedExecutor implements Executor {
   public void execute(Runnable command) {
     try {
       semaphore.acquire();
-      executor.execute(() -> {
-        try {
-          command.run();
-        } finally {
-          semaphore.release();
-        }
-      });
+      executor.execute(
+          () -> {
+            try {
+              command.run();
+            } finally {
+              semaphore.release();
+            }
+          });
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new RuntimeException("Task execution was interrupted", e);

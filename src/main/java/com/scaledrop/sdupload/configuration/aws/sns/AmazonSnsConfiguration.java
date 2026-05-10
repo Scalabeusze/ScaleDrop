@@ -4,7 +4,6 @@ import static org.apache.commons.lang3.ObjectUtils.allNotNull;
 
 import com.scaledrop.sdupload.configuration.aws.AmazonProperties;
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -37,15 +36,15 @@ public class AmazonSnsConfiguration {
 
   protected AwsCredentialsProvider buildCredentialsProvider() {
     if (allNotNull(amazonProperties.getAccessKeyId(), amazonProperties.getSecretKey())) {
-      return () -> AwsBasicCredentials.create(amazonProperties.getAccessKeyId(), amazonProperties.getSecretKey());
+      return () ->
+          AwsBasicCredentials.create(
+              amazonProperties.getAccessKeyId(), amazonProperties.getSecretKey());
     }
-    return DefaultCredentialsProvider.builder()
-        .asyncCredentialUpdateEnabled(true)
-        .build();
+    return DefaultCredentialsProvider.builder().asyncCredentialUpdateEnabled(true).build();
   }
 
-  private <T extends AwsClientBuilder<T, C>, C> AwsClientBuilder<T, C>
-  apply(AmazonSnsProperties amazonProperties, AwsClientBuilder<T, C> builder) {
+  private <T extends AwsClientBuilder<T, C>, C> AwsClientBuilder<T, C> apply(
+      AmazonSnsProperties amazonProperties, AwsClientBuilder<T, C> builder) {
     if (amazonProperties.getEndpoint() != null) {
       builder.endpointOverride(amazonProperties.getEndpoint());
     }

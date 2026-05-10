@@ -24,7 +24,8 @@ public class TestAmazonSnsConfiguration {
 
   @Bean
   public SnsClientDecorator snsClientDecorator() {
-    SnsClient realClient = new AmazonSnsConfiguration(amazonSnsProperties, amazonProperties).snsClient();
+    SnsClient realClient =
+        new AmazonSnsConfiguration(amazonSnsProperties, amazonProperties).snsClient();
     return new SnsClientDecorator(realClient);
   }
 }

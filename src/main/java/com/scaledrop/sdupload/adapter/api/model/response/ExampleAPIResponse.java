@@ -17,13 +17,11 @@ public class ExampleAPIResponse {
 
   @Schema(
       example = "498ecc77-a12c-409b-a37d-12631c75896c",
-      description = "This is an example UUID field in the API response"
-  )
+      description = "This is an example UUID field in the API response")
   UUID exampleId;
 
   @Schema(
       example = "Some example value",
-      description = "This is an example field in the API response"
-  )
+      description = "This is an example field in the API response")
   String exampleField;
 }

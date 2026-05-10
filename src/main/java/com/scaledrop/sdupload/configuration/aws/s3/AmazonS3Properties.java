@@ -33,5 +33,4 @@ public class AmazonS3Properties {
   public void init() {
     log.info("AmazonS3Properties: {}", this);
   }
-
 }

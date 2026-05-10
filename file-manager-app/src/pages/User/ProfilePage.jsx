@@ -11,9 +11,6 @@ export const ProfilePage = () => {
           <Avatar sx={{ width: 64, height: 64, mr: 3 }}>{user?.name?.[0]}</Avatar>
           <Box>
             <Typography variant="h5">{user?.name}</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Role: {user?.role}
-            </Typography>
           </Box>
         </Box>
         <Divider sx={{ my: 2 }} />

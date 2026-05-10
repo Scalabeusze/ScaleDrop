@@ -8,10 +8,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
@@ -77,29 +75,26 @@ public class AmazonS3Configuration {
 
   @Bean
   public S3Presigner s3Presigner(AwsCredentialsProvider awsCredentialsProvider) {
-      S3Presigner.Builder builder = S3Presigner.builder()
-              .region(Region.of(amazonS3Properties.getFileserver().getRegion()))
-              .credentialsProvider(awsCredentialsProvider);
+    S3Presigner.Builder builder =
+        S3Presigner.builder()
+            .region(Region.of(amazonS3Properties.getFileserver().getRegion()))
+            .credentialsProvider(awsCredentialsProvider);
 
-      String endpoint = amazonS3Properties.getFileserver().getEndpoint();
-      
-      if (StringUtils.isNotBlank(endpoint)) {
-          log.info("[S3-CONFIG] Applying local endpoint override: {}", endpoint);
-          builder.endpointOverride(URI.create(endpoint));
-          
-          S3Configuration s3Config = S3Configuration.builder()
-                  .pathStyleAccessEnabled(true)
-                  .build();
-          builder.serviceConfiguration(s3Config);
-      }
+    String endpoint = amazonS3Properties.getFileserver().getEndpoint();
 
-      return builder.build();
+    if (StringUtils.isNotBlank(endpoint)) {
+      log.info("[S3-CONFIG] Applying local endpoint override: {}", endpoint);
+      builder.endpointOverride(URI.create(endpoint));
+
+      S3Configuration s3Config = S3Configuration.builder().pathStyleAccessEnabled(true).build();
+      builder.serviceConfiguration(s3Config);
+    }
+
+    return builder.build();
   }
 
   private DefaultCredentialsProvider buildCredentialsProvider() {
-    return DefaultCredentialsProvider.builder()
-        .asyncCredentialUpdateEnabled(true)
-        .build();
+    return DefaultCredentialsProvider.builder().asyncCredentialUpdateEnabled(true).build();
   }
 
   /**

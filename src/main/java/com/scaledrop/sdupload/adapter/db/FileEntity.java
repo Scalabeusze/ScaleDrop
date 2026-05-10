@@ -1,9 +1,7 @@
 package com.scaledrop.sdupload.adapter.db;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import com.scaledrop.sdupload.domain.upload.UploadType; // Import Twojego Enuma
+import jakarta.persistence.*;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -32,8 +30,9 @@ public class FileEntity {
   @Column(name = "location", nullable = false)
   private String location;
 
+  @Enumerated(EnumType.STRING)
   @Column(name = "type", nullable = false)
-  private String type;
+  private UploadType type;
 
   @Column(name = "content_type")
   private String contentType;

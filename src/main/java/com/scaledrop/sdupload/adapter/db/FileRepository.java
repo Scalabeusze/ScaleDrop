@@ -6,6 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface FileRepository extends JpaRepository<FileEntity, UUID> {
-  boolean existsByOwnerIdAndHashAndLocationAndName(
-      UUID ownerId, String hash, String location, String name);
+  boolean existsByOwnerIdAndLocationAndName(UUID ownerId, String location, String name);
 }

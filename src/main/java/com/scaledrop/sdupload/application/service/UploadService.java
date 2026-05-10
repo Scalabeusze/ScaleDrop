@@ -7,7 +7,9 @@ import com.scaledrop.sdupload.adapter.db.FileRepository;
 import com.scaledrop.sdupload.adapter.event.publisher.UploadPublisher;
 import com.scaledrop.sdupload.application.port.in.RegisterUploadUseCase;
 import com.scaledrop.sdupload.configuration.exception.SdUploadServiceException;
+import com.scaledrop.sdupload.domain.upload.FileMetadata;
 import com.scaledrop.sdupload.domain.upload.UploadObject;
+import com.scaledrop.sdupload.domain.upload.UploadType;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,76 +29,112 @@ public class UploadService implements RegisterUploadUseCase {
   @Transactional
   public UploadObject registerUpload(UUID ownerId, RegisterUploadRequest request) {
     log.info(
-        "[UPLOAD-SERVICE] Processing file registration: '{}' for user: {}",
+        "[UPLOAD-SERVICE] Processing {} registration: '{}' for user: {}",
+        request.getType(),
         request.getName(),
         ownerId);
 
-    boolean exists =
-        fileRepository.existsByOwnerIdAndHashAndLocationAndName(
-            ownerId, request.getHash(), request.getLocation(), request.getName());
+    String finalName = resolveUniqueName(ownerId, request.getLocation(), request.getName());
 
-    if (exists) {
-      log.warn("[UPLOAD-SERVICE] Conflict! File already exists for user: {}", ownerId);
-      throw new RuntimeException("File conflict: You already have this file in this location.");
+    if (!finalName.equals(request.getName())) {
+      log.info(
+          "[UPLOAD-SERVICE] Name collision detected. Renamed '{}' to '{}'",
+          request.getName(),
+          finalName);
     }
 
     UUID fileId = UUID.randomUUID();
+    String status = (request.getType() == UploadType.FOLDER) ? "UPLOADED" : "PENDING";
+    String uploadUrl = null;
+
+    if (request.getType() == UploadType.FILE) {
+      uploadUrl =
+          s3Adapter.generatePreSignedUploadUrl(
+              fileId, request.getContentType(), request.getLocation(), finalName);
+    }
 
     FileEntity fileEntity =
         FileEntity.builder()
             .id(fileId)
             .ownerId(ownerId)
-            .name(request.getName())
+            .name(finalName)
             .location(request.getLocation())
-            .type("FILE")
+            .type(request.getType())
             .contentType(request.getContentType())
             .size(request.getSize())
             .hash(request.getHash())
-            .status("PENDING")
+            .status(status)
             .build();
 
     fileRepository.save(fileEntity);
-    log.info("[UPLOAD-SERVICE] Database entry created with status PENDING. File ID: {}", fileId);
+    log.info(
+        "[UPLOAD-SERVICE] {} saved to DB with status {}. ID: {}",
+        request.getType(),
+        status,
+        fileId);
 
-    String uploadUrl =
-        s3Adapter.generatePreSignedUploadUrl(
-            fileId, request.getContentType(), request.getLocation(), request.getName());
+    if (request.getType() == UploadType.FOLDER) {
+      publishUploadEvent(fileEntity);
+    }
 
     return UploadObject.builder()
         .fileId(fileId)
+        .location(fileEntity.getLocation() + fileEntity.getName())
         .uploadUrl(uploadUrl)
         .status(fileEntity.getStatus())
-        .location(request.getLocation() + request.getName())
+        .type(fileEntity.getType())
         .build();
   }
 
+  @Override
   @Transactional
   public void confirmUpload(UUID fileId) {
-    log.info("[UPLOAD-SERVICE] Confirming physical upload for file ID: {}", fileId);
+    log.info("[UPLOAD-SERVICE] Confirming physical upload for ID: {}", fileId);
 
     FileEntity fileEntity =
         fileRepository
             .findById(fileId)
-            .orElseThrow(() -> new SdUploadServiceException("File not found with ID: " + fileId));
+            .orElseThrow(() -> new SdUploadServiceException("Object not found: " + fileId));
 
     if ("UPLOADED".equals(fileEntity.getStatus())) {
-      log.info("[UPLOAD-SERVICE] File ID: {} is already confirmed. Skipping.", fileId);
       return;
     }
 
     fileEntity.setStatus("UPLOADED");
     fileRepository.save(fileEntity);
-    log.info("[UPLOAD-SERVICE] Status updated to UPLOADED for file ID: {}", fileId);
 
-    String fullPath = fileEntity.getLocation() + fileEntity.getName();
+    publishUploadEvent(fileEntity);
+  }
 
-    UploadObject uploadObject =
-        UploadObject.builder()
-            .fileId(fileEntity.getId())
-            .location(fullPath)
-            .status(fileEntity.getStatus())
+  private String resolveUniqueName(UUID ownerId, String location, String originalName) {
+    String currentName = originalName;
+    int counter = 1;
+
+    int lastDot = originalName.lastIndexOf('.');
+    String baseName = (lastDot != -1) ? originalName.substring(0, lastDot) : originalName;
+    String extension = (lastDot != -1) ? originalName.substring(lastDot) : "";
+
+    while (fileRepository.existsByOwnerIdAndLocationAndName(ownerId, location, currentName)) {
+      currentName = String.format("%s(%d)%s", baseName, counter, extension);
+      counter++;
+    }
+    return currentName;
+  }
+
+  private void publishUploadEvent(FileEntity entity) {
+    FileMetadata metadata =
+        FileMetadata.builder()
+            .fileId(entity.getId())
+            .ownerId(entity.getOwnerId())
+            .name(entity.getName())
+            .location(entity.getLocation())
+            .contentType(entity.getContentType())
+            .size(entity.getSize())
+            .hash(entity.getHash())
+            .status(entity.getStatus())
+            .type(entity.getType())
             .build();
 
-    uploadPublisher.publishEvent(uploadObject);
+    uploadPublisher.publishEvent(metadata);
   }
 }

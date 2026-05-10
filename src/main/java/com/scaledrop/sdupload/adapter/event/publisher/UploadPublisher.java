@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gruelbox.transactionoutbox.TransactionOutbox;
 import com.scaledrop.sdupload.configuration.aws.sns.AmazonSnsProperties;
 import com.scaledrop.sdupload.configuration.exception.SdUploadServiceException;
-import com.scaledrop.sdupload.domain.upload.UploadObject;
+import com.scaledrop.sdupload.domain.upload.FileMetadata;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,24 +23,24 @@ public class UploadPublisher {
   private final AmazonSnsProperties amazonSnsProperties;
 
   @Transactional
-  public void publishEvent(UploadObject uploadObject) {
-    transactionOutbox.schedule(this.getClass()).sendEventToTopic(uploadObject);
+  public void publishEvent(FileMetadata fileMetadata) {
+    transactionOutbox.schedule(this.getClass()).sendEventToTopic(fileMetadata);
   }
 
-  void sendEventToTopic(UploadObject registeredUpload) {
+  void sendEventToTopic(FileMetadata eventPayload) {
     try {
-      String message = objectMapper.writeValueAsString(registeredUpload);
+      String message = objectMapper.writeValueAsString(eventPayload);
       PublishRequest publishRequest =
           PublishRequest.builder()
               .topicArn(amazonSnsProperties.getFileUpdatesTopicArn())
               .message(message)
               .build();
       snsClient.publish(publishRequest);
-      log.info("[UPLOAD-PUBLISHER] Published event to SNS topic: {}", registeredUpload);
+      log.info("[UPLOAD-PUBLISHER] Published event to SNS topic: {}", eventPayload);
     } catch (Exception ex) {
       log.error(
           "[UPLOAD-PUBLISHER] Failed to publish event to SNS topic: {}, error: {}",
-          registeredUpload,
+          eventPayload,
           ex.getMessage(),
           ex);
       throw new SdUploadServiceException("Failed to publish event to SNS topic", ex);

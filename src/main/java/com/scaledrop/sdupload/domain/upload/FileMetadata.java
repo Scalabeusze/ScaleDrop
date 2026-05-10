@@ -10,10 +10,14 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UploadObject {
+public class FileMetadata {
   private UUID fileId;
+  private UUID ownerId;
+  private String name;
   private String location;
-  private String uploadUrl;
+  private String contentType;
+  private Long size;
+  private String hash;
   private String status;
   private UploadType type;
 }

@@ -1,5 +1,6 @@
 package com.scaledrop.sdupload.adapter.api.model.request;
 
+import com.scaledrop.sdupload.domain.upload.UploadType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -12,21 +13,26 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Request to register file metadata before physical upload")
+@Schema(description = "Request to register file or folder metadata before upload/creation")
 public class RegisterUploadRequest {
 
-  @NotBlank(message = "Location cannot be blank") @Schema(description = "Target folder location (e.g., '/', '/documents/')", example = "/")
+  @NotBlank(message = "Location cannot be blank") @Schema(description = "Target folder location", example = "/documents/")
   private String location;
 
-  @NotBlank(message = "File name is required") @Schema(description = "Name of the file with extension", example = "document.pdf")
+  @NotBlank(message = "Name is required") @Schema(description = "Name of the file or folder", example = "Photos")
   private String name;
 
-  @NotBlank(message = "Content type is required") @Schema(description = "MIME type of the file", example = "application/pdf")
+  @NotNull(message = "Type is required") @Schema(description = "Type of the object", example = "FILE")
+  private UploadType type;
+
+  @Schema(description = "MIME type of the file (optional for folders)", example = "image/png")
   private String contentType;
 
-  @NotNull(message = "File size is required") @Schema(description = "Size of the file in bytes", example = "1048576")
+  @NotNull(message = "Size is required") @Schema(description = "Size in bytes (0 for folders)", example = "2048")
   private Long size;
 
-  @NotBlank(message = "File hash is required") @Schema(description = "SHA-256 or MD5 hash for deduplication", example = "a1b2c3d4e5f6...")
+  @Schema(
+      description = "File hash for deduplication (optional for folders)",
+      example = "e99a18c4...")
   private String hash;
 }

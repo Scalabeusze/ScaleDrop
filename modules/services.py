@@ -1,5 +1,8 @@
 import streamlit as st
 import boto3
+import time
+from datetime import datetime
+from streamlit_autorefresh import st_autorefresh
 
 REGION = "eu-north-1"
 
@@ -9,8 +12,28 @@ def get_ecs_client():
     return boto3.client("ecs", region_name=REGION)
 
 
+# Helper function for status
+def get_status_ui(status):
+    status_upper = status.upper()
+    if status_upper == "ACTIVE":
+        return f"🟢 {status}"
+    elif status_upper == "DRAINING":
+        return f"🟡 {status}"
+    elif status_upper == "INACTIVE":
+        return f"🔴 {status}"
+    return f"⚪ {status}"
+
+
 def display():
+    # Autorefresh every 10 s, returns counter of refreshes
+    count = st_autorefresh(interval=10000, limit=None, key="ecs_autorefresh")
+
     st.title("ScaleDrop - Infrastructure management")
+
+    # Show last refresh time
+    current_time = datetime.now().strftime("%H:%M:%S")
+    st.caption(f"Data refreshes automatically (Last update: {current_time})")
+
     st.divider()
 
     try:
@@ -53,11 +76,20 @@ def display():
             desired_count = service_info["desiredCount"]
             running_count = service_info["runningCount"]
 
-            # Show metrics
             col1, col2, col3 = st.columns(3)
-            col1.metric("Status", status)
+            col1.metric("Status", get_status_ui(status))
             col2.metric("Desired count", desired_count)
-            col3.metric("Instances running", running_count)
+
+            # Add delta if running is different from desired
+            delta_instances = running_count - desired_count
+            delta_color = "normal" if running_count == desired_count else "off"
+
+            col3.metric(
+                "Instances running",
+                running_count,
+                delta=delta_instances if delta_instances != 0 else None,
+                delta_color=delta_color,
+            )
 
             st.divider()
             st.subheader("Actions")
@@ -72,23 +104,30 @@ def display():
                             service=selected_service,
                             forceNewDeployment=True,
                         )
-                    st.success("Restart request sent! Service should redeploy soon.")
+                    # Global toast
+                    st.toast("Restart request sent! Reloading...", icon="🔄")
+                    time.sleep(1.5)  # Short pause to read toast
+                    st.rerun()  # Refresh AWS data
 
             with col_btn2:
-                # On / Off switch
+                # Start / Stop button
                 new_count = 0 if desired_count > 0 else 1
                 action = "Stop service" if desired_count > 0 else "Start service"
 
-                if st.button(f"{action}", use_container_width=True):
+                btn_type = "primary" if desired_count > 0 else "secondary"
+
+                if st.button(f"{action}", type=btn_type, use_container_width=True):
                     with st.spinner("Changing desired count..."):
                         ecs.update_service(
                             cluster=selected_cluster,
                             service=selected_service,
                             desiredCount=new_count,
                         )
-                    st.success(
-                        f"Desired count changed to {new_count}. Please refresh the page in around 30 seconds."
+                    st.toast(
+                        f"Desired count changed to {new_count}. Reloading...", icon="✅"
                     )
+                    time.sleep(1.5)
+                    st.rerun()
 
     except Exception as e:
         st.error(

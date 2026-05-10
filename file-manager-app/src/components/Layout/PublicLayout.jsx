@@ -1,11 +1,9 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { Outlet, Link } from 'react-router';
-import { AppBar, Toolbar, Typography, Button, Box, Switch, FormControlLabel } from '@mui/material';
-import { ThemeContext } from '../../context/ThemeContext';
+import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
+import { ThemeSwitcher } from '../Shared/ThemeSwitcher';
 
 export const PublicLayout = () => {
-  const { isDarkMode, toggleTheme } = useContext(ThemeContext);
-
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', width: '100vw' }}>
       <AppBar position="static" color="transparent" elevation={0}>
@@ -13,10 +11,7 @@ export const PublicLayout = () => {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
             ScaleDrop FM
           </Typography>
-          <FormControlLabel
-            control={<Switch checked={isDarkMode} onChange={toggleTheme} color="primary" />}
-            label="Dark Mode"
-          />
+          <ThemeSwitcher color="primary" />
           <Button color="inherit" component={Link} to="/login">Login</Button>
         </Toolbar>
       </AppBar>

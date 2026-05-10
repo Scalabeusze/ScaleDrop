@@ -1,6 +1,6 @@
 
 import { Box, Typography, Paper, List, ListItem, ListItemText, ListItemIcon } from '@mui/material';
-import { FilePresent } from '@mui/icons-material';
+import { FileIcon } from '../../components/Shared/FileIcon';
 
 export const SharedFilesPage = () => {
   return (
@@ -13,7 +13,7 @@ export const SharedFilesPage = () => {
           {/* Mocked empty state or single item */}
           <ListItem divider>
             <ListItemIcon>
-              <FilePresent />
+              <FileIcon filename="Project_Proposal_v2.pdf" />
             </ListItemIcon>
             <ListItemText primary="Project_Proposal_v2.pdf" secondary="Shared by: Alice (alice@example.com)" />
           </ListItem>

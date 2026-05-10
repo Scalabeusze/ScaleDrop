@@ -1,11 +1,10 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { Outlet, Link, useNavigate } from 'react-router';
-import { AppBar, Toolbar, Typography, Button, Box, Switch, FormControlLabel } from '@mui/material';
-import { ThemeContext } from '../../context/ThemeContext';
+import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
+import { ThemeSwitcher } from '../Shared/ThemeSwitcher';
 import { useAuth } from '../../context/AuthContext';
 
 export const UserLayout = () => {
-  const { isDarkMode, toggleTheme } = useContext(ThemeContext);
   const { logout, user } = useAuth();
   const navigate = useNavigate();
 
@@ -27,11 +26,7 @@ export const UserLayout = () => {
             <Button color="inherit" component={Link} to="/user/shared-files">Shared With Me</Button>
             <Button color="inherit" component={Link} to="/user/profile">Profile</Button>
             
-            <FormControlLabel
-              control={<Switch checked={isDarkMode} onChange={toggleTheme} color="default" />}
-              label="Dark Mode"
-              sx={{ ml: 2 }}
-            />
+            <ThemeSwitcher color="default" sx={{ ml: 2 }} />
             <Typography variant="body2" sx={{ mr: 2 }}>{user?.name}</Typography>
             <Button color="inherit" onClick={handleLogout} variant="outlined">Logout</Button>
           </Box>

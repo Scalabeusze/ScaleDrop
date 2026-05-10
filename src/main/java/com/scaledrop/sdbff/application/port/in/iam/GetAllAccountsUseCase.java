@@ -1,9 +1,9 @@
 package com.scaledrop.sdbff.application.port.in.iam;
 
 import com.scaledrop.sdbff.adapter.api.model.iam.response.AccountIAMResponse;
-import java.util.UUID;
+import java.util.List;
 
-public interface GetAccountUseCase {
+public interface GetAllAccountsUseCase {
 
-  AccountIAMResponse getAccountById(UUID accountId);
+  List<AccountIAMResponse> getAllAccounts();
 }

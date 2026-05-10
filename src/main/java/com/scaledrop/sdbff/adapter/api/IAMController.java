@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.view.RedirectView;
 
 @Slf4j
 @Validated
@@ -24,8 +25,10 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "IAM", description = "Session and user accounts management")
 public class IAMController {
 
-  private final LoginUseCase authUseCase;
+  private final LoginUseCase loginUseCase;
+  private final GoogleLoginUseCase googleLoginUseCase;
   private final GetAccountUseCase getAccountUseCase;
+  private final GetAllAccountsUseCase getAllAccountsUseCase;
   private final CreateAccountUseCase createAccountUseCase;
   private final UpdateAccountUseCase updateAccountUseCase;
   private final UpdatePasswordUseCase updatePasswordUseCase;
@@ -38,7 +41,17 @@ public class IAMController {
   @DefaultApiExceptionResponses
   @ResponseStatus(HttpStatus.OK)
   public JwtIAMResponse login(@RequestBody @Validated SessionLoginIAMRequest request) {
-    return authUseCase.login(request);
+    return loginUseCase.login(request);
+  }
+
+  @GetMapping(value = API_V1_PREFIX + "/session/google")
+  @Operation(
+      summary = "Start Google login",
+      description = "Redirects the browser to the IAM service to start Google OAuth2 flow")
+  @DefaultApiExceptionResponses
+  public RedirectView loginWithGoogle() {
+    log.info("[BFF] Initiating Google login flow");
+    return googleLoginUseCase.googleLogin();
   }
 
   @GetMapping(value = API_V1_PREFIX + "/accounts")
@@ -47,7 +60,7 @@ public class IAMController {
   @DefaultApiExceptionResponses
   @ResponseStatus(HttpStatus.OK)
   public List<AccountIAMResponse> getAccounts() {
-    return getAccountUseCase.getAllAccounts();
+    return getAllAccountsUseCase.getAllAccounts();
   }
 
   @GetMapping(value = API_V1_PREFIX + "/accounts/{accountId}")

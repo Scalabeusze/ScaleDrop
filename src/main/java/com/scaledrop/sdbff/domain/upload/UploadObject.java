@@ -3,23 +3,19 @@ package com.scaledrop.sdbff.domain.upload;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
 
-@Getter
-@Setter
+@Data
 @Builder
-@ToString
-@EqualsAndHashCode
 @NoArgsConstructor
 @AllArgsConstructor
 public class UploadObject {
-  private String fileName;
+  private String location;
+  private String name;
   private String contentType;
   private Long size;
-  private UUID ownerId;
   private String hash;
+  private UploadType type;
+  private UUID ownerId;
 }

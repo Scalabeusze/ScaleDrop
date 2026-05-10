@@ -8,18 +8,25 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.view.RedirectView;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class IAMService
     implements LoginUseCase,
+        GoogleLoginUseCase,
         CreateAccountUseCase,
         GetAccountUseCase,
+        GetAllAccountsUseCase,
         UpdateAccountUseCase,
         UpdatePasswordUseCase,
         DeleteAccountUseCase {
+
+  @Value("${iam-service.url}")
+  private String iamBaseUrl;
 
   private final IAMRepository iamRepository;
 
@@ -27,6 +34,13 @@ public class IAMService
   public JwtIAMResponse login(SessionLoginIAMRequest request) {
     log.info("[IAM-SERVICE] Processing login request for: {}", request.getUsername());
     return iamRepository.login(request);
+  }
+
+  @Override
+  public RedirectView googleLogin() {
+    String redirectUrl = iamBaseUrl + "/api/v1/session/google";
+    log.info("[BFF] Redirecting browser to IAM for Google login: {}", redirectUrl);
+    return new RedirectView(redirectUrl);
   }
 
   @Override

@@ -19,6 +19,7 @@ package com.scaledrop.sdiam.adapter.api.model.request;
 import com.scaledrop.sdiam.adapter.db.AccountEntity.AccountStatus;
 import com.scaledrop.sdiam.configuration.annotations.ValidPassword;
 import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
 import jakarta.validation.constraints.NotBlank;
 import java.time.OffsetDateTime;
 
@@ -27,8 +28,14 @@ public record CreateAccountAPIRequest(
     @Schema(example = "password1A!", description = "Plain text password to be hashed")
         @ValidPassword
         String plainPassword,
-    @Schema(example = "ACTIVE", description = "Account lifecycle status") AccountStatus status,
-    @Schema(description = "Lock expiration timestamp if the account is temporarily locked")
+    @Schema(
+            example = "ACTIVE",
+            description = "Account lifecycle status",
+            requiredMode = RequiredMode.NOT_REQUIRED)
+        AccountStatus status,
+    @Schema(
+            description = "Lock expiration timestamp if the account is temporarily locked",
+            requiredMode = RequiredMode.NOT_REQUIRED)
         OffsetDateTime lockedUntil) {
 
   public CreateAccountAPIRequest {

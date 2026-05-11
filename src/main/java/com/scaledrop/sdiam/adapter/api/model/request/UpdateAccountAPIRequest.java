@@ -18,17 +18,34 @@ package com.scaledrop.sdiam.adapter.api.model.request;
 
 import com.scaledrop.sdiam.adapter.db.AccountEntity.AccountStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
+import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
+import jakarta.validation.constraints.Size;
 import java.time.OffsetDateTime;
 
 public record UpdateAccountAPIRequest(
-    @Schema(example = "Tomasz Testowy", description = "Unique username for the account") @NotBlank String username,
-    @Schema(example = "ACTIVE", description = "Account lifecycle status") AccountStatus status,
-    @Schema(example = "0", description = "Number of failed login attempts")
+    @Schema(
+            example = "Tomasz Testowy",
+            description = "Unique username for the account",
+            requiredMode = RequiredMode.NOT_REQUIRED)
+        @Size(min = 1, max = 100) String username,
+    @Schema(
+            example = "ACTIVE",
+            description = "Account lifecycle status",
+            requiredMode = RequiredMode.NOT_REQUIRED)
+        AccountStatus status,
+    @Schema(
+            example = "0",
+            description = "Number of failed login attempts",
+            requiredMode = RequiredMode.NOT_REQUIRED)
         Integer failedLoginAttempts,
-    @Schema(description = "Lock expiration timestamp if the account is temporarily locked")
+    @Schema(
+            description = "Lock expiration timestamp if the account is temporarily locked",
+            requiredMode = RequiredMode.NOT_REQUIRED)
         OffsetDateTime lockedUntil,
-    @Schema(description = "Timestamp of the last successful login") OffsetDateTime lastLoginAt) {
+    @Schema(
+            description = "Timestamp of the last successful login",
+            requiredMode = RequiredMode.NOT_REQUIRED)
+        OffsetDateTime lastLoginAt) {
 
   public UpdateAccountAPIRequest {
     if (username != null) {

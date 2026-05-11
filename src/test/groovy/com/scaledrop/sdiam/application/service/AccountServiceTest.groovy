@@ -25,6 +25,7 @@ import com.scaledrop.sdiam.adapter.db.AccountEntity.AccountStatus
 import com.scaledrop.sdiam.adapter.db.AccountRepository
 import com.scaledrop.sdiam.configuration.exception.AccountConflictException
 import com.scaledrop.sdiam.configuration.exception.AccountNotFoundException
+import com.scaledrop.sdiam.configuration.exception.AccountValidationException
 import java.time.OffsetDateTime
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.transaction.annotation.Transactional
@@ -114,6 +115,46 @@ class AccountServiceTest extends IntegrationTestBase {
     accounts.size() == 2
   }
 
+  def "should search active accounts by username sorted by username"() {
+    given:
+    persistAccount("zeta@example.com")
+    persistAccount("alpha@example.com")
+    persistAccount("archived-alpha@example.com", AccountStatus.DISABLED)
+    persistAccount("locked-alpha@example.com", AccountStatus.LOCKED)
+
+    when:
+    def accounts = accountService.searchAccounts("ALPHA", 10)
+
+    then:
+    accounts*.username == ["alpha@example.com"]
+  }
+
+  def "should cap account search limit"() {
+    given:
+    (1..25).each {
+      persistAccount(String.format("user-%02d@example.com", it))
+    }
+
+    when:
+    def accounts = accountService.searchAccounts("user-", 50)
+
+    then:
+    accounts.size() == 20
+    accounts*.username.first() == "user-01@example.com"
+    accounts*.username.last() == "user-20@example.com"
+  }
+
+  def "should reject invalid account search query"() {
+    when:
+    accountService.searchAccounts(query, 10)
+
+    then:
+    thrown(AccountValidationException)
+
+    where:
+    query << [null, " ", "a", "a" * 101]
+  }
+
   def "should update only provided fields"() {
     given:
     def account = persistAccount("test_username")
@@ -197,12 +238,16 @@ class AccountServiceTest extends IntegrationTestBase {
   }
 
   private AccountEntity persistAccount(String username) {
+    return persistAccount(username, AccountStatus.ACTIVE)
+  }
+
+  private AccountEntity persistAccount(String username, AccountStatus status) {
     return accountRepository.save(AccountEntity.builder()
         .id(UUID.randomUUID())
         .username(username)
         .passwordHash("hash-${username}")
         .passwordSalt("salt-${username}")
-        .status(AccountStatus.ACTIVE)
+        .status(status)
         .failedLoginAttempts(0)
         .build())
   }

@@ -32,6 +32,8 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +43,13 @@ public class AccountService {
 
   private static final String ACCOUNT_NOT_FOUND = "Account not found";
   private static final String USERNAME_ALREADY_EXISTS = "Username already exists";
+  private static final String SEARCH_QUERY_REQUIRED = "Search query is required";
+  private static final String SEARCH_QUERY_TOO_SHORT = "Search query must be at least 2 characters";
+  private static final String SEARCH_QUERY_TOO_LONG = "Search query must be at most 100 characters";
+  private static final int DEFAULT_SEARCH_LIMIT = 10;
+  private static final int MAX_SEARCH_LIMIT = 20;
+  private static final int MIN_SEARCH_QUERY_LENGTH = 2;
+  private static final int MAX_SEARCH_QUERY_LENGTH = 100;
 
   private final AccountRepository accountRepository;
   private final AccountPasswordService hashingService;
@@ -116,6 +125,30 @@ public class AccountService {
   @Transactional(readOnly = true)
   public List<AccountEntity> getAccounts() {
     return accountRepository.findAll();
+  }
+
+  /**
+   * Searches active accounts for share-recipient autocomplete.
+   *
+   * @param query username fragment
+   * @param limit maximum number of accounts to return
+   * @return matching active accounts sorted by username
+   */
+  @Transactional(readOnly = true)
+  public List<AccountEntity> searchAccounts(String query, Integer limit) {
+    String normalizedQuery = StringUtils.trimToEmpty(query);
+    if (StringUtils.isBlank(normalizedQuery)) {
+      throw new AccountValidationException(SEARCH_QUERY_REQUIRED);
+    }
+    if (normalizedQuery.length() < MIN_SEARCH_QUERY_LENGTH) {
+      throw new AccountValidationException(SEARCH_QUERY_TOO_SHORT);
+    }
+    if (normalizedQuery.length() > MAX_SEARCH_QUERY_LENGTH) {
+      throw new AccountValidationException(SEARCH_QUERY_TOO_LONG);
+    }
+
+    return accountRepository.findByStatusAndUsernameContainingIgnoreCaseOrderByUsernameAsc(
+        AccountStatus.ACTIVE, normalizedQuery, PageRequest.of(0, resolveSearchLimit(limit)));
   }
 
   // Update
@@ -213,5 +246,12 @@ public class AccountService {
         && account.getLockedUntil().isAfter(OffsetDateTime.now(authenticationService.clock))) {
       throw new AuthenticationFailedException(AuthenticationService.ACCOUNT_LOCKED);
     }
+  }
+
+  private int resolveSearchLimit(Integer limit) {
+    if (limit == null || limit < 1) {
+      return DEFAULT_SEARCH_LIMIT;
+    }
+    return Math.min(limit, MAX_SEARCH_LIMIT);
   }
 }

@@ -14,21 +14,14 @@
  * permissions and limitations under the License.
  */
 
-package com.scaledrop.sdiam.adapter.db;
+package com.scaledrop.sdiam.adapter.api.model.response;
 
-import com.scaledrop.sdiam.adapter.db.AccountEntity.AccountStatus;
-import java.util.List;
-import java.util.Optional;
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface AccountRepository extends JpaRepository<AccountEntity, UUID> {
-
-  Optional<AccountEntity> findByUsername(String username);
-
-  boolean existsByUsername(String username);
-
-  List<AccountEntity> findByStatusAndUsernameContainingIgnoreCaseOrderByUsernameAsc(
-      AccountStatus status, String username, Pageable pageable);
-}
+public record AccountSearchAPIResponse(
+    @Schema(example = "498ecc77-a12c-409b-a37d-12631c75896c", description = "Account identifier")
+        @NotNull UUID id,
+    @Schema(example = "user@example.com", description = "Unique username for the account") @NotBlank String username) {}

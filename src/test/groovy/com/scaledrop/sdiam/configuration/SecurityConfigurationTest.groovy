@@ -28,6 +28,7 @@ class SecurityConfigurationTest extends WiremockTestBase {
   private static final String WRONG_PASSWORD = "wrongPassword"
   private static final String SWAGGER_PATH = "/swagger-ui/index.html"
   private static final String ACCOUNTS_ENDPOINT = "/api/v1/accounts"
+  private static final String ACCOUNT_SEARCH_ENDPOINT = "/api/v1/accounts/search"
 
   // ACTUATOR
   def "should be able to access actuator endpoints"() {
@@ -81,6 +82,29 @@ class SecurityConfigurationTest extends WiremockTestBase {
   def 'should allow access to accounts endpoint with internal credentials'() {
     expect:
     mockMvc.perform(get(ACCOUNTS_ENDPOINT)
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+  }
+
+  def 'should not allow access to account search endpoint without credentials'() {
+    expect:
+    mockMvc.perform(get(ACCOUNT_SEARCH_ENDPOINT)
+        .param("query", "test"))
+        .andExpect(status().isUnauthorized())
+  }
+
+  def 'should not allow access to account search endpoint with documentation credentials'() {
+    expect:
+    mockMvc.perform(get(ACCOUNT_SEARCH_ENDPOINT)
+        .param("query", "test")
+        .with(httpBasic(DOCUMENTATION_USERNAME, DOCUMENTATION_PASSWORD)))
+        .andExpect(status().isForbidden())
+  }
+
+  def 'should allow access to account search endpoint with internal credentials'() {
+    expect:
+    mockMvc.perform(get(ACCOUNT_SEARCH_ENDPOINT)
+        .param("query", "test")
         .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
         .andExpect(status().isOk())
   }

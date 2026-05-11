@@ -24,6 +24,7 @@ import com.scaledrop.sdiam.adapter.api.model.request.CreateAccountAPIRequest;
 import com.scaledrop.sdiam.adapter.api.model.request.UpdateAccountAPIRequest;
 import com.scaledrop.sdiam.adapter.api.model.request.UpdatePasswordAPIRequest;
 import com.scaledrop.sdiam.adapter.api.model.response.AccountAPIResponse;
+import com.scaledrop.sdiam.adapter.api.model.response.AccountSearchAPIResponse;
 import com.scaledrop.sdiam.application.service.AccountService;
 import com.scaledrop.sdiam.configuration.annotations.DefaultApiExceptionResponses;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,6 +32,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +48,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -80,6 +84,22 @@ public class AccountController {
   @ResponseStatus(HttpStatus.OK)
   public List<AccountAPIResponse> getAccounts() {
     return accountService.getAccounts().stream().map(accountResponseMapper::toResponse).toList();
+  }
+
+  @GetMapping(value = "/search", produces = MediaType.APPLICATION_JSON_VALUE)
+  @Operation(
+      summary = "Search accounts",
+      description = "Searches active accounts for share-recipient autocomplete")
+  @SecurityRequirement(name = BASIC_AUTH)
+  @DefaultApiExceptionResponses
+  @ApiResponse(responseCode = "200", description = "Successfully searched accounts")
+  @ResponseStatus(HttpStatus.OK)
+  public List<AccountSearchAPIResponse> searchAccounts(
+      @RequestParam("query") @NotBlank @Size(min = 2, max = 100) String query,
+      @RequestParam(value = "limit", required = false) Integer limit) {
+    return accountService.searchAccounts(query, limit).stream()
+        .map(accountResponseMapper::toSearchResponse)
+        .toList();
   }
 
   @GetMapping(value = "/{accountId}", produces = MediaType.APPLICATION_JSON_VALUE)

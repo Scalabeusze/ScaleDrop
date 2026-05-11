@@ -17,6 +17,7 @@
 package com.scaledrop.sdiam.adapter.api.mapper;
 
 import com.scaledrop.sdiam.adapter.api.model.response.AccountAPIResponse;
+import com.scaledrop.sdiam.adapter.api.model.response.AccountSearchAPIResponse;
 import com.scaledrop.sdiam.adapter.db.AccountEntity;
 import com.scaledrop.sdiam.configuration.MapperConfiguration;
 import org.mapstruct.BeanMapping;
@@ -27,4 +28,18 @@ public interface AccountResponseMapper {
 
   @BeanMapping(ignoreUnmappedSourceProperties = {"passwordHash", "passwordSalt"})
   AccountAPIResponse toResponse(AccountEntity accountEntity);
+
+  @BeanMapping(
+      ignoreUnmappedSourceProperties = {
+        "status",
+        "passwordHash",
+        "passwordSalt",
+        "passwordUpdatedAt",
+        "lastLoginAt",
+        "failedLoginAttempts",
+        "lockedUntil",
+        "createdAt",
+        "updatedAt"
+      })
+  AccountSearchAPIResponse toSearchResponse(AccountEntity accountEntity);
 }

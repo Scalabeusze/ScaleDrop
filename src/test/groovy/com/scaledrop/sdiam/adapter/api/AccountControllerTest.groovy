@@ -141,6 +141,91 @@ class AccountControllerTest extends WiremockTestBase {
     response.size() == 2
   }
 
+  def "should search active accounts by username for sharing"() {
+    given:
+    def alpha = persistAccount("alpha@example.com")
+    def beta = persistAccount("beta@example.com")
+    persistAccount("archived-alpha@example.com", AccountStatus.DISABLED)
+    persistAccount("locked-alpha@example.com", AccountStatus.LOCKED)
+
+    when:
+    def result = mockMvc.perform(get("${ACCOUNTS_ENDPOINT}/search")
+        .param("query", "ALPHA")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+        .andReturn()
+
+    def response = parseJson(result.response.contentAsString)
+
+    then:
+    response*.username == ["alpha@example.com"]
+    response[0].id == alpha.id.toString()
+    !response[0].containsKey("status")
+    !response[0].containsKey("createdAt")
+    !response[0].containsKey("passwordUpdatedAt")
+
+    and:
+    !(response*.id).contains(beta.id.toString())
+  }
+
+  def "should return empty list when account search has no matches"() {
+    given:
+    persistAccount("alpha@example.com")
+
+    when:
+    def result = mockMvc.perform(get("${ACCOUNTS_ENDPOINT}/search")
+        .param("query", "missing")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+        .andReturn()
+
+    then:
+    parseJson(result.response.contentAsString) == []
+  }
+
+  def "should apply default and maximum account search limits"() {
+    given:
+    (1..25).each {
+      persistAccount(String.format("user-%02d@example.com", it))
+    }
+
+    when:
+    def defaultLimitResult = mockMvc.perform(get("${ACCOUNTS_ENDPOINT}/search")
+        .param("query", "user-")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+        .andReturn()
+
+    def cappedLimitResult = mockMvc.perform(get("${ACCOUNTS_ENDPOINT}/search")
+        .param("query", "user-")
+        .param("limit", "50")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+        .andReturn()
+
+    then:
+    parseJson(defaultLimitResult.response.contentAsString).size() == 10
+    parseJson(cappedLimitResult.response.contentAsString).size() == 20
+  }
+
+  def "should reject invalid account search query"() {
+    when:
+    def result = mockMvc.perform(get("${ACCOUNTS_ENDPOINT}/search")
+        .param("query", query)
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isBadRequest())
+        .andReturn()
+
+    def response = parseJson(result.response.contentAsString)
+
+    then:
+    response.type == "VALIDATION"
+    response.message == "Validation error"
+
+    where:
+    query << [" ", "a"]
+  }
+
   def "should get account by id"() {
     given:
     def account = persistAccount("test_username")
@@ -367,12 +452,16 @@ class AccountControllerTest extends WiremockTestBase {
   }
 
   private AccountEntity persistAccount(String username) {
+    return persistAccount(username, AccountStatus.ACTIVE)
+  }
+
+  private AccountEntity persistAccount(String username, AccountStatus status) {
     return accountRepository.save(AccountEntity.builder()
         .id(UUID.randomUUID())
         .username(username)
         .passwordHash("hash-${username}")
         .passwordSalt("salt-${username}")
-        .status(AccountStatus.ACTIVE)
+        .status(status)
         .failedLoginAttempts(0)
         .build())
   }

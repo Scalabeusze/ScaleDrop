@@ -104,6 +104,28 @@ class SessionControllerTest extends WiremockTestBase {
         .andExpect(status().isUnauthorized())
   }
 
+  def "should issue jwt for active account when disabled account has same username"() {
+    given:
+    persistAccount("test_username", "disabled_password1A!", AccountStatus.DISABLED, null)
+    def activeAccount = persistAccount("test_username", "test_password1A!", AccountStatus.ACTIVE, null)
+
+    when:
+    def result = mockMvc.perform(post("${SESSION_ENDPOINT}/login")
+        .contentType(APPLICATION_JSON)
+        .content(toJson([
+          username: "test_username",
+          password: "test_password1A!"
+        ])))
+        .andExpect(status().isOk())
+        .andReturn()
+
+    def response = parseJson(result.response.contentAsString)
+    def claims = parseJwtClaims(response.jwt as String)
+
+    then:
+    claims[ACCOUNT_ID_CLAIM] == activeAccount.id.toString()
+  }
+
   private AccountEntity persistAccount(
       String username,
       String plainPassword,

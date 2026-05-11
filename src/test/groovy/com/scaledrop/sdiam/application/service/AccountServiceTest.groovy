@@ -83,6 +83,20 @@ class AccountServiceTest extends IntegrationTestBase {
     thrown(AccountConflictException)
   }
 
+  def "should create account with username from disabled account"() {
+    given:
+    def disabledAccount = persistAccount("test_username", AccountStatus.DISABLED)
+
+    when:
+    def account = accountService.createAccount(
+        new CreateAccountAPIRequest("test_username", "test_password1A!", null, null))
+
+    then:
+    account.id != disabledAccount.id
+    account.username == "test_username"
+    account.status == AccountStatus.ACTIVE
+  }
+
   def "should get account by id"() {
     given:
     def account = persistAccount("test_username")
@@ -97,6 +111,17 @@ class AccountServiceTest extends IntegrationTestBase {
 
     expect:
     accountService.getAccountByUsername("test_username").username == "test_username"
+  }
+
+  def "should not get disabled account by username"() {
+    given:
+    persistAccount("test_username", AccountStatus.DISABLED)
+
+    when:
+    accountService.getAccountByUsername("test_username")
+
+    then:
+    thrown(AccountNotFoundException)
   }
 
   def "should return all accounts"() {
@@ -192,6 +217,20 @@ class AccountServiceTest extends IntegrationTestBase {
     thrown(AccountConflictException)
   }
 
+  def "should reject enabling disabled account when username is used by active account"() {
+    given:
+    def disabledAccount = persistAccount("test_username", AccountStatus.DISABLED)
+    persistAccount("test_username", AccountStatus.ACTIVE)
+
+    when:
+    accountService.updateAccount(
+        disabledAccount.id,
+        new UpdateAccountAPIRequest(null, AccountStatus.ACTIVE, null, null, null))
+
+    then:
+    thrown(AccountConflictException)
+  }
+
   def "should update password and password updated timestamp"() {
     given:
     def account = persistAccount("test_username")
@@ -216,7 +255,6 @@ class AccountServiceTest extends IntegrationTestBase {
     accountService.deleteAccount(account.id)
 
     then:
-    accountRepository.existsByUsername(account.username)
     def deletedAccount = accountRepository.findById(account.id).orElseThrow()
     deletedAccount.status == AccountStatus.DISABLED
   }

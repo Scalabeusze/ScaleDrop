@@ -68,9 +68,8 @@ public class AccountService {
    */
   @Transactional
   public AccountEntity createAccount(CreateAccountAPIRequest req) {
-    if (accountRepository.existsByUsername(req.username())) {
-      throw new AccountConflictException(USERNAME_ALREADY_EXISTS);
-    }
+    AccountStatus status = req.status() == null ? AccountStatus.ACTIVE : req.status();
+    validateUsernameAvailable(req.username(), status, null);
 
     var passwordData = hashingService.hashPassword(req.plainPassword());
 
@@ -80,7 +79,7 @@ public class AccountService {
             .username(req.username())
             .passwordHash(passwordData.hash())
             .passwordSalt(passwordData.salt())
-            .status(req.status() == null ? AccountStatus.ACTIVE : req.status())
+            .status(status)
             .lockedUntil(req.lockedUntil())
             .build();
 
@@ -113,7 +112,7 @@ public class AccountService {
   @Transactional(readOnly = true)
   public AccountEntity getAccountByUsername(String username) {
     return accountRepository
-        .findByUsername(username)
+        .findByUsernameAndStatusNot(username, AccountStatus.DISABLED)
         .orElseThrow(() -> new AccountNotFoundException(ACCOUNT_NOT_FOUND));
   }
 
@@ -165,11 +164,11 @@ public class AccountService {
   @Transactional
   public AccountEntity updateAccount(UUID accountId, UpdateAccountAPIRequest req) {
     var accountEntity = getAccountById(accountId);
+    String updatedUsername = req.username() == null ? accountEntity.getUsername() : req.username();
+    AccountStatus updatedStatus = req.status() == null ? accountEntity.getStatus() : req.status();
+    validateUsernameAvailable(updatedUsername, updatedStatus, accountId);
 
     if (req.username() != null && !accountEntity.getUsername().equals(req.username())) {
-      if (accountRepository.existsByUsername(req.username())) {
-        throw new AccountConflictException(USERNAME_ALREADY_EXISTS);
-      }
       accountEntity.setUsername(req.username());
     }
 
@@ -253,5 +252,21 @@ public class AccountService {
       return DEFAULT_SEARCH_LIMIT;
     }
     return Math.min(limit, MAX_SEARCH_LIMIT);
+  }
+
+  private void validateUsernameAvailable(String username, AccountStatus status, UUID accountId) {
+    if (status == AccountStatus.DISABLED) {
+      return;
+    }
+
+    boolean usernameTaken =
+        accountId == null
+            ? accountRepository.existsByUsernameAndStatusNot(username, AccountStatus.DISABLED)
+            : accountRepository.existsByUsernameAndStatusNotAndIdNot(
+                username, AccountStatus.DISABLED, accountId);
+
+    if (usernameTaken) {
+      throw new AccountConflictException(USERNAME_ALREADY_EXISTS);
+    }
   }
 }

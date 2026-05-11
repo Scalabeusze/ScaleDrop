@@ -87,10 +87,26 @@ public class AuthenticationService {
 
     AccountEntity account;
     if (existingIdentity.isPresent()) {
-      account = existingIdentity.get().getAccount();
+      var identity = existingIdentity.get();
+      account = identity.getAccount();
+      // Reuse old Google identity by assigning it to the newer account
+      if (account.getStatus() == AccountStatus.DISABLED) {
+        account =
+            accountRepository
+                .findByUsernameAndStatusNot(email, AccountStatus.DISABLED)
+                .orElseGet(() -> autoProvisionAccount(email));
+        accountService.validateAccountState(this, account);
+        identity.setAccount(account);
+        identity.setEmail(email);
+        identity.setEmailVerified(true);
+        identityRepository.save(identity);
+      }
     } else {
+      // link email to a local account, if such an account exists
       account =
-          accountRepository.findByUsername(email).orElseGet(() -> autoProvisionAccount(email));
+          accountRepository
+              .findByUsernameAndStatusNot(email, AccountStatus.DISABLED)
+              .orElseGet(() -> autoProvisionAccount(email));
       accountService.validateAccountState(this, account);
       identityRepository.save(
           IdentityEntity.builder()

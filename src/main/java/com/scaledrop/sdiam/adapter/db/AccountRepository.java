@@ -25,9 +25,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface AccountRepository extends JpaRepository<AccountEntity, UUID> {
 
-  Optional<AccountEntity> findByUsername(String username);
+  Optional<AccountEntity> findByUsernameAndStatusNot(String username, AccountStatus status);
 
-  boolean existsByUsername(String username);
+  boolean existsByUsernameAndStatusNot(String username, AccountStatus status);
+
+  boolean existsByUsernameAndStatusNotAndIdNot(String username, AccountStatus status, UUID id);
 
   List<AccountEntity> findByStatusAndUsernameContainingIgnoreCaseOrderByUsernameAsc(
       AccountStatus status, String username, Pageable pageable);

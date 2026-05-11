@@ -48,7 +48,7 @@ public class AccountEntity {
   @Column(nullable = false, updatable = false)
   private UUID id;
 
-  @Column(nullable = false, length = 100, unique = true)
+  @Column(nullable = false, length = 100)
   private String username;
 
   @Column(name = "password_hash", nullable = false, length = 255)

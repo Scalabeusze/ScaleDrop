@@ -70,7 +70,8 @@ class AccountControllerTest extends WiremockTestBase {
     response.updatedAt
 
     and:
-    def savedAccount = accountRepository.findByUsername("test_username").orElseThrow()
+    def savedAccount =
+        accountRepository.findByUsernameAndStatusNot("test_username", AccountStatus.DISABLED).orElseThrow()
     savedAccount.status == AccountStatus.LOCKED
     savedAccount.passwordHash
     savedAccount.passwordSalt
@@ -117,6 +118,29 @@ class AccountControllerTest extends WiremockTestBase {
     then:
     response.type == "CONFLICT"
     response.message == "Username already exists"
+  }
+
+  def "should create account with username from disabled account"() {
+    given:
+    def disabledAccount = persistAccount("test_username", AccountStatus.DISABLED)
+
+    when:
+    def result = mockMvc.perform(post(ACCOUNTS_ENDPOINT)
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD))
+        .contentType(APPLICATION_JSON)
+        .content(toJson([
+          username     : "test_username",
+          plainPassword: PASSWORD
+        ])))
+        .andExpect(status().isCreated())
+        .andReturn()
+
+    def response = parseJson(result.response.contentAsString)
+
+    then:
+    response.id != disabledAccount.id.toString()
+    response.username == "test_username"
+    response.status == "ACTIVE"
   }
 
   def "should list accounts"() {
@@ -315,6 +339,28 @@ class AccountControllerTest extends WiremockTestBase {
     response.message == "Username already exists"
   }
 
+  def "should reject enabling disabled account when username is used by active account"() {
+    given:
+    def disabledAccount = persistAccount("test_username", AccountStatus.DISABLED)
+    persistAccount("test_username", AccountStatus.ACTIVE)
+
+    when:
+    def result = mockMvc.perform(put("${ACCOUNTS_ENDPOINT}/${disabledAccount.id}")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD))
+        .contentType(APPLICATION_JSON)
+        .content(toJson([
+          status: "ACTIVE"
+        ])))
+        .andExpect(status().isConflict())
+        .andReturn()
+
+    def response = parseJson(result.response.contentAsString)
+
+    then:
+    response.type == "CONFLICT"
+    response.message == "Username already exists"
+  }
+
   def "should reject invalid update account request"() {
     given:
     def account = persistAccount("test_username")
@@ -432,7 +478,6 @@ class AccountControllerTest extends WiremockTestBase {
         .andExpect(status().isNoContent())
 
     then:
-    accountRepository.existsByUsername(account.username)
     def deletedAccount = accountRepository.findById(account.id).orElseThrow()
     deletedAccount.status == AccountStatus.DISABLED
   }

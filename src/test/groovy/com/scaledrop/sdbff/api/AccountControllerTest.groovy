@@ -40,6 +40,29 @@ class AccountControllerTest extends WiremockTestBase {
       response.jwt == generatedJwt
   }
 
+  def "should return 401 when login fails"() {
+    given: "A valid google ID token"
+      def googleToken = "invalid.google.token"
+
+    and: "IAM Service is stubbed to return a JWT for this token"
+      stubFor(post(urlEqualTo("/api/v1/login/google"))
+          .withRequestBody(matchingJsonPath('$.googleIdToken', equalTo(googleToken)))
+          .willReturn(aResponse().withStatus(401)))
+
+    when: "Performing login request"
+      def result = mockMvc.perform(MockMvcRequestBuilders.post(LOGIN_ENDPOINT)
+          .contentType(MediaType.APPLICATION_JSON)
+          .content("""{"googleIdToken": "${googleToken}"}"""))
+          .andExpect(status().isUnauthorized())
+          .andReturn()
+
+    then: "exception message is returned"
+      def response = parseJson(result.response.contentAsString)
+      response.uuid != null
+      response.message != null
+      response.type == "UNAUTHORIZED"
+  }
+
   def "should fetch current user account details"() {
     given: "An authenticated user ID"
       def userId = UUID.randomUUID()
@@ -75,6 +98,58 @@ class AccountControllerTest extends WiremockTestBase {
       response.firstName == "John"
       response.lastName == "Doe"
       response.avatarUrl == "https://avatar.com/john"
+  }
+
+  def "should return not found when account not found"() {
+    given: "An authenticated user ID"
+      def userId = UUID.randomUUID()
+
+    and: "IAM Service is stubbed to return account details for this ID"
+      stubFor(get(urlEqualTo("/api/v1/accounts/${userId}"))
+          .willReturn(aResponse()
+              .withStatus(404)))
+
+    when: "Fetching account endpoint as the authenticated user"
+      def result = mockMvc.perform(MockMvcRequestBuilders.get(ACCOUNT_ENDPOINT)
+          .with(jwt()
+              .authorities(new SimpleGrantedAuthority("ROLE_USER"))
+              .jwt { it.subject(userId.toString()) }
+          )
+          .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().isNotFound())
+          .andReturn()
+
+    then: "exception message is returned"
+      def response = parseJson(result.response.contentAsString)
+      response.uuid != null
+      response.message != null
+      response.type == "NOT_FOUND"
+  }
+
+  def "should return external server error when IAM fails"() {
+    given: "An authenticated user ID"
+      def userId = UUID.randomUUID()
+
+    and: "IAM Service is stubbed to return account details for this ID"
+      stubFor(get(urlEqualTo("/api/v1/accounts/${userId}"))
+          .willReturn(aResponse()
+              .withStatus(500)))
+
+    when: "Fetching account endpoint as the authenticated user"
+      def result = mockMvc.perform(MockMvcRequestBuilders.get(ACCOUNT_ENDPOINT)
+          .with(jwt()
+              .authorities(new SimpleGrantedAuthority("ROLE_USER"))
+              .jwt { it.subject(userId.toString()) }
+          )
+          .contentType(MediaType.APPLICATION_JSON))
+          .andExpect(status().isInternalServerError())
+          .andReturn()
+
+    then: "exception message is returned"
+      def response = parseJson(result.response.contentAsString)
+      response.uuid != null
+      response.message != null
+      response.type == "EXTERNAL_SERVER_ERROR"
   }
 
   def "should update current user account details"() {

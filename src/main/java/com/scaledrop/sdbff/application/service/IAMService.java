@@ -1,6 +1,8 @@
 package com.scaledrop.sdbff.application.service;
 
+import com.scaledrop.sdbff.adapter.api.model.account.request.UpdateAccountAPIRequest;
 import com.scaledrop.sdbff.adapter.client.iam.model.request.IAMLoginRequest;
+import com.scaledrop.sdbff.adapter.client.iam.model.request.IAMUpdateAccountRequest;
 import com.scaledrop.sdbff.adapter.client.iam.model.response.IAMAccountResponse;
 import com.scaledrop.sdbff.application.port.in.IAMUseCase;
 import com.scaledrop.sdbff.application.port.out.IAMRepository;
@@ -24,5 +26,10 @@ public class IAMService implements IAMUseCase {
   @Override
   public IAMAccountResponse getAccountById(UUID accountId) {
     return iamRepository.getAccountById(accountId);
+  }
+
+  @Override
+  public IAMAccountResponse updateAccount(UUID accountId, UpdateAccountAPIRequest request) {
+    return iamRepository.updateAccount(accountId, IAMUpdateAccountRequest.from(request));
   }
 }

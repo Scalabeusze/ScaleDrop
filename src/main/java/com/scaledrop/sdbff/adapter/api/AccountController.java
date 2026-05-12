@@ -6,6 +6,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import com.scaledrop.sdbff.adapter.api.mapper.AccountMapper;
 import com.scaledrop.sdbff.adapter.api.model.account.request.LoginAPIRequest;
+import com.scaledrop.sdbff.adapter.api.model.account.request.UpdateAccountAPIRequest;
 import com.scaledrop.sdbff.adapter.api.model.account.response.AccountAPIResponse;
 import com.scaledrop.sdbff.adapter.api.model.iam.response.JwtAPIResponse;
 import com.scaledrop.sdbff.application.component.UserContext;
@@ -13,6 +14,7 @@ import com.scaledrop.sdbff.application.port.in.IAMUseCase;
 import com.scaledrop.sdbff.configuration.annotations.DefaultApiExceptionResponses;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -28,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @RestController
 @RequiredArgsConstructor
+@Tag(name = "Accounts", description = "Account management controller")
 public class AccountController {
 
   private final IAMUseCase iamUseCase;
@@ -61,5 +66,21 @@ public class AccountController {
     UUID userId = userContext.getUserId();
     log.info("[ACCOUNT] Received fetch account request for user: {}", userId);
     return accountMapper.toAccountResponse(iamUseCase.getAccountById(userId));
+  }
+
+  @PutMapping(
+      value = API_V1_PREFIX + "/account",
+      consumes = APPLICATION_JSON_VALUE,
+      produces = APPLICATION_JSON_VALUE)
+  @Operation(
+      summary = "Update account information",
+      description = "Updates account information for the currently authenticated user")
+  @DefaultApiExceptionResponses
+  @SecurityRequirement(name = BEARER_JWT)
+  @ResponseStatus(HttpStatus.OK)
+  public AccountAPIResponse updateAccount(@Valid @RequestBody UpdateAccountAPIRequest request) {
+    UUID userId = userContext.getUserId();
+    log.info("[ACCOUNT] Received update account request for user: {}", userId);
+    return accountMapper.toAccountResponse(iamUseCase.updateAccount(userId, request));
   }
 }

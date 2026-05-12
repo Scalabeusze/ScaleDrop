@@ -34,7 +34,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class CustomBasicAuthenticationEntryPoint extends BasicAuthenticationEntryPoint {
 
-  public static final String REALM_NAME = "CK_EV_REALM";
+  public static final String REALM_NAME = "SD_REALM";
   private static final String BASIC_REALM = "Basic realm=";
 
   private final ObjectMapper objectMapper;

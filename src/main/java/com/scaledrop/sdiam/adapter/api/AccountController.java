@@ -20,15 +20,12 @@ import static com.scaledrop.sdiam.configuration.Constants.API_V1_PREFIX;
 import static com.scaledrop.sdiam.configuration.Constants.BASIC_AUTH;
 
 import com.scaledrop.sdiam.adapter.api.mapper.AccountResponseMapper;
-import com.scaledrop.sdiam.adapter.api.model.request.CreateAccountAPIRequest;
 import com.scaledrop.sdiam.adapter.api.model.request.UpdateAccountAPIRequest;
-import com.scaledrop.sdiam.adapter.api.model.request.UpdatePasswordAPIRequest;
 import com.scaledrop.sdiam.adapter.api.model.response.AccountAPIResponse;
 import com.scaledrop.sdiam.adapter.api.model.response.AccountSearchAPIResponse;
 import com.scaledrop.sdiam.application.service.AccountService;
 import com.scaledrop.sdiam.configuration.annotations.DefaultApiExceptionResponses;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -37,14 +34,13 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -52,6 +48,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
 @Validated
 @RestController
 @RequiredArgsConstructor
@@ -64,51 +61,21 @@ public class AccountController {
   private final AccountService accountService;
   private final AccountResponseMapper accountResponseMapper;
 
-  @PostMapping(
-      consumes = MediaType.APPLICATION_JSON_VALUE,
-      produces = MediaType.APPLICATION_JSON_VALUE)
-  @Operation(summary = "Create account", description = "Creates a new account")
-  @SecurityRequirement(name = BASIC_AUTH)
-  @DefaultApiExceptionResponses
-  @ApiResponse(responseCode = "201", description = "Successfully created account")
-  @ResponseStatus(HttpStatus.CREATED)
-  public AccountAPIResponse createAccount(@Valid @RequestBody CreateAccountAPIRequest request) {
-    return accountResponseMapper.toResponse(accountService.createAccount(request));
-  }
-
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-  @Operation(summary = "List accounts", description = "Fetches all accounts")
+  @Operation(summary = "Get account by username", description = "Fetches account by username")
   @SecurityRequirement(name = BASIC_AUTH)
   @DefaultApiExceptionResponses
-  @ApiResponse(responseCode = "200", description = "Successfully fetched accounts")
-  @ResponseStatus(HttpStatus.OK)
-  public List<AccountAPIResponse> getAccounts() {
-    return accountService.getAccounts().stream().map(accountResponseMapper::toResponse).toList();
-  }
-
-  @GetMapping(value = "/search", produces = MediaType.APPLICATION_JSON_VALUE)
-  @Operation(
-      summary = "Search accounts",
-      description = "Searches active accounts for share-recipient autocomplete")
-  @SecurityRequirement(name = BASIC_AUTH)
-  @DefaultApiExceptionResponses
-  @ApiResponse(responseCode = "200", description = "Successfully searched accounts")
-  @ResponseStatus(HttpStatus.OK)
-  public List<AccountSearchAPIResponse> searchAccounts(
-      @RequestParam("query") @NotBlank @Size(min = 2, max = 100) String query,
-      @RequestParam(value = "limit", required = false) Integer limit) {
-    return accountService.searchAccounts(query, limit).stream()
-        .map(accountResponseMapper::toSearchResponse)
-        .toList();
+  public AccountAPIResponse getByUsername(@RequestParam(value = "username") String username) {
+    log.info("[ACCOUNT] Received request to get account by username: {}", username);
+    return accountResponseMapper.toResponse(accountService.getAccountByUsername(username));
   }
 
   @GetMapping(value = "/{accountId}", produces = MediaType.APPLICATION_JSON_VALUE)
-  @Operation(summary = "Get account", description = "Fetches an account by id")
+  @Operation(summary = "Get account by ID", description = "Fetches an account by its unique UUID")
   @SecurityRequirement(name = BASIC_AUTH)
   @DefaultApiExceptionResponses
-  @ApiResponse(responseCode = "200", description = "Successfully fetched account")
-  @ResponseStatus(HttpStatus.OK)
   public AccountAPIResponse getAccount(@PathVariable UUID accountId) {
+    log.info("[ACCOUNT] Received request to get account by ID: {}", accountId);
     return accountResponseMapper.toResponse(accountService.getAccountById(accountId));
   }
 
@@ -116,37 +83,39 @@ public class AccountController {
       value = "/{accountId}",
       consumes = MediaType.APPLICATION_JSON_VALUE,
       produces = MediaType.APPLICATION_JSON_VALUE)
-  @Operation(summary = "Update account", description = "Updates non-password account fields")
+  @Operation(
+      summary = "Update account",
+      description = "Updates profile fields (firstName, lastName, avatarUrl)")
   @SecurityRequirement(name = BASIC_AUTH)
   @DefaultApiExceptionResponses
-  @ApiResponse(responseCode = "200", description = "Successfully updated account")
-  @ResponseStatus(HttpStatus.OK)
   public AccountAPIResponse updateAccount(
       @PathVariable UUID accountId, @Valid @RequestBody UpdateAccountAPIRequest request) {
+    log.info("[ACCOUNT] Received request to update: {}", accountId);
     return accountResponseMapper.toResponse(accountService.updateAccount(accountId, request));
   }
 
-  @PatchMapping(
-      value = "/{accountId}/password",
-      consumes = MediaType.APPLICATION_JSON_VALUE,
-      produces = MediaType.APPLICATION_JSON_VALUE)
-  @Operation(summary = "Update password", description = "Changes account password")
-  @SecurityRequirement(name = BASIC_AUTH)
-  @DefaultApiExceptionResponses
-  @ApiResponse(responseCode = "200", description = "Successfully updated password")
-  @ResponseStatus(HttpStatus.OK)
-  public AccountAPIResponse updatePassword(
-      @PathVariable UUID accountId, @Valid @RequestBody UpdatePasswordAPIRequest request) {
-    return accountResponseMapper.toResponse(accountService.updatePassword(accountId, request));
-  }
-
   @DeleteMapping("/{accountId}")
-  @Operation(summary = "Delete account", description = "Deletes an account by id")
+  @Operation(
+      summary = "Deactivate account",
+      description = "Logically deactivates an account by setting status to DISABLED")
   @SecurityRequirement(name = BASIC_AUTH)
   @DefaultApiExceptionResponses
-  @ApiResponse(responseCode = "204", description = "Successfully deleted account")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void deleteAccount(@PathVariable UUID accountId) {
-    accountService.deleteAccount(accountId);
+    log.info("[ACCOUNT] Received request to deactivate account: {}", accountId);
+    accountService.deactivateAccount(accountId);
+  }
+
+  @GetMapping(value = "/search", produces = MediaType.APPLICATION_JSON_VALUE)
+  @Operation(summary = "Search accounts", description = "Autocomplete for user search")
+  @SecurityRequirement(name = BASIC_AUTH)
+  @DefaultApiExceptionResponses
+  public List<AccountSearchAPIResponse> searchAccounts(
+      @RequestParam("query") @NotBlank @Size(min = 2, max = 100) String query,
+      @RequestParam(value = "limit", required = false) Integer limit) {
+    log.info("[ACCOUNT] Received request to search accounts: {}", query);
+    return accountService.searchAccounts(query, limit).stream()
+        .map(accountResponseMapper::toSearchResponse)
+        .toList();
   }
 }

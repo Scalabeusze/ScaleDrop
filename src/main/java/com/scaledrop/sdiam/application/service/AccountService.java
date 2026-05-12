@@ -16,19 +16,12 @@
 
 package com.scaledrop.sdiam.application.service;
 
-import com.scaledrop.sdiam.adapter.api.model.request.CreateAccountAPIRequest;
 import com.scaledrop.sdiam.adapter.api.model.request.UpdateAccountAPIRequest;
-import com.scaledrop.sdiam.adapter.api.model.request.UpdatePasswordAPIRequest;
 import com.scaledrop.sdiam.adapter.db.AccountEntity;
 import com.scaledrop.sdiam.adapter.db.AccountEntity.AccountStatus;
 import com.scaledrop.sdiam.adapter.db.AccountRepository;
-import com.scaledrop.sdiam.configuration.exception.AccountConflictException;
 import com.scaledrop.sdiam.configuration.exception.AccountNotFoundException;
-import com.scaledrop.sdiam.configuration.exception.AccountServiceException;
 import com.scaledrop.sdiam.configuration.exception.AccountValidationException;
-import com.scaledrop.sdiam.configuration.exception.AuthenticationFailedException;
-import java.time.Clock;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -42,7 +35,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class AccountService {
 
   private static final String ACCOUNT_NOT_FOUND = "Account not found";
-  private static final String USERNAME_ALREADY_EXISTS = "Username already exists";
   private static final String SEARCH_QUERY_REQUIRED = "Search query is required";
   private static final String SEARCH_QUERY_TOO_SHORT = "Search query must be at least 2 characters";
   private static final String SEARCH_QUERY_TOO_LONG = "Search query must be at most 100 characters";
@@ -52,39 +44,6 @@ public class AccountService {
   private static final int MAX_SEARCH_QUERY_LENGTH = 100;
 
   private final AccountRepository accountRepository;
-  private final AccountPasswordService hashingService;
-  private final Clock clock;
-
-  // Create
-
-  /**
-   * Creates a brand new account
-   *
-   * @param req request payload
-   * @return newly created AccountEntity
-   * @throws AccountConflictException if username is taken
-   * @throws AccountValidationException if new password does not meet validation requirements
-   * @throws AccountServiceException if hashing service fails
-   */
-  @Transactional
-  public AccountEntity createAccount(CreateAccountAPIRequest req) {
-    AccountStatus status = req.status() == null ? AccountStatus.ACTIVE : req.status();
-    validateUsernameAvailable(req.username(), status, null);
-
-    var passwordData = hashingService.hashPassword(req.plainPassword());
-
-    var accountEntity =
-        AccountEntity.builder()
-            .id(UUID.randomUUID())
-            .username(req.username())
-            .passwordHash(passwordData.hash())
-            .passwordSalt(passwordData.salt())
-            .status(status)
-            .lockedUntil(req.lockedUntil())
-            .build();
-
-    return accountRepository.save(accountEntity);
-  }
 
   // Read
 
@@ -117,16 +76,6 @@ public class AccountService {
   }
 
   /**
-   * Gets all accounts in the system
-   *
-   * @return List of AccountEntity
-   */
-  @Transactional(readOnly = true)
-  public List<AccountEntity> getAccounts() {
-    return accountRepository.findAll();
-  }
-
-  /**
    * Searches active accounts for share-recipient autocomplete.
    *
    * @param query username fragment
@@ -151,78 +100,23 @@ public class AccountService {
   }
 
   // Update
-
-  /**
-   * Updates the user's account
-   *
-   * @param accountId UUID of the account
-   * @param req request payload
-   * @return updated AccountEntity
-   * @throws AccountNotFoundException if accountId does not exist
-   * @throws AccountConflictException if username is taken
-   */
   @Transactional
-  public AccountEntity updateAccount(UUID accountId, UpdateAccountAPIRequest req) {
+  public AccountEntity updateAccount(UUID accountId, UpdateAccountAPIRequest request) {
     var accountEntity = getAccountById(accountId);
-    String updatedUsername = req.username() == null ? accountEntity.getUsername() : req.username();
-    AccountStatus updatedStatus = req.status() == null ? accountEntity.getStatus() : req.status();
-    validateUsernameAvailable(updatedUsername, updatedStatus, accountId);
-
-    if (req.username() != null && !accountEntity.getUsername().equals(req.username())) {
-      accountEntity.setUsername(req.username());
-    }
-
-    if (req.status() != null) {
-      accountEntity.setStatus(req.status());
-    }
-
-    if (req.lastLoginAt() != null) {
-      accountEntity.setLastLoginAt(req.lastLoginAt());
-    }
-
-    if (req.failedLoginAttempts() != null) {
-      accountEntity.setFailedLoginAttempts(req.failedLoginAttempts());
-    }
-
-    if (req.lockedUntil() != null) {
-      accountEntity.setLockedUntil(req.lockedUntil());
-    }
-
-    return accountRepository.save(accountEntity);
-  }
-
-  /**
-   * Updates the user's password
-   *
-   * @param accountId UUID of the account
-   * @param req request payload
-   * @return updated AccountEntity
-   * @throws AccountNotFoundException if accountId does not exist
-   * @throws AccountValidationException if new password does not meet validation requirements
-   * @throws AccountServiceException if hashing service fails
-   */
-  @Transactional
-  public AccountEntity updatePassword(UUID accountId, UpdatePasswordAPIRequest req) {
-    var accountEntity = getAccountById(accountId);
-    var passwordData = hashingService.hashPassword(req.plainPassword());
-
-    accountEntity.setPasswordHash(passwordData.hash());
-    accountEntity.setPasswordSalt(passwordData.salt());
-    accountEntity.setPasswordUpdatedAt(OffsetDateTime.now(clock));
-
+    accountEntity.apply(request);
     return accountRepository.save(accountEntity);
   }
 
   // Delete
 
   /**
-   * Deletes and account
+   * Deactivates and account
    *
    * @param accountId UUID of the account
    * @throws AccountNotFoundException if accountId does not exist
    */
   @Transactional
-  public void deleteAccount(UUID accountId) {
+  public void deactivateAccount(UUID accountId) {
     var accountEntity = getAccountById(accountId);
     accountEntity.setStatus(AccountStatus.DISABLED);
     accountRepository.save(accountEntity);
@@ -230,43 +124,10 @@ public class AccountService {
 
   // Utility
 
-  /**
-   * Validates account expiry status
-   *
-   * @param authenticationService
-   * @param account
-   */
-  void validateAccountState(AuthenticationService authenticationService, AccountEntity account) {
-    if (account.getStatus() == AccountStatus.DISABLED) {
-      throw new AuthenticationFailedException(AuthenticationService.ACCOUNT_DISABLED);
-    }
-    if (account.getStatus() == AccountStatus.LOCKED
-        && account.getLockedUntil() != null
-        && account.getLockedUntil().isAfter(OffsetDateTime.now(authenticationService.clock))) {
-      throw new AuthenticationFailedException(AuthenticationService.ACCOUNT_LOCKED);
-    }
-  }
-
   private int resolveSearchLimit(Integer limit) {
     if (limit == null || limit < 1) {
       return DEFAULT_SEARCH_LIMIT;
     }
     return Math.min(limit, MAX_SEARCH_LIMIT);
-  }
-
-  private void validateUsernameAvailable(String username, AccountStatus status, UUID accountId) {
-    if (status == AccountStatus.DISABLED) {
-      return;
-    }
-
-    boolean usernameTaken =
-        accountId == null
-            ? accountRepository.existsByUsernameAndStatusNot(username, AccountStatus.DISABLED)
-            : accountRepository.existsByUsernameAndStatusNotAndIdNot(
-                username, AccountStatus.DISABLED, accountId);
-
-    if (usernameTaken) {
-      throw new AccountConflictException(USERNAME_ALREADY_EXISTS);
-    }
   }
 }

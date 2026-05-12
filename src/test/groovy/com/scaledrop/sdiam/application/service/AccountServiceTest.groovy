@@ -17,16 +17,12 @@
 package com.scaledrop.sdiam.application.service
 
 import com.scaledrop.sdiam.IntegrationTestBase
-import com.scaledrop.sdiam.adapter.api.model.request.CreateAccountAPIRequest
 import com.scaledrop.sdiam.adapter.api.model.request.UpdateAccountAPIRequest
-import com.scaledrop.sdiam.adapter.api.model.request.UpdatePasswordAPIRequest
 import com.scaledrop.sdiam.adapter.db.AccountEntity
 import com.scaledrop.sdiam.adapter.db.AccountEntity.AccountStatus
 import com.scaledrop.sdiam.adapter.db.AccountRepository
-import com.scaledrop.sdiam.configuration.exception.AccountConflictException
 import com.scaledrop.sdiam.configuration.exception.AccountNotFoundException
 import com.scaledrop.sdiam.configuration.exception.AccountValidationException
-import java.time.OffsetDateTime
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.transaction.annotation.Transactional
 
@@ -38,64 +34,6 @@ class AccountServiceTest extends IntegrationTestBase {
 
   @Autowired
   private AccountRepository accountRepository
-
-  def "should create account with active status by default"() {
-    when:
-    def account = accountService.createAccount(
-        new CreateAccountAPIRequest("test_username", "test_password1A!", null, null))
-
-    then:
-    account.id != null
-    account.username == "test_username"
-    account.status == AccountStatus.ACTIVE
-    account.failedLoginAttempts == 0
-    account.passwordHash
-    account.passwordSalt
-
-    and:
-    def persistedAccount = accountRepository.findById(account.id).orElseThrow()
-    persistedAccount.username == "test_username"
-    persistedAccount.status == AccountStatus.ACTIVE
-  }
-
-  def "should create account with explicit status"() {
-    when:
-    def account = accountService.createAccount(
-        new CreateAccountAPIRequest(
-        "test_username",
-        "test_password1A!",
-        AccountStatus.LOCKED,
-        OffsetDateTime.parse("2026-04-20T09:30:00Z")))
-
-    then:
-    account.status == AccountStatus.LOCKED
-    account.lockedUntil == OffsetDateTime.parse("2026-04-20T09:30:00Z")
-  }
-
-  def "should reject duplicate username during create"() {
-    given:
-    persistAccount("test_username")
-
-    when:
-    accountService.createAccount(new CreateAccountAPIRequest("test_username", "test_password1A!", null, null))
-
-    then:
-    thrown(AccountConflictException)
-  }
-
-  def "should create account with username from disabled account"() {
-    given:
-    def disabledAccount = persistAccount("test_username", AccountStatus.DISABLED)
-
-    when:
-    def account = accountService.createAccount(
-        new CreateAccountAPIRequest("test_username", "test_password1A!", null, null))
-
-    then:
-    account.id != disabledAccount.id
-    account.username == "test_username"
-    account.status == AccountStatus.ACTIVE
-  }
 
   def "should get account by id"() {
     given:
@@ -122,22 +60,6 @@ class AccountServiceTest extends IntegrationTestBase {
 
     then:
     thrown(AccountNotFoundException)
-  }
-
-  def "should return all accounts"() {
-    given:
-    persistAccount("test_username")
-    persistAccount("test_username1")
-
-    when:
-    def accounts = accountService.getAccounts()
-
-    then:
-    accounts*.username.containsAll([
-      "test_username",
-      "test_username1"
-    ])
-    accounts.size() == 2
   }
 
   def "should search active accounts by username sorted by username"() {
@@ -180,71 +102,33 @@ class AccountServiceTest extends IntegrationTestBase {
     query << [null, " ", "a", "a" * 101]
   }
 
-  def "should update only provided fields"() {
-    given:
-    def account = persistAccount("test_username")
-    def lastLoginAt = account.lastLoginAt
+  def "should update only provided profile fields"() {
+    given: "An existing account with initial profile data"
+    def initialEmail = "marian@swiatwgkiepskich.com"
+    def account = accountRepository.save(AccountEntity.builder()
+        .id(UUID.randomUUID())
+        .username(initialEmail)
+        .firstName("Marian")
+        .lastName("Pazdzioch")
+        .status(AccountStatus.ACTIVE)
+        .build())
 
-    when:
-    def updatedAccount = accountService.updateAccount(
-        account.id,
-        new UpdateAccountAPIRequest(
-        "test_username1",
-        AccountStatus.DISABLED,
-        2,
-        OffsetDateTime.parse("2026-04-20T11:00:00Z"),
-        null))
+    when: "Updating only the first name and adding an avatar"
+    def request = new UpdateAccountAPIRequest(
+        "Marek",           // New first name
+        null,              // Last name remains unchanged
+        "https://avatar.io" // New avatar URL
+        )
+    def updatedAccount = accountService.updateAccount(account.id, request)
 
-    then:
-    updatedAccount.username == "test_username1"
-    updatedAccount.status == AccountStatus.DISABLED
-    updatedAccount.failedLoginAttempts == 2
-    updatedAccount.lockedUntil == OffsetDateTime.parse("2026-04-20T11:00:00Z")
-    updatedAccount.lastLoginAt == lastLoginAt
-  }
+    then: "Only requested fields are updated"
+    updatedAccount.firstName == "Marek"
+    updatedAccount.avatarUrl == "https://avatar.io"
 
-  def "should reject duplicate username during update"() {
-    given:
-    def account = persistAccount("test_username")
-    persistAccount("test_username1")
-
-    when:
-    accountService.updateAccount(
-        account.id,
-        new UpdateAccountAPIRequest("test_username1", null, null, null, null))
-
-    then:
-    thrown(AccountConflictException)
-  }
-
-  def "should reject enabling disabled account when username is used by active account"() {
-    given:
-    def disabledAccount = persistAccount("test_username", AccountStatus.DISABLED)
-    persistAccount("test_username", AccountStatus.ACTIVE)
-
-    when:
-    accountService.updateAccount(
-        disabledAccount.id,
-        new UpdateAccountAPIRequest(null, AccountStatus.ACTIVE, null, null, null))
-
-    then:
-    thrown(AccountConflictException)
-  }
-
-  def "should update password and password updated timestamp"() {
-    given:
-    def account = persistAccount("test_username")
-    def previousHash = account.passwordHash
-    def previousSalt = account.passwordSalt
-
-    when:
-    def updatedAccount =
-        accountService.updatePassword(account.id, new UpdatePasswordAPIRequest("test_password2A!"))
-
-    then:
-    updatedAccount.passwordHash != previousHash
-    updatedAccount.passwordSalt != previousSalt
-    updatedAccount.passwordUpdatedAt.toInstant() == OffsetDateTime.parse("2022-10-10T15:00:00Z").toInstant()
+    and: "Other fields remain untouched"
+    updatedAccount.lastName == "Pazdzioch"
+    updatedAccount.username == initialEmail
+    updatedAccount.status == AccountStatus.ACTIVE
   }
 
   def "should disable account instead of delete"() {
@@ -252,7 +136,7 @@ class AccountServiceTest extends IntegrationTestBase {
     def account = persistAccount("test_username")
 
     when:
-    accountService.deleteAccount(account.id)
+    accountService.deactivateAccount(account.id)
 
     then:
     def deletedAccount = accountRepository.findById(account.id).orElseThrow()
@@ -283,10 +167,7 @@ class AccountServiceTest extends IntegrationTestBase {
     return accountRepository.save(AccountEntity.builder()
         .id(UUID.randomUUID())
         .username(username)
-        .passwordHash("hash-${username}")
-        .passwordSalt("salt-${username}")
         .status(status)
-        .failedLoginAttempts(0)
         .build())
   }
 }

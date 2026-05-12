@@ -32,14 +32,6 @@ spring:
         jdbc:
           time_zone: UTC
   main.banner-mode: off
-  spring:
-  security:
-    oauth2:
-      client:
-        registration:
-          google:
-            client-id: ${GOOGLE_CLIENT_ID}
-            client-secret: ${GOOGLE_SECRET}
 
 server:
   port: 7300
@@ -72,6 +64,8 @@ security:
     internal:
       username: scaledrop
       password: ${SECURITY_ACCESS_INTERNAL_PASSWORD:scaledrop}
+  google:
+    client-id: ${GOOGLE_CLIENT_ID}
 
 springdoc:
   use-fqn: true

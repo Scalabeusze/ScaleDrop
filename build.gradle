@@ -84,6 +84,7 @@ dependencies {
   implementation "io.jsonwebtoken:jjwt-api:${jsonWebTokenVersion}"
   runtimeOnly "io.jsonwebtoken:jjwt-impl:${jsonWebTokenVersion}"
   runtimeOnly "io.jsonwebtoken:jjwt-jackson:${jsonWebTokenVersion}"
+  implementation "com.google.api-client:google-api-client:${googleApiClientVersion}"
 
   // Database
   implementation "org.flywaydb:flyway-core:${flywayVersion}"

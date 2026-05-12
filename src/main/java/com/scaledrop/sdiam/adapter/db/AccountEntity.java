@@ -16,6 +16,7 @@
 
 package com.scaledrop.sdiam.adapter.db;
 
+import com.scaledrop.sdiam.adapter.api.model.request.UpdateAccountAPIRequest;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -24,6 +25,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -48,32 +50,25 @@ public class AccountEntity {
   @Column(nullable = false, updatable = false)
   private UUID id;
 
-  @Column(nullable = false, length = 100)
+  @Column(nullable = false, unique = true, length = 100)
   private String username;
 
-  @Column(name = "password_hash", nullable = false, length = 255)
-  private String passwordHash;
+  @Column(name = "first_name")
+  private String firstName;
 
-  @Column(name = "password_salt", nullable = false, length = 255)
-  private String passwordSalt;
+  @Column(name = "last_name")
+  private String lastName;
+
+  @Column(name = "avatar_url")
+  private String avatarUrl;
 
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 32)
   @Builder.Default
   private AccountStatus status = AccountStatus.ACTIVE;
 
-  @Column(name = "password_updated_at")
-  private OffsetDateTime passwordUpdatedAt;
-
   @Column(name = "last_login_at")
   private OffsetDateTime lastLoginAt;
-
-  @Column(name = "failed_login_attempts", nullable = false)
-  @Builder.Default
-  private Integer failedLoginAttempts = 0;
-
-  @Column(name = "locked_until")
-  private OffsetDateTime lockedUntil;
 
   @CreatedDate
   @Column(name = "created_at", nullable = false, updatable = false)
@@ -87,5 +82,11 @@ public class AccountEntity {
     ACTIVE,
     DISABLED,
     LOCKED
+  }
+
+  public void apply(UpdateAccountAPIRequest request) {
+    firstName = Optional.ofNullable(request.getFirstName()).orElse(firstName);
+    lastName = Optional.ofNullable(request.getLastName()).orElse(lastName);
+    avatarUrl = Optional.ofNullable(request.getAvatarUrl()).orElse(avatarUrl);
   }
 }

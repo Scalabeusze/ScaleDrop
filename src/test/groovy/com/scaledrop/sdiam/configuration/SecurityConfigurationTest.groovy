@@ -27,7 +27,7 @@ class SecurityConfigurationTest extends WiremockTestBase {
   private static final String WRONG_USER = "wrongUser"
   private static final String WRONG_PASSWORD = "wrongPassword"
   private static final String SWAGGER_PATH = "/swagger-ui/index.html"
-  private static final String ACCOUNTS_ENDPOINT = "/api/v1/accounts"
+  private static final String ACCOUNTS_ENDPOINT = "/api/v1/accounts/0bb3fd76-170a-4fca-9ee7-f033c539dbed"
   private static final String ACCOUNT_SEARCH_ENDPOINT = "/api/v1/accounts/search"
 
   // ACTUATOR
@@ -83,7 +83,7 @@ class SecurityConfigurationTest extends WiremockTestBase {
     expect:
     mockMvc.perform(get(ACCOUNTS_ENDPOINT)
         .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
-        .andExpect(status().isOk())
+        .andExpect(status().isNotFound()) // as long as its authorized it dont matter
   }
 
   def 'should not allow access to account search endpoint without credentials'() {

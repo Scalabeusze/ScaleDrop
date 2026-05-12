@@ -16,6 +16,8 @@
 
 package com.scaledrop.sdiam.application.service
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier
 import com.scaledrop.sdiam.IntegrationTestBase
 import com.scaledrop.sdiam.adapter.db.AccountEntity
 import com.scaledrop.sdiam.adapter.db.AccountEntity.AccountStatus
@@ -25,10 +27,8 @@ import com.scaledrop.sdiam.adapter.db.IdentityProvider
 import com.scaledrop.sdiam.adapter.db.IdentityRepository
 import com.scaledrop.sdiam.configuration.exception.AuthenticationFailedException
 import java.time.OffsetDateTime
-import java.util.UUID
+import org.spockframework.spring.SpringBean
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.security.core.authority.SimpleGrantedAuthority
-import org.springframework.security.oauth2.core.user.DefaultOAuth2User
 import org.springframework.transaction.annotation.Transactional
 
 @Transactional
@@ -43,127 +43,169 @@ class AuthenticationServiceTest extends IntegrationTestBase {
   @Autowired
   private IdentityRepository identityRepository
 
-  @Autowired
-  private AccountPasswordService accountPasswordService
+  @SpringBean
+  private GoogleIdTokenVerifier googleIdTokenVerifier = Mock()
 
-  def "should link google identity to existing account matched by verified email"() {
+  def "should authenticate successfully for existing identity"() {
     given:
-    def account = persistAccount("user@example.com")
-    def oauth2User = googleUser("google-subject", "user@example.com", true)
+    def email = "existing@example.com"
+    def subject = "google-sub-123"
+    def tokenString = "valid-token-string"
+
+    def account = persistAccount(email)
+    persistGoogleIdentity(account, subject, email)
+
+    googleIdTokenVerifier.verify(tokenString) >> mockGoogleToken(subject, email, true)
 
     when:
-    def principal = authService.authGoogle(oauth2User)
+    def principal = authService.authGoogleWithToken(tokenString)
 
-    then:
+    then: "Principal is returned successfully"
     principal.accountId == account.id
     principal.provider == IdentityProvider.GOOGLE
 
-    and:
-    def identity = identityRepository.findByProviderAndProviderSubject(IdentityProvider.GOOGLE, "google-subject").orElseThrow()
-    identity.account.id == account.id
-    identity.email == "user@example.com"
+    and: "Last login date is updated"
+    def updatedAccount = accountRepository.findById(account.id).get()
+    !updatedAccount.lastLoginAt.toInstant().isBefore(OffsetDateTime.parse("2022-10-10T15:00:00Z").toInstant())
   }
 
-  def "should auto provision account for first google login"() {
+  def "should link new google identity to existing account by email"() {
     given:
-    def oauth2User = googleUser("new-google-subject", "new-user@example.com", true)
+    def email = "match-me@example.com"
+    def subject = "new-google-sub-456"
+    def tokenString = "valid-token-string"
+
+    // Account exists (e.g. from previous local registration), but no Google Identity
+    def account = persistAccount(email)
+
+    googleIdTokenVerifier.verify(tokenString) >> mockGoogleToken(subject, email, true)
 
     when:
-    def principal = authService.authGoogle(oauth2User)
+    def principal = authService.authGoogleWithToken(tokenString)
 
-    then:
-    principal.username == "new-user@example.com"
-    principal.provider == IdentityProvider.GOOGLE
+    then: "Principal is linked to existing account"
+    principal.accountId == account.id
 
-    and:
-    def persistedAccount =
-        accountRepository.findByUsernameAndStatusNot("new-user@example.com", AccountStatus.DISABLED).orElseThrow()
-    persistedAccount.id == principal.accountId
-    identityRepository.findByProviderAndProviderSubject(IdentityProvider.GOOGLE, "new-google-subject").isPresent()
+    and: "New Google Identity is saved"
+    def identity = identityRepository.findByProviderAndProviderSubject(IdentityProvider.GOOGLE, subject)
+    identity.isPresent()
+    identity.get().account.id == account.id
+    identity.get().email == email
   }
 
-  def "should link google identity to active account when disabled account has same username"() {
+  def "should auto-provision new account with profile data from google"() {
     given:
-    persistAccount("user@example.com", AccountStatus.DISABLED)
-    def activeAccount = persistAccount("user@example.com", AccountStatus.ACTIVE)
-    def oauth2User = googleUser("google-subject", "user@example.com", true)
+    def email = "new-user@example.com"
+    def subject = "google-sub-789"
+    def fName = "Tomasz"
+    def lName = "Testowy"
+    def pic = "https://avatar.url"
+    def tokenString = "valid-token"
+
+    googleIdTokenVerifier.verify(tokenString) >> mockGoogleToken(subject, email, true, fName, lName, pic)
 
     when:
-    def principal = authService.authGoogle(oauth2User)
+    authService.authGoogleWithToken(tokenString)
 
-    then:
-    principal.accountId == activeAccount.id
-    principal.provider == IdentityProvider.GOOGLE
+    then: "Account is created with all profile details"
+    def newAccount = accountRepository.findByUsernameAndStatusNot(email, AccountStatus.DISABLED).get()
+    newAccount.firstName == fName
+    newAccount.lastName == lName
+    newAccount.avatarUrl == pic
+    newAccount.status == AccountStatus.ACTIVE
 
-    and:
-    def identity = identityRepository.findByProviderAndProviderSubject(IdentityProvider.GOOGLE, "google-subject").orElseThrow()
-    identity.account.id == activeAccount.id
+    and: "Identity is correctly linked"
+    def identity = identityRepository.findByProviderAndProviderSubject(IdentityProvider.GOOGLE, subject).get()
+    identity.account.id == newAccount.id
   }
 
-  def "should move existing google identity from disabled account to active account"() {
+  def "should throw exception when google token is invalid or expired"() {
     given:
-    def disabledAccount = persistAccount("user@example.com", AccountStatus.DISABLED)
-    def activeAccount = persistAccount("user@example.com", AccountStatus.ACTIVE)
-    persistGoogleIdentity(disabledAccount, "google-subject", "user@example.com")
-    def oauth2User = googleUser("google-subject", "user@example.com", true)
+    def tokenString = "invalid-token"
+    googleIdTokenVerifier.verify(tokenString) >> null // Verifier returns null for bad tokens
 
     when:
-    def principal = authService.authGoogle(oauth2User)
+    authService.authGoogleWithToken(tokenString)
 
     then:
-    principal.accountId == activeAccount.id
-    principal.provider == IdentityProvider.GOOGLE
-
-    and:
-    def identity = identityRepository.findByProviderAndProviderSubject(IdentityProvider.GOOGLE, "google-subject").orElseThrow()
-    identity.account.id == activeAccount.id
-    identity.email == "user@example.com"
-    identity.emailVerified
+    def e = thrown(AuthenticationFailedException)
+    e.message.contains("Invalid or expired Google ID token")
   }
 
-  def "should move existing google identity from disabled account to new account"() {
+  def "should provision account even if some profile fields are missing"() {
     given:
-    def disabledAccount = persistAccount("user@example.com", AccountStatus.DISABLED)
-    persistGoogleIdentity(disabledAccount, "google-subject", "user@example.com")
-    def oauth2User = googleUser("google-subject", "user@example.com", true)
+    def email = "minimal-user@example.com"
+    def tokenString = "valid-token"
+
+    googleIdTokenVerifier.verify(tokenString) >> mockGoogleToken("sub-999", email, true, null, null, null)
 
     when:
-    def principal = authService.authGoogle(oauth2User)
+    authService.authGoogleWithToken(tokenString)
 
-    then:
-    principal.username == "user@example.com"
-    principal.provider == IdentityProvider.GOOGLE
-    principal.accountId != disabledAccount.id
-
-    and:
-    def identity = identityRepository.findByProviderAndProviderSubject(IdentityProvider.GOOGLE, "google-subject").orElseThrow()
-    identity.account.id == principal.accountId
-    identity.email == "user@example.com"
-    identity.emailVerified
+    then: "Account is created without crashing"
+    def account = accountRepository.findByUsernameAndStatusNot(email, AccountStatus.DISABLED).get()
+    account.firstName == "User"
+    account.lastName != null
+    account.lastName ==~ /\d{8}/
+    account.avatarUrl == null
   }
 
-  def "should reject google login without verified email"() {
+  def "should throw exception when subject is missing in token payload"() {
+    given:
+    def tokenString = "valid-token-string"
+    googleIdTokenVerifier.verify(tokenString) >> mockGoogleToken(null, "test@example.com", true)
+
     when:
-    authService.authGoogle(googleUser("google-subject", "user@example.com", false))
+    authService.authGoogleWithToken(tokenString)
 
     then:
-    thrown(AuthenticationFailedException)
+    def e = thrown(AuthenticationFailedException)
+    e.message.contains("Google account subject is missing")
   }
+
+  def "should throw exception when email is not verified"() {
+    given:
+    def tokenString = "valid-token-string"
+    googleIdTokenVerifier.verify(tokenString) >> mockGoogleToken("sub-123", "test@example.com", false)
+
+    when:
+    authService.authGoogleWithToken(tokenString)
+
+    then:
+    def e = thrown(AuthenticationFailedException)
+    e.message.contains("Google account email must be verified")
+  }
+
+  def "should throw exception when trying to log in to disabled account"() {
+    given:
+    def email = "banned@example.com"
+    def subject = "google-sub-123"
+    def tokenString = "valid-token-string"
+
+    def account = persistAccount(email, AccountStatus.DISABLED)
+    persistGoogleIdentity(account, subject, email)
+
+    googleIdTokenVerifier.verify(tokenString) >> mockGoogleToken(subject, email, true)
+
+    when:
+    authService.authGoogleWithToken(tokenString)
+
+    then:
+    def e = thrown(AuthenticationFailedException)
+    e.message.contains("Account is disabled")
+  }
+
+  // --- Helper Methods ---
 
   private AccountEntity persistAccount(String username) {
     return persistAccount(username, AccountStatus.ACTIVE)
   }
 
   private AccountEntity persistAccount(String username, AccountStatus status) {
-    def passwordData = accountPasswordService.hashPassword("test_password1A!")
     return accountRepository.save(AccountEntity.builder()
         .id(UUID.randomUUID())
         .username(username)
-        .passwordHash(passwordData.hash())
-        .passwordSalt(passwordData.salt())
         .status(status)
-        .failedLoginAttempts(0)
-        .lockedUntil(null)
         .lastLoginAt(OffsetDateTime.parse("2022-10-10T15:00:00Z"))
         .build())
   }
@@ -180,16 +222,24 @@ class AuthenticationServiceTest extends IntegrationTestBase {
         .build())
   }
 
-  private DefaultOAuth2User googleUser(String subject, String email, boolean emailVerified) {
-    return new DefaultOAuth2User(
-        [
-          new SimpleGrantedAuthority("ROLE_USER")
-        ] as Set,
-        [
-          sub           : subject,
-          email         : email,
-          email_verified: emailVerified
-        ],
-        "sub")
+  private GoogleIdToken mockGoogleToken(
+      String subject,
+      String email,
+      Boolean emailVerified,
+      String firstName = "John",
+      String lastName = "Doe",
+      String picture = "https://lh3.googleusercontent.com/a/avatar") {
+
+    def payload = new GoogleIdToken.Payload()
+    payload.setSubject(subject)
+    payload.setEmail(email)
+    payload.setEmailVerified(emailVerified)
+    payload.set("given_name", firstName)
+    payload.set("family_name", lastName)
+    payload.set("picture", picture)
+
+    def token = Mock(GoogleIdToken)
+    token.getPayload() >> payload
+    return token
   }
 }

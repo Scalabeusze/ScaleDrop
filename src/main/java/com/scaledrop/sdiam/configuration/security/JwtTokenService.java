@@ -25,6 +25,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import javax.crypto.SecretKey;
 import lombok.RequiredArgsConstructor;
@@ -48,12 +49,17 @@ public class JwtTokenService {
   private final TimeProvider timeProvider;
 
   public String createToken(SessionAccountPrincipal principal) {
-    Instant expiresAt = timeProvider.now().toInstant().plus(getTtl());
-    var claims = new LinkedHashMap<String, Object>();
-    claims.put(EXPIRES_AT_CLAIM, expiresAt.toString());
-    claims.put(ACCOUNT_ID_CLAIM, principal.getAccountId().toString());
+    Date now = new Date(timeProvider.now().toInstant().toEpochMilli());
+    Date expiresAt = new Date(now.getTime() + getTtl().toMillis());
 
-    return Jwts.builder().claims(claims).signWith(getSigningKey(), Jwts.SIG.HS256).compact();
+    return Jwts.builder()
+        .subject(principal.getAccountId().toString())
+        .issuedAt(now)
+        .expiration(expiresAt)
+        .claim("provider", principal.getProvider().name())
+        .claim("role", "ROLE_USER")
+        .signWith(getSigningKey(), Jwts.SIG.HS256)
+        .compact();
   }
 
   private Duration getTtl() {

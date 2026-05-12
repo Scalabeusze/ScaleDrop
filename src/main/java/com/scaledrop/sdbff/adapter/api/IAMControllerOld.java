@@ -23,7 +23,7 @@ import org.springframework.web.servlet.view.RedirectView;
 @RestController
 @RequiredArgsConstructor
 @Tag(name = "IAM", description = "Session and user accounts management")
-public class IAMController {
+public class IAMControllerOld {
 
   private final LoginUseCase loginUseCase;
   private final GoogleLoginUseCase googleLoginUseCase;

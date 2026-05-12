@@ -162,17 +162,6 @@ public class AccountService {
 
   // Utility
 
-  /**
-   * Validates account expiry status
-   *
-   * @param account
-   */
-  void validateAccountState(AccountEntity account) {
-    if (account.getStatus() == AccountStatus.DISABLED) {
-      throw new AuthenticationFailedException(AuthenticationService.ACCOUNT_DISABLED);
-    }
-  }
-
   private int resolveSearchLimit(Integer limit) {
     if (limit == null || limit < 1) {
       return DEFAULT_SEARCH_LIMIT;

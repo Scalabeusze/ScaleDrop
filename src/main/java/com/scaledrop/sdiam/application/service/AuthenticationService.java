@@ -43,7 +43,6 @@ public class AuthenticationService {
 
   private final AccountRepository accountRepository;
   private final IdentityRepository identityRepository;
-  private final AccountService accountService;
   private final GoogleIdTokenVerifier googleIdTokenVerifier;
   final Clock clock;
 
@@ -79,7 +78,7 @@ public class AuthenticationService {
             accountRepository
                 .findByUsernameAndStatusNot(email, AccountStatus.DISABLED)
                 .orElseGet(() -> autoProvisionAccount(email));
-        accountService.validateAccountState(account);
+        validateAccountState(account);
 
         identityRepository.save(
             IdentityEntity.builder()
@@ -92,7 +91,7 @@ public class AuthenticationService {
                 .build());
       }
 
-      accountService.validateAccountState(account);
+      validateAccountState(account);
       account.setLastLoginAt(OffsetDateTime.now(clock));
       account = accountRepository.save(account);
 
@@ -104,14 +103,18 @@ public class AuthenticationService {
     }
   }
 
+  private static void validateAccountState(AccountEntity account) {
+    if (account.getStatus() == AccountStatus.DISABLED) {
+      throw new AuthenticationFailedException(AuthenticationService.ACCOUNT_DISABLED);
+    }
+  }
+
   private AccountEntity autoProvisionAccount(String email) {
-    AccountEntity account =
-        accountRepository.save(
-            AccountEntity.builder()
-                .id(UUID.randomUUID())
-                .username(email)
-                .status(AccountStatus.ACTIVE)
-                .build());
-    return account;
+    return accountRepository.save(
+        AccountEntity.builder()
+            .id(UUID.randomUUID())
+            .username(email)
+            .status(AccountStatus.ACTIVE)
+            .build());
   }
 }

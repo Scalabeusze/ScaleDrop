@@ -19,5 +19,4 @@ package com.scaledrop.sdiam.adapter.api.model.response;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 
-public record JwtAPIResponse(
-    @Schema(description = "Signed JWT containing account_id and expires_at claims") @NotBlank String jwt) {}
+public record JwtAPIResponse(@Schema(description = "Signed JWT") @NotBlank String jwt) {}

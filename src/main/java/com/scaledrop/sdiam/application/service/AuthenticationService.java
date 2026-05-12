@@ -28,7 +28,9 @@ import com.scaledrop.sdiam.configuration.exception.AuthenticationFailedException
 import com.scaledrop.sdiam.configuration.security.SessionAccountPrincipal;
 import java.time.Clock;
 import java.time.OffsetDateTime;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -77,7 +79,7 @@ public class AuthenticationService {
         account =
             accountRepository
                 .findByUsernameAndStatusNot(email, AccountStatus.DISABLED)
-                .orElseGet(() -> autoProvisionAccount(email));
+                .orElseGet(() -> autoProvisionAccount(payload));
         validateAccountState(account);
 
         identityRepository.save(
@@ -109,12 +111,24 @@ public class AuthenticationService {
     }
   }
 
-  private AccountEntity autoProvisionAccount(String email) {
+  private AccountEntity autoProvisionAccount(GoogleIdToken.Payload payload) {
+    String googleFirstName = (String) payload.get("given_name");
+    String googleLastName = (String) payload.get("family_name");
+    String picture = (String) payload.get("picture");
+
     return accountRepository.save(
         AccountEntity.builder()
             .id(UUID.randomUUID())
-            .username(email)
+            .username(payload.getEmail())
+            .firstName(Objects.requireNonNullElse(googleFirstName, "User"))
+            .lastName(Objects.requireNonNullElse(googleLastName, generateRandomId()))
+            .avatarUrl((String) payload.get("picture"))
             .status(AccountStatus.ACTIVE)
             .build());
+  }
+
+  private String generateRandomId() {
+    int randomNum = ThreadLocalRandom.current().nextInt(100_000_000);
+    return String.format("%08d", randomNum);
   }
 }

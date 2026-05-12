@@ -26,7 +26,14 @@ import java.util.UUID;
 public record AccountAPIResponse(
     @Schema(example = "498ecc77-a12c-409b-a37d-12631c75896c", description = "Account identifier")
         @NotNull UUID id,
-    @Schema(example = "Tomasz Testowy", description = "Unique username for the account") @NotBlank String username,
+    @Schema(
+            example = "marian.pazdzioch@swiatwgkiepskich.com",
+            description = "Unique username for the account")
+        @NotBlank String username,
+    @Schema(example = "Marian", description = "Users first name") String firstName,
+    @Schema(example = "Pazdzioch", description = "Users last name") String lastName,
+    @Schema(example = "https://www.example.com", description = "URL to the user's avatar image")
+        String avatarUrl,
     @Schema(example = "ACTIVE", description = "Account lifecycle status") @NotNull AccountStatus status,
     @Schema(description = "Timestamp of the last successful login") OffsetDateTime lastLoginAt,
     @Schema(description = "Timestamp when the account was created") @NotNull OffsetDateTime createdAt,

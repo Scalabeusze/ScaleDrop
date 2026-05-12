@@ -93,29 +93,30 @@ class AuthenticationServiceTest extends IntegrationTestBase {
     identity.get().email == email
   }
 
-  def "should auto-provision new account and identity for completely new user"() {
+  def "should auto-provision new account with profile data from google"() {
     given:
-    def email = "brand-new@example.com"
+    def email = "new-user@example.com"
     def subject = "google-sub-789"
-    def tokenString = "valid-token-string"
+    def fName = "Tomasz"
+    def lName = "Testowy"
+    def pic = "https://avatar.url"
+    def tokenString = "valid-token"
 
-    // No account and no identity exist in the DB
-
-    googleIdTokenVerifier.verify(tokenString) >> mockGoogleToken(subject, email, true)
+    googleIdTokenVerifier.verify(tokenString) >> mockGoogleToken(subject, email, true, fName, lName, pic)
 
     when:
-    def principal = authService.authGoogleWithToken(tokenString)
+    authService.authGoogleWithToken(tokenString)
 
-    then: "New account and identity are created"
-    def newAccount = accountRepository.findByUsernameAndStatusNot(email, AccountStatus.DISABLED)
-    newAccount.isPresent()
-    newAccount.get().status == AccountStatus.ACTIVE
+    then: "Account is created with all profile details"
+    def newAccount = accountRepository.findByUsernameAndStatusNot(email, AccountStatus.DISABLED).get()
+    newAccount.firstName == fName
+    newAccount.lastName == lName
+    newAccount.avatarUrl == pic
+    newAccount.status == AccountStatus.ACTIVE
 
-    principal.accountId == newAccount.get().id
-
-    def identity = identityRepository.findByProviderAndProviderSubject(IdentityProvider.GOOGLE, subject)
-    identity.isPresent()
-    identity.get().account.id == newAccount.get().id
+    and: "Identity is correctly linked"
+    def identity = identityRepository.findByProviderAndProviderSubject(IdentityProvider.GOOGLE, subject).get()
+    identity.account.id == newAccount.id
   }
 
   def "should throw exception when google token is invalid or expired"() {
@@ -129,6 +130,24 @@ class AuthenticationServiceTest extends IntegrationTestBase {
     then:
     def e = thrown(AuthenticationFailedException)
     e.message.contains("Invalid or expired Google ID token")
+  }
+
+  def "should provision account even if some profile fields are missing"() {
+    given:
+    def email = "minimal-user@example.com"
+    def tokenString = "valid-token"
+
+    googleIdTokenVerifier.verify(tokenString) >> mockGoogleToken("sub-999", email, true, null, null, null)
+
+    when:
+    authService.authGoogleWithToken(tokenString)
+
+    then: "Account is created without crashing"
+    def account = accountRepository.findByUsernameAndStatusNot(email, AccountStatus.DISABLED).get()
+    account.firstName == "User"
+    account.lastName != null
+    account.lastName ==~ /\d{8}/
+    account.avatarUrl == null
   }
 
   def "should throw exception when subject is missing in token payload"() {
@@ -203,11 +222,21 @@ class AuthenticationServiceTest extends IntegrationTestBase {
         .build())
   }
 
-  private GoogleIdToken mockGoogleToken(String subject, String email, Boolean emailVerified) {
+  private GoogleIdToken mockGoogleToken(
+      String subject,
+      String email,
+      Boolean emailVerified,
+      String firstName = "John",
+      String lastName = "Doe",
+      String picture = "https://lh3.googleusercontent.com/a/avatar") {
+
     def payload = new GoogleIdToken.Payload()
     payload.setSubject(subject)
     payload.setEmail(email)
     payload.setEmailVerified(emailVerified)
+    payload.set("given_name", firstName)
+    payload.set("family_name", lastName)
+    payload.set("picture", picture)
 
     def token = Mock(GoogleIdToken)
     token.getPayload() >> payload

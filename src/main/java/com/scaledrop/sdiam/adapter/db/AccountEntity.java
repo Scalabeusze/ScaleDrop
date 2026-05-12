@@ -51,6 +51,15 @@ public class AccountEntity {
   @Column(nullable = false, length = 100)
   private String username;
 
+  @Column(name = "first_name")
+  private String firstName;
+
+  @Column(name = "last_name")
+  private String lastName;
+
+  @Column(name = "avatar_url")
+  private String avatarUrl;
+
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 32)
   @Builder.Default

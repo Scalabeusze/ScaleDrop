@@ -11,4 +11,6 @@ public interface IAMUseCase {
   IAMAccountResponse getAccountById(UUID accountId);
 
   IAMAccountResponse updateAccount(UUID accountId, UpdateAccountAPIRequest request);
+
+  void deactivateAccount(UUID accountId);
 }

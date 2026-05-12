@@ -32,4 +32,9 @@ public class IAMService implements IAMUseCase {
   public IAMAccountResponse updateAccount(UUID accountId, UpdateAccountAPIRequest request) {
     return iamRepository.updateAccount(accountId, IAMUpdateAccountRequest.from(request));
   }
+
+  @Override
+  public void deactivateAccount(UUID accountId) {
+    iamRepository.deleteAccountById(accountId);
+  }
 }

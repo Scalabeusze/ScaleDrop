@@ -21,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -82,5 +83,19 @@ public class AccountController {
     UUID userId = userContext.getUserId();
     log.info("[ACCOUNT] Received update account request for user: {}", userId);
     return accountMapper.toAccountResponse(iamUseCase.updateAccount(userId, request));
+  }
+
+  @DeleteMapping(API_V1_PREFIX + "/account")
+  @Operation(
+      summary = "Deactivate account",
+      description = "Deactivates the account of the currently authenticated user")
+  @DefaultApiExceptionResponses
+  @SecurityRequirement(name = BEARER_JWT)
+  @ResponseStatus(HttpStatus.OK)
+  public void deactivateAccount() {
+    UUID userId = userContext.getUserId();
+    log.info("[ACCOUNT] Received deactivate account request for user: {}", userId);
+    iamUseCase.deactivateAccount(userId);
+    log.info("[ACCOUNT] Succesfully deactivated account: {}", userId);
   }
 }

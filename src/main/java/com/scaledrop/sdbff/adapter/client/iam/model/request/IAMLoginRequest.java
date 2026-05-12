@@ -20,8 +20,6 @@ public class IAMLoginRequest {
   private String googleIdToken;
 
   public static IAMLoginRequest from(String googleIdToken) {
-    return IAMLoginRequest.builder()
-        .googleIdToken(googleIdToken)
-        .build();
+    return IAMLoginRequest.builder().googleIdToken(googleIdToken).build();
   }
 }

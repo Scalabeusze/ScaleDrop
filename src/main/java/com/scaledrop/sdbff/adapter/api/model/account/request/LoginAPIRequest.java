@@ -1,4 +1,4 @@
-package com.scaledrop.sdbff.adapter.api.model.iam.request;
+package com.scaledrop.sdbff.adapter.api.model.account.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
@@ -20,8 +20,7 @@ import org.springframework.validation.annotation.Validated;
 @AllArgsConstructor
 public class LoginAPIRequest {
 
-  @NotBlank
-  @Schema(
+  @NotBlank @Schema(
       requiredMode = RequiredMode.REQUIRED,
       description =
           "Google ID token obtained from the client after successful Google authentication")

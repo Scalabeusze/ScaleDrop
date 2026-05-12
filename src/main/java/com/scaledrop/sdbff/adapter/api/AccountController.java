@@ -1,20 +1,25 @@
 package com.scaledrop.sdbff.adapter.api;
 
 import static com.scaledrop.sdbff.configuration.Constants.API_V1_PREFIX;
+import static com.scaledrop.sdbff.configuration.Constants.BEARER_JWT;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 import com.scaledrop.sdbff.adapter.api.mapper.AccountMapper;
-import com.scaledrop.sdbff.adapter.api.model.iam.request.LoginAPIRequest;
+import com.scaledrop.sdbff.adapter.api.model.account.request.LoginAPIRequest;
+import com.scaledrop.sdbff.adapter.api.model.account.response.AccountAPIResponse;
 import com.scaledrop.sdbff.adapter.api.model.iam.response.JwtAPIResponse;
 import com.scaledrop.sdbff.application.component.UserContext;
 import com.scaledrop.sdbff.application.port.in.IAMUseCase;
 import com.scaledrop.sdbff.configuration.annotations.DefaultApiExceptionResponses;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -35,11 +40,26 @@ public class AccountController {
       produces = APPLICATION_JSON_VALUE)
   @Operation(
       summary = "Log in with Google token",
-      description = "Returns a signed JWT after successful Google authentication and optionally creates an account")
+      description =
+          "Returns a signed JWT after successful Google authentication and optionally creates an"
+              + " account")
   @DefaultApiExceptionResponses
   @ResponseStatus(HttpStatus.OK)
   public JwtAPIResponse login(@Valid LoginAPIRequest request) {
     log.info("[ACCOUNT] Received login request with Google ID token");
     return accountMapper.toJwtResponse(iamUseCase.login(request.getGoogleIdToken()));
+  }
+
+  @GetMapping(value = API_V1_PREFIX + "/account", produces = APPLICATION_JSON_VALUE)
+  @Operation(
+      summary = "Get account information",
+      description = "Returns account information for the currently authenticated user")
+  @DefaultApiExceptionResponses
+  @SecurityRequirement(name = BEARER_JWT)
+  @ResponseStatus(HttpStatus.OK)
+  public AccountAPIResponse getAccount() {
+    UUID userId = userContext.getUserId();
+    log.info("[ACCOUNT] Received fetch account request for user: {}", userId);
+    return accountMapper.toAccountResponse(iamUseCase.getAccountById(userId));
   }
 }

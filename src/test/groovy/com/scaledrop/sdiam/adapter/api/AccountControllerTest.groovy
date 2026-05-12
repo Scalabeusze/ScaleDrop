@@ -193,8 +193,6 @@ class AccountControllerTest extends WiremockTestBase {
         .content(toJson([
           username           : "test_username1",
           status             : "DISABLED",
-          failedLoginAttempts: 3,
-          lockedUntil        : "2026-04-20T10:00:00Z",
           lastLoginAt        : "2026-04-19T10:15:00Z"
         ])))
         .andExpect(status().isOk())
@@ -206,15 +204,12 @@ class AccountControllerTest extends WiremockTestBase {
     response.id == account.id.toString()
     response.username == "test_username1"
     response.status == "DISABLED"
-    response.failedLoginAttempts == 3
-    response.lockedUntil == "2026-04-20T10:00:00Z"
     response.lastLoginAt == "2026-04-19T10:15:00Z"
 
     and:
     def updatedAccount = accountRepository.findById(account.id).orElseThrow()
     updatedAccount.username == "test_username1"
     updatedAccount.status == AccountStatus.DISABLED
-    updatedAccount.failedLoginAttempts == 3
   }
 
   def "should reject update account with duplicate username"() {
@@ -337,7 +332,6 @@ class AccountControllerTest extends WiremockTestBase {
         .id(UUID.randomUUID())
         .username(username)
         .status(status)
-        .failedLoginAttempts(0)
         .build())
   }
 

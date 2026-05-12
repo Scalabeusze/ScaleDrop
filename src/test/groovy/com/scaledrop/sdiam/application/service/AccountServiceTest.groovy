@@ -24,7 +24,6 @@ import com.scaledrop.sdiam.adapter.db.AccountRepository
 import com.scaledrop.sdiam.configuration.exception.AccountConflictException
 import com.scaledrop.sdiam.configuration.exception.AccountNotFoundException
 import com.scaledrop.sdiam.configuration.exception.AccountValidationException
-import java.time.OffsetDateTime
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.transaction.annotation.Transactional
 
@@ -131,15 +130,11 @@ class AccountServiceTest extends IntegrationTestBase {
         new UpdateAccountAPIRequest(
         "test_username1",
         AccountStatus.DISABLED,
-        2,
-        OffsetDateTime.parse("2026-04-20T11:00:00Z"),
         null))
 
     then:
     updatedAccount.username == "test_username1"
     updatedAccount.status == AccountStatus.DISABLED
-    updatedAccount.failedLoginAttempts == 2
-    updatedAccount.lockedUntil == OffsetDateTime.parse("2026-04-20T11:00:00Z")
     updatedAccount.lastLoginAt == lastLoginAt
   }
 
@@ -151,7 +146,7 @@ class AccountServiceTest extends IntegrationTestBase {
     when:
     accountService.updateAccount(
         account.id,
-        new UpdateAccountAPIRequest("test_username1", null, null, null, null))
+        new UpdateAccountAPIRequest("test_username1", null, null))
 
     then:
     thrown(AccountConflictException)
@@ -165,7 +160,7 @@ class AccountServiceTest extends IntegrationTestBase {
     when:
     accountService.updateAccount(
         disabledAccount.id,
-        new UpdateAccountAPIRequest(null, AccountStatus.ACTIVE, null, null, null))
+        new UpdateAccountAPIRequest(null, AccountStatus.ACTIVE, null))
 
     then:
     thrown(AccountConflictException)
@@ -208,7 +203,6 @@ class AccountServiceTest extends IntegrationTestBase {
         .id(UUID.randomUUID())
         .username(username)
         .status(status)
-        .failedLoginAttempts(0)
         .build())
   }
 }

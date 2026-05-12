@@ -155,8 +155,6 @@ class AuthenticationServiceTest extends IntegrationTestBase {
         .id(UUID.randomUUID())
         .username(username)
         .status(status)
-        .failedLoginAttempts(0)
-        .lockedUntil(null)
         .lastLoginAt(OffsetDateTime.parse("2022-10-10T15:00:00Z"))
         .build())
   }

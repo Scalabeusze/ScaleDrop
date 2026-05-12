@@ -28,9 +28,6 @@ public record AccountAPIResponse(
         @NotNull UUID id,
     @Schema(example = "Tomasz Testowy", description = "Unique username for the account") @NotBlank String username,
     @Schema(example = "ACTIVE", description = "Account lifecycle status") @NotNull AccountStatus status,
-    @Schema(example = "0", description = "Number of failed login attempts") @NotNull Integer failedLoginAttempts,
-    @Schema(description = "Lock expiration timestamp if the account is temporarily locked")
-        OffsetDateTime lockedUntil,
     @Schema(description = "Timestamp of the last successful login") OffsetDateTime lastLoginAt,
     @Schema(description = "Timestamp when the account was created") @NotNull OffsetDateTime createdAt,
     @Schema(description = "Timestamp when the account was last updated") @NotNull OffsetDateTime updatedAt) {}

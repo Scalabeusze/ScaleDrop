@@ -34,15 +34,6 @@ public record UpdateAccountAPIRequest(
             requiredMode = RequiredMode.NOT_REQUIRED)
         AccountStatus status,
     @Schema(
-            example = "0",
-            description = "Number of failed login attempts",
-            requiredMode = RequiredMode.NOT_REQUIRED)
-        Integer failedLoginAttempts,
-    @Schema(
-            description = "Lock expiration timestamp if the account is temporarily locked",
-            requiredMode = RequiredMode.NOT_REQUIRED)
-        OffsetDateTime lockedUntil,
-    @Schema(
             description = "Timestamp of the last successful login",
             requiredMode = RequiredMode.NOT_REQUIRED)
         OffsetDateTime lastLoginAt) {

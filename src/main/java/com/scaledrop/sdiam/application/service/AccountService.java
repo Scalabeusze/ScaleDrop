@@ -24,7 +24,6 @@ import com.scaledrop.sdiam.configuration.exception.AccountConflictException;
 import com.scaledrop.sdiam.configuration.exception.AccountNotFoundException;
 import com.scaledrop.sdiam.configuration.exception.AccountValidationException;
 import com.scaledrop.sdiam.configuration.exception.AuthenticationFailedException;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -143,14 +142,6 @@ public class AccountService {
       accountEntity.setLastLoginAt(req.lastLoginAt());
     }
 
-    if (req.failedLoginAttempts() != null) {
-      accountEntity.setFailedLoginAttempts(req.failedLoginAttempts());
-    }
-
-    if (req.lockedUntil() != null) {
-      accountEntity.setLockedUntil(req.lockedUntil());
-    }
-
     return accountRepository.save(accountEntity);
   }
 
@@ -180,11 +171,6 @@ public class AccountService {
   void validateAccountState(AuthenticationService authenticationService, AccountEntity account) {
     if (account.getStatus() == AccountStatus.DISABLED) {
       throw new AuthenticationFailedException(AuthenticationService.ACCOUNT_DISABLED);
-    }
-    if (account.getStatus() == AccountStatus.LOCKED
-        && account.getLockedUntil() != null
-        && account.getLockedUntil().isAfter(OffsetDateTime.now(authenticationService.clock))) {
-      throw new AuthenticationFailedException(AuthenticationService.ACCOUNT_LOCKED);
     }
   }
 

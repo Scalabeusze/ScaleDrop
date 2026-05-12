@@ -59,13 +59,6 @@ public class AccountEntity {
   @Column(name = "last_login_at")
   private OffsetDateTime lastLoginAt;
 
-  @Column(name = "failed_login_attempts", nullable = false)
-  @Builder.Default
-  private Integer failedLoginAttempts = 0;
-
-  @Column(name = "locked_until")
-  private OffsetDateTime lockedUntil;
-
   @CreatedDate
   @Column(name = "created_at", nullable = false, updatable = false)
   private OffsetDateTime createdAt;

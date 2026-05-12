@@ -28,14 +28,6 @@ public interface AccountResponseMapper {
 
   AccountAPIResponse toResponse(AccountEntity accountEntity);
 
-  @BeanMapping(
-      ignoreUnmappedSourceProperties = {
-        "status",
-        "lastLoginAt",
-        "failedLoginAttempts",
-        "lockedUntil",
-        "createdAt",
-        "updatedAt"
-      })
+  @BeanMapping(ignoreUnmappedSourceProperties = {"status", "lastLoginAt", "createdAt", "updatedAt"})
   AccountSearchAPIResponse toSearchResponse(AccountEntity accountEntity);
 }

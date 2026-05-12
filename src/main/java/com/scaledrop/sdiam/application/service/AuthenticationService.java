@@ -171,7 +171,6 @@ public class AuthenticationService {
                 .id(UUID.randomUUID())
                 .username(email)
                 .status(AccountStatus.ACTIVE)
-                .failedLoginAttempts(0)
                 .build());
     return account;
   }

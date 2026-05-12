@@ -52,7 +52,7 @@ public class IAMService
   @Override
   public AccountIAMResponse getAccountById(UUID accountId) {
     log.info("[IAM-SERVICE] Fetching data for account ID: {}", accountId);
-    return iamRepository.getAccountById(accountId);
+    return iamRepository.getAccountByIdOld(accountId);
   }
 
   @Override

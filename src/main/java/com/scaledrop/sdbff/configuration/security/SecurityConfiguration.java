@@ -85,9 +85,9 @@ public class SecurityConfiguration {
           .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
           .authorizeHttpRequests(
               r ->
-                  r.requestMatchers(POST, API_V1_PREFIX + "/session/login")
+                  r.requestMatchers(POST, API_V1_PREFIX + "/login")
                       .permitAll()
-                      .requestMatchers(API_V1_PREFIX + "/accounts/**")
+                      .requestMatchers(API_V1_PREFIX + "/account/**")
                       .hasRole("USER")
                       .requestMatchers(POST, API_V1_PREFIX + "/upload/**")
                       .hasRole("USER")

@@ -51,7 +51,7 @@ public class AccountController {
               + " account")
   @DefaultApiExceptionResponses
   @ResponseStatus(HttpStatus.OK)
-  public JwtAPIResponse login(@Valid LoginAPIRequest request) {
+  public JwtAPIResponse login(@Valid @RequestBody LoginAPIRequest request) {
     log.info("[ACCOUNT] Received login request with Google ID token");
     return accountMapper.toJwtResponse(iamUseCase.login(request.getGoogleIdToken()));
   }

@@ -165,10 +165,9 @@ public class AccountService {
   /**
    * Validates account expiry status
    *
-   * @param authenticationService
    * @param account
    */
-  void validateAccountState(AuthenticationService authenticationService, AccountEntity account) {
+  void validateAccountState(AccountEntity account) {
     if (account.getStatus() == AccountStatus.DISABLED) {
       throw new AuthenticationFailedException(AuthenticationService.ACCOUNT_DISABLED);
     }

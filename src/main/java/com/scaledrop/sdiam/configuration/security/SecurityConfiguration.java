@@ -28,7 +28,6 @@ import com.scaledrop.sdiam.configuration.security.properties.SecurityProperties.
 import java.util.Optional;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -38,7 +37,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.NullSecurityContextRepository;
 
@@ -60,13 +58,11 @@ public class SecurityConfiguration {
       "/swagger-ui/**", "/swagger-resources/**", "/v3/api-docs/**"
     };
     private static final String[] ACTUATOR_PATHS = {"/actuator/**"};
+
     private final SecurityProperties securityProperties;
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
     private final CustomBasicAuthenticationEntryPoint basicAuthenticationEntryPoint;
     private final SessionAuthenticationEntryPoint sessionAuthenticationEntryPoint;
-    private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
-    private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
-    private final ObjectProvider<ClientRegistrationRepository> clientRegistrationRepository;
 
     @Bean
     @Order(0)
@@ -94,7 +90,7 @@ public class SecurityConfiguration {
     @Bean
     @Order(2)
     protected SecurityFilterChain securityFilterChainJwtLogin(HttpSecurity http) throws Exception {
-      http.securityMatcher(API_V1_PREFIX + "/session/**", "/oauth2/**", "/login/oauth2/**")
+      http.securityMatcher(API_V1_PREFIX + "/session/**")
           .cors(AbstractHttpConfigurer::disable)
           .csrf(AbstractHttpConfigurer::disable)
           .requestCache(AbstractHttpConfigurer::disable)
@@ -103,26 +99,14 @@ public class SecurityConfiguration {
           .logout(AbstractHttpConfigurer::disable)
           .authorizeHttpRequests(
               r ->
-                  r.requestMatchers(API_V1_PREFIX + "/session/login")
-                      .permitAll()
-                      .requestMatchers(API_V1_PREFIX + "/session/google")
-                      .permitAll()
-                      .requestMatchers("/oauth2/**", "/login/oauth2/**")
-                      .permitAll()
+                  r.requestMatchers(API_V1_PREFIX + "/session/login/google")
+                      .hasRole(INTERNAL.name())
                       .anyRequest()
                       .authenticated())
           .exceptionHandling(
               eh ->
                   eh.authenticationEntryPoint(sessionAuthenticationEntryPoint)
                       .accessDeniedHandler(customAccessDeniedHandler));
-
-      if (clientRegistrationRepository.getIfAvailable() != null) {
-        http.oauth2Login(
-            customizer ->
-                customizer
-                    .successHandler(oAuth2LoginSuccessHandler)
-                    .failureHandler(oAuth2LoginFailureHandler));
-      }
 
       return http.build();
     }

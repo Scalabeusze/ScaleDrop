@@ -38,7 +38,6 @@ import org.springframework.transaction.annotation.Transactional
 class AccountControllerTest extends WiremockTestBase {
 
   private static final String ACCOUNTS_ENDPOINT = "/api/v1/accounts"
-  private static final String PASSWORD = "test_password1A!"
 
   @Autowired
   private AccountRepository accountRepository
@@ -86,7 +85,6 @@ class AccountControllerTest extends WiremockTestBase {
     response[0].id == alpha.id.toString()
     !response[0].containsKey("status")
     !response[0].containsKey("createdAt")
-    !response[0].containsKey("passwordUpdatedAt")
 
     and:
     !(response*.id).contains(beta.id.toString())

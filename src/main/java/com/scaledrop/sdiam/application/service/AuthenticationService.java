@@ -31,17 +31,13 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class AuthenticationService {
 
-  final String INVALID_CREDENTIALS = "Invalid credentials";
   static final String ACCOUNT_DISABLED = "Account is disabled";
-  static final String ACCOUNT_LOCKED = "Account is locked";
   private static final String GOOGLE_EMAIL_NOT_VERIFIED = "Google account email must be verified";
   private static final String GOOGLE_SUBJECT_MISSING = "Google account subject is missing";
 
@@ -83,7 +79,7 @@ public class AuthenticationService {
             accountRepository
                 .findByUsernameAndStatusNot(email, AccountStatus.DISABLED)
                 .orElseGet(() -> autoProvisionAccount(email));
-        accountService.validateAccountState(this, account);
+        accountService.validateAccountState(account);
 
         identityRepository.save(
             IdentityEntity.builder()
@@ -96,7 +92,7 @@ public class AuthenticationService {
                 .build());
       }
 
-      accountService.validateAccountState(this, account);
+      accountService.validateAccountState(account);
       account.setLastLoginAt(OffsetDateTime.now(clock));
       account = accountRepository.save(account);
 
@@ -106,62 +102,6 @@ public class AuthenticationService {
       throw new AuthenticationFailedException(
           "Failed to authenticate with Google: " + e.getMessage());
     }
-  }
-
-  @Transactional
-  public SessionAccountPrincipal authGoogle(OAuth2User oauth2User) {
-    String subject = oauth2User.getAttribute("sub");
-    String email = oauth2User.getAttribute("email");
-    Boolean emailVerified = oauth2User.getAttribute("email_verified");
-
-    if (StringUtils.isBlank(subject)) {
-      throw new AuthenticationFailedException(GOOGLE_SUBJECT_MISSING);
-    }
-    if (!emailVerified || StringUtils.isBlank(email)) {
-      throw new AuthenticationFailedException(GOOGLE_EMAIL_NOT_VERIFIED);
-    }
-
-    var existingIdentity =
-        identityRepository.findByProviderAndProviderSubject(IdentityProvider.GOOGLE, subject);
-
-    AccountEntity account;
-    if (existingIdentity.isPresent()) {
-      var identity = existingIdentity.get();
-      account = identity.getAccount();
-      // Reuse old Google identity by assigning it to the newer account
-      if (account.getStatus() == AccountStatus.DISABLED) {
-        account =
-            accountRepository
-                .findByUsernameAndStatusNot(email, AccountStatus.DISABLED)
-                .orElseGet(() -> autoProvisionAccount(email));
-        accountService.validateAccountState(this, account);
-        identity.setAccount(account);
-        identity.setEmail(email);
-        identity.setEmailVerified(true);
-        identityRepository.save(identity);
-      }
-    } else {
-      // link email to a local account, if such an account exists
-      account =
-          accountRepository
-              .findByUsernameAndStatusNot(email, AccountStatus.DISABLED)
-              .orElseGet(() -> autoProvisionAccount(email));
-      accountService.validateAccountState(this, account);
-      identityRepository.save(
-          IdentityEntity.builder()
-              .id(UUID.randomUUID())
-              .account(account)
-              .provider(IdentityProvider.GOOGLE)
-              .providerSubject(subject)
-              .email(email)
-              .emailVerified(true)
-              .build());
-    }
-
-    accountService.validateAccountState(this, account);
-    account.setLastLoginAt(OffsetDateTime.now(clock));
-    accountRepository.save(account);
-    return SessionAccountPrincipal.from(account, IdentityProvider.GOOGLE);
   }
 
   private AccountEntity autoProvisionAccount(String email) {

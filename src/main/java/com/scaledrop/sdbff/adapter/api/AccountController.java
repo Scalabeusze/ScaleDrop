@@ -8,7 +8,7 @@ import com.scaledrop.sdbff.adapter.api.mapper.AccountMapper;
 import com.scaledrop.sdbff.adapter.api.model.account.request.LoginAPIRequest;
 import com.scaledrop.sdbff.adapter.api.model.account.request.UpdateAccountAPIRequest;
 import com.scaledrop.sdbff.adapter.api.model.account.response.AccountAPIResponse;
-import com.scaledrop.sdbff.adapter.api.model.iam.response.JwtAPIResponse;
+import com.scaledrop.sdbff.adapter.api.model.account.response.JwtAPIResponse;
 import com.scaledrop.sdbff.application.component.UserContext;
 import com.scaledrop.sdbff.application.port.in.IAMUseCase;
 import com.scaledrop.sdbff.configuration.annotations.DefaultApiExceptionResponses;

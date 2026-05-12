@@ -1,4 +1,4 @@
-package com.scaledrop.sdbff.adapter.api.model.iam.response;
+package com.scaledrop.sdbff.adapter.api.model.account.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;

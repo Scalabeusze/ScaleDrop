@@ -1,20 +1,25 @@
-package com.scaledrop.sdbff.adapter.api.model.iam.response;
+package com.scaledrop.sdbff.adapter.api.model.account.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+import org.springframework.validation.annotation.Validated;
 
-@Data
+@Getter
+@Setter
 @Builder
+@ToString
+@Validated
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "Response containing the generated session token")
-public class JwtIAMResponse {
+public class JwtAPIResponse {
 
   @Schema(
-      description = "Signed JWT token containing expiration and user data (id)",
+      description = "Signed JWT token",
       example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM...")
   private String jwt;
 }

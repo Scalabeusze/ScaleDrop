@@ -44,12 +44,8 @@ security:
     internal:
       username: scaledrop
       password: ${SECURITY_ACCESS_INTERNAL_PASSWORD:scaledrop}
-  oauth2:
-    client:
-      registration:
-        google:
-          issuer-uri: https://accounts.google.com
-          client-id: ${GOOGLE_CLIENT_ID:super-secret-client-id}
+  jwt:
+    secret: ${SECURITY_JWT_SECRET}
 
 iam-service:
   url: ${IAM_SERVICE_URL:http://localhost:8081/sd-iam}

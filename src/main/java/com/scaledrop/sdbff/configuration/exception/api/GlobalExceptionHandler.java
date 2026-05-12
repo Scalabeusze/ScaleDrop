@@ -4,9 +4,12 @@ import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCauseMess
 import static org.springframework.core.Ordered.HIGHEST_PRECEDENCE;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.METHOD_NOT_ALLOWED;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
+import com.scaledrop.sdbff.configuration.exception.iam.AccountNotFoundException;
+import com.scaledrop.sdbff.configuration.exception.iam.LoginException;
 import jakarta.validation.ConstraintViolationException;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
@@ -42,8 +45,14 @@ public class GlobalExceptionHandler {
   }
 
   @ResponseStatus(UNAUTHORIZED)
-  @ExceptionHandler(AccessDeniedException.class)
+  @ExceptionHandler({AccessDeniedException.class, LoginException.class})
   public ApiExceptionResponse handleUnauthorizedException(Exception ex) {
+    return buildApiExceptionResponse(ex);
+  }
+
+  @ResponseStatus(NOT_FOUND)
+  @ExceptionHandler(AccountNotFoundException.class)
+  public ApiExceptionResponse handleNotFoundException(Exception ex) {
     return buildApiExceptionResponse(ex);
   }
 

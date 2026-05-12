@@ -3,7 +3,7 @@ package com.scaledrop.sdbff.configuration.cache;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.scaledrop.sdbff.adapter.api.model.iam.response.AccountIAMResponse;
+import com.scaledrop.sdbff.adapter.client.iam.model.response.IAMAccountResponse;
 import java.time.Duration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
@@ -42,8 +42,8 @@ public class RedisCacheConfig {
     objectMapper.registerModule(new JavaTimeModule());
     objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
-    Jackson2JsonRedisSerializer<AccountIAMResponse> accountResponseRedisSerializer =
-        new Jackson2JsonRedisSerializer<>(objectMapper, AccountIAMResponse.class);
+    Jackson2JsonRedisSerializer<IAMAccountResponse> accountResponseRedisSerializer =
+        new Jackson2JsonRedisSerializer<>(objectMapper, IAMAccountResponse.class);
 
     final RedisCacheConfiguration config =
         RedisCacheConfiguration.defaultCacheConfig()

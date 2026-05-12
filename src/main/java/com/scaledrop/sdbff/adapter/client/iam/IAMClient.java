@@ -1,9 +1,10 @@
 package com.scaledrop.sdbff.adapter.client.iam;
 
-import com.scaledrop.sdbff.adapter.api.model.iam.request.*;
-import com.scaledrop.sdbff.adapter.api.model.iam.response.*;
 import com.scaledrop.sdbff.adapter.client.iam.configuration.IAMClientConfiguration;
-import java.util.List;
+import com.scaledrop.sdbff.adapter.client.iam.model.request.IAMLoginRequest;
+import com.scaledrop.sdbff.adapter.client.iam.model.request.IAMUpdateAccountRequest;
+import com.scaledrop.sdbff.adapter.client.iam.model.response.IAMAccountResponse;
+import com.scaledrop.sdbff.adapter.client.iam.model.response.IAMJWTResponse;
 import java.util.UUID;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
@@ -14,40 +15,27 @@ import org.springframework.web.bind.annotation.*;
     configuration = IAMClientConfiguration.class)
 public interface IAMClient {
 
-  // --- SESJA ---
+  // --- LOGIN ---
   @PostMapping(
-      value = "/api/v1/session/login",
+      value = "/api/v1/login/google",
       produces = "application/json",
       consumes = "application/json")
-  JwtIAMResponse login(@RequestBody SessionLoginIAMRequest request);
+  IAMJWTResponse login(IAMLoginRequest request);
 
-  // --- KONTA ---
-  @GetMapping(value = "/api/v1/accounts", produces = "application/json")
-  List<AccountIAMResponse> getAccounts();
-
+  // --- ACCOUNTS ---
   @GetMapping(value = "/api/v1/accounts/{accountId}", produces = "application/json")
-  AccountIAMResponse getAccount(@PathVariable("accountId") UUID accountId);
+  IAMAccountResponse getAccount(@PathVariable UUID accountId);
 
-  @PostMapping(
-      value = "/api/v1/accounts",
-      produces = "application/json",
-      consumes = "application/json")
-  AccountIAMResponse createAccount(@RequestBody CreateAccountIAMRequest request);
+  @GetMapping(value = "/api/v1/accounts", produces = "application/json")
+  IAMAccountResponse getAccountByUsername(@RequestParam(value = "username") String username);
 
   @PutMapping(
       value = "/api/v1/accounts/{accountId}",
       produces = "application/json",
       consumes = "application/json")
-  AccountIAMResponse updateAccount(
-      @PathVariable("accountId") UUID accountId, @RequestBody UpdateAccountIAMRequest request);
+  IAMAccountResponse updateAccount(
+      @PathVariable UUID accountId, @RequestBody IAMUpdateAccountRequest request);
 
-  @PatchMapping(
-      value = "/api/v1/accounts/{accountId}/password",
-      produces = "application/json",
-      consumes = "application/json")
-  AccountIAMResponse updatePassword(
-      @PathVariable("accountId") UUID accountId, @RequestBody UpdatePasswordIAMRequest request);
-
-  @DeleteMapping(value = "/api/v1/accounts/{accountId}")
-  void deleteAccount(@PathVariable("accountId") UUID accountId);
+  @DeleteMapping("/api/v1/accounts/{accountId}")
+  void deleteAccount(@PathVariable UUID accountId);
 }

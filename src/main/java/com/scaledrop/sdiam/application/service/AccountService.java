@@ -23,7 +23,6 @@ import com.scaledrop.sdiam.adapter.db.AccountRepository;
 import com.scaledrop.sdiam.configuration.exception.AccountConflictException;
 import com.scaledrop.sdiam.configuration.exception.AccountNotFoundException;
 import com.scaledrop.sdiam.configuration.exception.AccountValidationException;
-import com.scaledrop.sdiam.configuration.exception.AuthenticationFailedException;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

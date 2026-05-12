@@ -22,6 +22,7 @@ import static com.scaledrop.sdiam.configuration.security.role.ApiUserRole.INTERN
 import static org.springframework.security.crypto.factory.PasswordEncoderFactories.createDelegatingPasswordEncoder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.scaledrop.sdiam.adapter.api.AuthController;
 import com.scaledrop.sdiam.configuration.exception.AccountServiceException;
 import com.scaledrop.sdiam.configuration.security.properties.SecurityProperties;
 import com.scaledrop.sdiam.configuration.security.properties.SecurityProperties.BasicAuthorization;
@@ -62,7 +63,6 @@ public class SecurityConfiguration {
     private final SecurityProperties securityProperties;
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
     private final CustomBasicAuthenticationEntryPoint basicAuthenticationEntryPoint;
-    private final SessionAuthenticationEntryPoint sessionAuthenticationEntryPoint;
 
     @Bean
     @Order(0)
@@ -90,7 +90,7 @@ public class SecurityConfiguration {
     @Bean
     @Order(2)
     protected SecurityFilterChain securityFilterChainJwtLogin(HttpSecurity http) throws Exception {
-      http.securityMatcher(API_V1_PREFIX + "/session/**")
+      http.securityMatcher(API_V1_PREFIX + "/login/**")
           .cors(AbstractHttpConfigurer::disable)
           .csrf(AbstractHttpConfigurer::disable)
           .requestCache(AbstractHttpConfigurer::disable)
@@ -99,14 +99,13 @@ public class SecurityConfiguration {
           .logout(AbstractHttpConfigurer::disable)
           .authorizeHttpRequests(
               r ->
-                  r.requestMatchers(API_V1_PREFIX + "/session/login/google")
+                  r.requestMatchers(AuthController.GOOGLE_LOGIN_ENDPOINT)
                       .hasRole(INTERNAL.name())
                       .anyRequest()
                       .authenticated())
-          .exceptionHandling(
-              eh ->
-                  eh.authenticationEntryPoint(sessionAuthenticationEntryPoint)
-                      .accessDeniedHandler(customAccessDeniedHandler));
+          .httpBasic(
+              customizer -> customizer.authenticationEntryPoint(basicAuthenticationEntryPoint))
+          .exceptionHandling(eh -> eh.accessDeniedHandler(customAccessDeniedHandler));
 
       return http.build();
     }

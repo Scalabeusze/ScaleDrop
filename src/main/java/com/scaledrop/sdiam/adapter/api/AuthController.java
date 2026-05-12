@@ -29,6 +29,7 @@ import com.scaledrop.sdiam.configuration.security.SessionAccountPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -45,7 +46,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Authentication controller", description = "API for user authentication")
 public class AuthController {
 
-  private static final String GOOGLE_LOGIN_ENDPOINT = API_V1_PREFIX + "/login/google";
+  public static final String GOOGLE_LOGIN_ENDPOINT = API_V1_PREFIX + "/login/google";
 
   private final AuthenticationService authenticationService;
   private final JwtTokenService jwtTokenService;
@@ -62,7 +63,7 @@ public class AuthController {
   @SecurityRequirement(name = BASIC_AUTH)
   @DefaultApiExceptionResponses
   @ResponseStatus(HttpStatus.OK)
-  public JwtAPIResponse loginWithGoogle(@RequestBody LoginWithGoogleAPIRequest request) {
+  public JwtAPIResponse loginWithGoogle(@Valid @RequestBody LoginWithGoogleAPIRequest request) {
     log.info("[AUTH] Received request to login with Google account");
     SessionAccountPrincipal sessionAccountPrincipal =
         authenticationService.authGoogleWithToken(request.getGoogleIdToken());

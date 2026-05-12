@@ -1,0 +1,3 @@
+security:
+  jwt:
+    secret: super-secret-key-for-testing-purpose-only-should-be-at-least-32-bytes

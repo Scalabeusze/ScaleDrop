@@ -13,26 +13,20 @@ import com.scaledrop.sdbff.configuration.security.properties.SecurityProperties;
 import com.scaledrop.sdbff.configuration.security.properties.SecurityProperties.BasicAuthorization;
 import java.util.Optional;
 import java.util.function.Function;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
-import org.springframework.security.oauth2.core.OAuth2Error;
-import org.springframework.security.oauth2.core.OAuth2TokenValidator;
-import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.JwtDecoders;
-import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
@@ -88,31 +82,26 @@ public class SecurityConfiguration {
     protected SecurityFilterChain securityFilterChainEndpoints(HttpSecurity http) throws Exception {
       return http.cors(AbstractHttpConfigurer::disable)
           .csrf(AbstractHttpConfigurer::disable)
-          .requestCache(AbstractHttpConfigurer::disable)
           .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-          .logout(AbstractHttpConfigurer::disable)
-          .anonymous(Customizer.withDefaults())
           .authorizeHttpRequests(
               r ->
                   r.requestMatchers(POST, API_V1_PREFIX + "/session/login")
                       .permitAll()
                       .requestMatchers(API_V1_PREFIX + "/accounts/**")
-                      .hasAnyAuthority(
-                          "ROLE_INTERNAL", "SCOPE_openid", "SCOPE_email", "SCOPE_profile")
-                      .requestMatchers(POST, API_V1_PREFIX + "/uploads/**")
-                      .hasAnyAuthority(
-                          "ROLE_INTERNAL", "SCOPE_openid", "SCOPE_email", "SCOPE_profile")
+                      .hasRole("USER")
+                      .requestMatchers(POST, API_V1_PREFIX + "/upload/**")
+                      .hasRole("USER")
                       .requestMatchers(GET, API_V1_PREFIX + "/download/**")
-                      .hasAnyAuthority(
-                          "ROLE_INTERNAL", "SCOPE_openid", "SCOPE_email", "SCOPE_profile")
+                      .hasRole("USER")
                       .anyRequest()
                       .authenticated())
-          .httpBasic(
-              customizer -> customizer.authenticationEntryPoint(basicAuthenticationEntryPoint))
           .oauth2ResourceServer(
               oauth2 ->
                   oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
-          .exceptionHandling(eh -> eh.accessDeniedHandler(customAccessDeniedHandler))
+          .exceptionHandling(
+              eh ->
+                  eh.accessDeniedHandler(customAccessDeniedHandler)
+                      .authenticationEntryPoint(basicAuthenticationEntryPoint))
           .build();
     }
 
@@ -151,8 +140,8 @@ public class SecurityConfiguration {
 
     private JwtAuthenticationConverter jwtAuthenticationConverter() {
       JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
-      authoritiesConverter.setAuthorityPrefix("ROLE_");
-      authoritiesConverter.setAuthoritiesClaimName("roles");
+      authoritiesConverter.setAuthorityPrefix("");
+      authoritiesConverter.setAuthoritiesClaimName("role");
 
       JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
       converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
@@ -166,39 +155,12 @@ public class SecurityConfiguration {
   }
 
   @Bean
-  public JwtDecoder jwtDecoder(
-      @Value("${security.oauth2.client.registration.google.issuer-uri}") String issuerUri,
-      @Value("${security.oauth2.client.registration.google.client-id}") String clientId) {
+  public JwtDecoder jwtDecoder(@Value("${security.jwt.secret}") String secret) {
+    byte[] bytes = secret.getBytes();
+    SecretKey spec = new SecretKeySpec(bytes, "HmacSHA256");
 
-    // Initialize decoder
-    NimbusJwtDecoder jwtDecoder = JwtDecoders.fromIssuerLocation(issuerUri);
-
-    // Verify audience
-    OAuth2TokenValidator<Jwt> audienceValidator = new AudienceValidator(clientId);
-    // Verify issuer
-    OAuth2TokenValidator<Jwt> withIssuer = JwtValidators.createDefaultWithIssuer(issuerUri);
-
-    OAuth2TokenValidator<Jwt> withAudience =
-        new DelegatingOAuth2TokenValidator<>(withIssuer, audienceValidator);
-    jwtDecoder.setJwtValidator(withAudience);
+    NimbusJwtDecoder jwtDecoder = NimbusJwtDecoder.withSecretKey(spec).build();
 
     return jwtDecoder;
-  }
-
-  static class AudienceValidator implements OAuth2TokenValidator<Jwt> {
-    private final String audience;
-
-    AudienceValidator(String audience) {
-      this.audience = audience;
-    }
-
-    @Override
-    public OAuth2TokenValidatorResult validate(Jwt jwt) {
-      if (jwt.getAudience() != null && jwt.getAudience().contains(audience)) {
-        return OAuth2TokenValidatorResult.success();
-      }
-      return OAuth2TokenValidatorResult.failure(
-          new OAuth2Error("invalid_token", "Error while verifying token: wrong audience", null));
-    }
   }
 }

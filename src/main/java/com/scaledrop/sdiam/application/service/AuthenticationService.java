@@ -16,6 +16,8 @@
 
 package com.scaledrop.sdiam.application.service;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.scaledrop.sdiam.adapter.db.AccountEntity;
 import com.scaledrop.sdiam.adapter.db.AccountEntity.AccountStatus;
 import com.scaledrop.sdiam.adapter.db.AccountRepository;
@@ -48,7 +50,60 @@ public class AuthenticationService {
   private final IdentityRepository identityRepository;
   private final AccountService accountService;
   private final AccountPasswordService hashingService;
+  private final GoogleIdTokenVerifier googleIdTokenVerifier;
   final Clock clock;
+
+  public SessionAccountPrincipal authGoogleWithToken(String idTokenString) {
+    try {
+      // Verify
+      GoogleIdToken token = googleIdTokenVerifier.verify(idTokenString);
+      if (token == null) {
+        throw new AuthenticationFailedException("Invalid or expired Google ID token");
+      }
+
+      // Extract data
+      GoogleIdToken.Payload payload = token.getPayload();
+      String subject = payload.getSubject();
+      String email = payload.getEmail();
+      Boolean emailVerified = payload.getEmailVerified();
+
+      if (StringUtils.isBlank(subject)) {
+        throw new AuthenticationFailedException(GOOGLE_SUBJECT_MISSING);
+      }
+      if (emailVerified == null || !emailVerified || StringUtils.isBlank(email)) {
+        throw new AuthenticationFailedException(GOOGLE_EMAIL_NOT_VERIFIED);
+      }
+
+      var existingIdentity = identityRepository.findByProviderAndProviderSubject(IdentityProvider.GOOGLE, subject);
+
+      AccountEntity account;
+      if (existingIdentity.isPresent()) {
+        account = existingIdentity.get().getAccount();
+      } else {
+        account = accountRepository.findByUsernameAndStatusNot(email, AccountStatus.DISABLED).orElseGet(() -> autoProvisionAccount(email));
+        accountService.validateAccountState(this, account);
+
+        identityRepository.save(
+            IdentityEntity.builder()
+                .id(UUID.randomUUID())
+                .account(account)
+                .provider(IdentityProvider.GOOGLE)
+                .providerSubject(subject)
+                .email(email)
+                .emailVerified(true)
+                .build());
+      }
+
+      accountService.validateAccountState(this, account);
+      account.setLastLoginAt(OffsetDateTime.now(clock));
+      account = accountRepository.save(account);
+
+      return SessionAccountPrincipal.from(account, IdentityProvider.GOOGLE);
+
+    } catch (Exception e) {
+      throw new AuthenticationFailedException("Failed to authenticate with Google: " + e.getMessage());
+    }
+  }
 
   @Transactional
   public SessionAccountPrincipal authLocal(String username, String plainPassword) {

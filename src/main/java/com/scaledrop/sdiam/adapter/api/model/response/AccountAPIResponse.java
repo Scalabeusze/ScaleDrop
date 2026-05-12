@@ -35,6 +35,4 @@ public record AccountAPIResponse(
     @Schema(example = "https://www.example.com", description = "URL to the user's avatar image")
         String avatarUrl,
     @Schema(example = "ACTIVE", description = "Account lifecycle status") @NotNull AccountStatus status,
-    @Schema(description = "Timestamp of the last successful login") OffsetDateTime lastLoginAt,
-    @Schema(description = "Timestamp when the account was created") @NotNull OffsetDateTime createdAt,
-    @Schema(description = "Timestamp when the account was last updated") @NotNull OffsetDateTime updatedAt) {}
+    @Schema(description = "Timestamp of the last successful login") OffsetDateTime lastLoginAt) {}

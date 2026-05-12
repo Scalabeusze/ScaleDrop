@@ -16,31 +16,41 @@
 
 package com.scaledrop.sdiam.adapter.api.model.request;
 
-import com.scaledrop.sdiam.adapter.db.AccountEntity.AccountStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
 import jakarta.validation.constraints.Size;
-import java.time.OffsetDateTime;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
+import org.springframework.validation.annotation.Validated;
 
-public record UpdateAccountAPIRequest(
-    @Schema(
-            example = "Tomasz Testowy",
-            description = "Unique username for the account",
-            requiredMode = RequiredMode.NOT_REQUIRED)
-        @Size(min = 1, max = 100) String username,
-    @Schema(
-            example = "ACTIVE",
-            description = "Account lifecycle status",
-            requiredMode = RequiredMode.NOT_REQUIRED)
-        AccountStatus status,
-    @Schema(
-            description = "Timestamp of the last successful login",
-            requiredMode = RequiredMode.NOT_REQUIRED)
-        OffsetDateTime lastLoginAt) {
+@Getter
+@Setter
+@Builder
+@ToString
+@Validated
+@NoArgsConstructor
+@AllArgsConstructor
+public class UpdateAccountAPIRequest {
 
-  public UpdateAccountAPIRequest {
-    if (username != null) {
-      username = username.trim();
-    }
-  }
+  @Size(max = 250) @Schema(
+      requiredMode = RequiredMode.NOT_REQUIRED,
+      example = "Ferdynand",
+      description = "First name of the account holder")
+  private String firstName;
+
+  @Size(max = 250) @Schema(
+      requiredMode = RequiredMode.NOT_REQUIRED,
+      example = "Kiepski",
+      description = "Last name of the account holder")
+  private String lastName;
+
+  @Size(max = 1024) @Schema(
+      requiredMode = RequiredMode.NOT_REQUIRED,
+      example = "https://www.new.example.com",
+      description = "Avatar url of the account holder")
+  private String avatarUrl;
 }

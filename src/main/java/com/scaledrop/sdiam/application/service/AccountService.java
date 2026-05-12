@@ -20,7 +20,6 @@ import com.scaledrop.sdiam.adapter.api.model.request.UpdateAccountAPIRequest;
 import com.scaledrop.sdiam.adapter.db.AccountEntity;
 import com.scaledrop.sdiam.adapter.db.AccountEntity.AccountStatus;
 import com.scaledrop.sdiam.adapter.db.AccountRepository;
-import com.scaledrop.sdiam.configuration.exception.AccountConflictException;
 import com.scaledrop.sdiam.configuration.exception.AccountNotFoundException;
 import com.scaledrop.sdiam.configuration.exception.AccountValidationException;
 import java.util.List;
@@ -36,7 +35,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class AccountService {
 
   private static final String ACCOUNT_NOT_FOUND = "Account not found";
-  private static final String USERNAME_ALREADY_EXISTS = "Username already exists";
   private static final String SEARCH_QUERY_REQUIRED = "Search query is required";
   private static final String SEARCH_QUERY_TOO_SHORT = "Search query must be at least 2 characters";
   private static final String SEARCH_QUERY_TOO_LONG = "Search query must be at most 100 characters";
@@ -78,16 +76,6 @@ public class AccountService {
   }
 
   /**
-   * Gets all accounts in the system
-   *
-   * @return List of AccountEntity
-   */
-  @Transactional(readOnly = true)
-  public List<AccountEntity> getAccounts() {
-    return accountRepository.findAll();
-  }
-
-  /**
    * Searches active accounts for share-recipient autocomplete.
    *
    * @param query username fragment
@@ -112,48 +100,23 @@ public class AccountService {
   }
 
   // Update
-
-  /**
-   * Updates the user's account
-   *
-   * @param accountId UUID of the account
-   * @param req       request payload
-   * @return updated AccountEntity
-   * @throws AccountNotFoundException if accountId does not exist
-   * @throws AccountConflictException if username is taken
-   */
   @Transactional
-  public AccountEntity updateAccount(UUID accountId, UpdateAccountAPIRequest req) {
+  public AccountEntity updateAccount(UUID accountId, UpdateAccountAPIRequest request) {
     var accountEntity = getAccountById(accountId);
-    String updatedUsername = req.username() == null ? accountEntity.getUsername() : req.username();
-    AccountStatus updatedStatus = req.status() == null ? accountEntity.getStatus() : req.status();
-    validateUsernameAvailable(updatedUsername, updatedStatus, accountId);
-
-    if (req.username() != null && !accountEntity.getUsername().equals(req.username())) {
-      accountEntity.setUsername(req.username());
-    }
-
-    if (req.status() != null) {
-      accountEntity.setStatus(req.status());
-    }
-
-    if (req.lastLoginAt() != null) {
-      accountEntity.setLastLoginAt(req.lastLoginAt());
-    }
-
+    accountEntity.apply(request);
     return accountRepository.save(accountEntity);
   }
 
   // Delete
 
   /**
-   * Deletes and account
+   * Deactivates and account
    *
    * @param accountId UUID of the account
    * @throws AccountNotFoundException if accountId does not exist
    */
   @Transactional
-  public void deleteAccount(UUID accountId) {
+  public void deactivateAccount(UUID accountId) {
     var accountEntity = getAccountById(accountId);
     accountEntity.setStatus(AccountStatus.DISABLED);
     accountRepository.save(accountEntity);
@@ -166,21 +129,5 @@ public class AccountService {
       return DEFAULT_SEARCH_LIMIT;
     }
     return Math.min(limit, MAX_SEARCH_LIMIT);
-  }
-
-  private void validateUsernameAvailable(String username, AccountStatus status, UUID accountId) {
-    if (status == AccountStatus.DISABLED) {
-      return;
-    }
-
-    boolean usernameTaken =
-        accountId == null
-            ? accountRepository.existsByUsernameAndStatusNot(username, AccountStatus.DISABLED)
-            : accountRepository.existsByUsernameAndStatusNotAndIdNot(
-                username, AccountStatus.DISABLED, accountId);
-
-    if (usernameTaken) {
-      throw new AccountConflictException(USERNAME_ALREADY_EXISTS);
-    }
   }
 }

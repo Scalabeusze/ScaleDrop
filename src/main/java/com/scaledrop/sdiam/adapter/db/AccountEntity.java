@@ -16,6 +16,7 @@
 
 package com.scaledrop.sdiam.adapter.db;
 
+import com.scaledrop.sdiam.adapter.api.model.request.UpdateAccountAPIRequest;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -24,6 +25,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.OffsetDateTime;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -48,7 +50,7 @@ public class AccountEntity {
   @Column(nullable = false, updatable = false)
   private UUID id;
 
-  @Column(nullable = false, length = 100)
+  @Column(nullable = false, unique = true, length = 100)
   private String username;
 
   @Column(name = "first_name")
@@ -80,5 +82,11 @@ public class AccountEntity {
     ACTIVE,
     DISABLED,
     LOCKED
+  }
+
+  public void apply(UpdateAccountAPIRequest request) {
+    firstName = Optional.ofNullable(request.getFirstName()).orElse(firstName);
+    lastName = Optional.ofNullable(request.getLastName()).orElse(lastName);
+    avatarUrl = Optional.ofNullable(request.getAvatarUrl()).orElse(avatarUrl);
   }
 }

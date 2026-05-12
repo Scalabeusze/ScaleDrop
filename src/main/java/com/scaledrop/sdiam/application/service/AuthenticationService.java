@@ -24,7 +24,6 @@ import com.scaledrop.sdiam.adapter.db.AccountRepository;
 import com.scaledrop.sdiam.adapter.db.IdentityEntity;
 import com.scaledrop.sdiam.adapter.db.IdentityProvider;
 import com.scaledrop.sdiam.adapter.db.IdentityRepository;
-import com.scaledrop.sdiam.configuration.exception.AccountNotFoundException;
 import com.scaledrop.sdiam.configuration.exception.AuthenticationFailedException;
 import com.scaledrop.sdiam.configuration.security.SessionAccountPrincipal;
 import java.time.Clock;
@@ -49,7 +48,6 @@ public class AuthenticationService {
   private final AccountRepository accountRepository;
   private final IdentityRepository identityRepository;
   private final AccountService accountService;
-  private final AccountPasswordService hashingService;
   private final GoogleIdTokenVerifier googleIdTokenVerifier;
   final Clock clock;
 
@@ -74,13 +72,17 @@ public class AuthenticationService {
         throw new AuthenticationFailedException(GOOGLE_EMAIL_NOT_VERIFIED);
       }
 
-      var existingIdentity = identityRepository.findByProviderAndProviderSubject(IdentityProvider.GOOGLE, subject);
+      var existingIdentity =
+          identityRepository.findByProviderAndProviderSubject(IdentityProvider.GOOGLE, subject);
 
       AccountEntity account;
       if (existingIdentity.isPresent()) {
         account = existingIdentity.get().getAccount();
       } else {
-        account = accountRepository.findByUsernameAndStatusNot(email, AccountStatus.DISABLED).orElseGet(() -> autoProvisionAccount(email));
+        account =
+            accountRepository
+                .findByUsernameAndStatusNot(email, AccountStatus.DISABLED)
+                .orElseGet(() -> autoProvisionAccount(email));
         accountService.validateAccountState(this, account);
 
         identityRepository.save(
@@ -101,26 +103,8 @@ public class AuthenticationService {
       return SessionAccountPrincipal.from(account, IdentityProvider.GOOGLE);
 
     } catch (Exception e) {
-      throw new AuthenticationFailedException("Failed to authenticate with Google: " + e.getMessage());
-    }
-  }
-
-  @Transactional
-  public SessionAccountPrincipal authLocal(String username, String plainPassword) {
-    try {
-      AccountEntity account = accountService.getAccountByUsername(username);
-      accountService.validateAccountState(this, account);
-
-      if (!hashingService.matchesPassword(
-          plainPassword, account.getPasswordHash(), account.getPasswordSalt())) {
-        throw new AuthenticationFailedException(INVALID_CREDENTIALS);
-      }
-
-      account.setLastLoginAt(OffsetDateTime.now(clock));
-      accountRepository.save(account);
-      return SessionAccountPrincipal.from(account, IdentityProvider.LOCAL);
-    } catch (AccountNotFoundException exception) {
-      throw new AuthenticationFailedException(INVALID_CREDENTIALS);
+      throw new AuthenticationFailedException(
+          "Failed to authenticate with Google: " + e.getMessage());
     }
   }
 
@@ -181,15 +165,11 @@ public class AuthenticationService {
   }
 
   private AccountEntity autoProvisionAccount(String email) {
-    var placeholderPassword =
-        hashingService.hashPassword(UUID.randomUUID() + "-" + UUID.randomUUID());
     AccountEntity account =
         accountRepository.save(
             AccountEntity.builder()
                 .id(UUID.randomUUID())
                 .username(email)
-                .passwordHash(placeholderPassword.hash())
-                .passwordSalt(placeholderPassword.salt())
                 .status(AccountStatus.ACTIVE)
                 .failedLoginAttempts(0)
                 .build());

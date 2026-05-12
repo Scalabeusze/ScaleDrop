@@ -25,7 +25,6 @@ import com.scaledrop.sdiam.adapter.db.IdentityProvider
 import com.scaledrop.sdiam.adapter.db.IdentityRepository
 import com.scaledrop.sdiam.configuration.exception.AuthenticationFailedException
 import java.time.OffsetDateTime
-import java.util.UUID
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User
@@ -42,9 +41,6 @@ class AuthenticationServiceTest extends IntegrationTestBase {
 
   @Autowired
   private IdentityRepository identityRepository
-
-  @Autowired
-  private AccountPasswordService accountPasswordService
 
   def "should link google identity to existing account matched by verified email"() {
     given:
@@ -155,12 +151,9 @@ class AuthenticationServiceTest extends IntegrationTestBase {
   }
 
   private AccountEntity persistAccount(String username, AccountStatus status) {
-    def passwordData = accountPasswordService.hashPassword("test_password1A!")
     return accountRepository.save(AccountEntity.builder()
         .id(UUID.randomUUID())
         .username(username)
-        .passwordHash(passwordData.hash())
-        .passwordSalt(passwordData.salt())
         .status(status)
         .failedLoginAttempts(0)
         .lockedUntil(null)

@@ -43,106 +43,6 @@ class AccountControllerTest extends WiremockTestBase {
   @Autowired
   private AccountRepository accountRepository
 
-  def "should create account"() {
-    when:
-    def result = mockMvc.perform(post(ACCOUNTS_ENDPOINT)
-        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD))
-        .contentType(APPLICATION_JSON)
-        .content(toJson([
-          username     : "test_username",
-          plainPassword: PASSWORD,
-          status       : "LOCKED",
-          lockedUntil  : "2026-04-20T09:30:00Z"
-        ])))
-        .andExpect(status().isCreated())
-        .andReturn()
-
-    def response = parseJson(result.response.contentAsString)
-
-    then:
-    response.id
-    response.username == "test_username"
-    response.status == "LOCKED"
-    response.failedLoginAttempts == 0
-    response.lockedUntil == "2026-04-20T09:30:00Z"
-    response.passwordUpdatedAt == null
-    response.createdAt
-    response.updatedAt
-
-    and:
-    def savedAccount =
-        accountRepository.findByUsernameAndStatusNot("test_username", AccountStatus.DISABLED).orElseThrow()
-    savedAccount.status == AccountStatus.LOCKED
-    savedAccount.passwordHash
-    savedAccount.passwordSalt
-  }
-
-  def "should reject invalid create account request"() {
-    when:
-    def result = mockMvc.perform(post(ACCOUNTS_ENDPOINT)
-        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD))
-        .contentType(APPLICATION_JSON)
-        .content(toJson([
-          username     : " ",
-          plainPassword: "short"
-        ])))
-        .andExpect(status().isBadRequest())
-        .andReturn()
-
-    def response = parseJson(result.response.contentAsString)
-
-    then:
-    response.type == "VALIDATION"
-    response.message == "Validation error"
-    response.errors*.field.contains("username")
-    response.errors*.field.contains("plainPassword")
-  }
-
-  def "should reject create account with duplicate username"() {
-    given:
-    persistAccount("test_username")
-
-    when:
-    def result = mockMvc.perform(post(ACCOUNTS_ENDPOINT)
-        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD))
-        .contentType(APPLICATION_JSON)
-        .content(toJson([
-          username     : "test_username",
-          plainPassword: PASSWORD
-        ])))
-        .andExpect(status().isConflict())
-        .andReturn()
-
-    def response = parseJson(result.response.contentAsString)
-
-    then:
-    response.type == "CONFLICT"
-    response.message == "Username already exists"
-  }
-
-  def "should create account with username from disabled account"() {
-    given:
-    def disabledAccount = persistAccount("test_username", AccountStatus.DISABLED)
-
-    when:
-    def result = mockMvc.perform(post(ACCOUNTS_ENDPOINT)
-        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD))
-        .contentType(APPLICATION_JSON)
-        .content(toJson([
-          username     : "test_username",
-          plainPassword: PASSWORD
-        ])))
-        .andExpect(status().isCreated())
-        .andReturn()
-
-    def response = parseJson(result.response.contentAsString)
-
-    then:
-    response.id != disabledAccount.id.toString()
-    response.username == "test_username"
-    response.status == "ACTIVE"
-  }
-
   def "should list accounts"() {
     given:
     persistAccount("test_username")
@@ -400,74 +300,6 @@ class AccountControllerTest extends WiremockTestBase {
     response.message == "Account not found"
   }
 
-  def "should update password"() {
-    given:
-    def account = persistAccount("test_username")
-    def previousHash = account.passwordHash
-    def previousSalt = account.passwordSalt
-
-    when:
-    def result = mockMvc.perform(patch("${ACCOUNTS_ENDPOINT}/${account.id}/password")
-        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD))
-        .contentType(APPLICATION_JSON)
-        .content(toJson([
-          plainPassword: "test_password2A!"
-        ])))
-        .andExpect(status().isOk())
-        .andReturn()
-
-    def response = parseJson(result.response.contentAsString)
-
-    then:
-    response.id == account.id.toString()
-    OffsetDateTime.parse(response.passwordUpdatedAt).toInstant() == OffsetDateTime.parse("2022-10-10T15:00:00Z").toInstant()
-
-    and:
-    def updatedAccount = accountRepository.findById(account.id).orElseThrow()
-    updatedAccount.passwordUpdatedAt.toInstant() == OffsetDateTime.parse("2022-10-10T15:00:00Z").toInstant()
-    updatedAccount.passwordHash != previousHash
-    updatedAccount.passwordSalt != previousSalt
-  }
-
-  def "should reject invalid password update request"() {
-    given:
-    def account = persistAccount("test_username")
-
-    when:
-    def result = mockMvc.perform(patch("${ACCOUNTS_ENDPOINT}/${account.id}/password")
-        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD))
-        .contentType(APPLICATION_JSON)
-        .content(toJson([
-          plainPassword: "short"
-        ])))
-        .andExpect(status().isBadRequest())
-        .andReturn()
-
-    def response = parseJson(result.response.contentAsString)
-
-    then:
-    response.type == "VALIDATION"
-    response.message == "Validation error"
-  }
-
-  def "should return not found when updating password for missing account"() {
-    when:
-    def result = mockMvc.perform(patch("${ACCOUNTS_ENDPOINT}/${UUID.randomUUID()}/password")
-        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD))
-        .contentType(APPLICATION_JSON)
-        .content(toJson([
-          plainPassword: "test_password2A!"
-        ])))
-        .andExpect(status().isNotFound())
-        .andReturn()
-
-    def response = parseJson(result.response.contentAsString)
-
-    then:
-    response.type == "NOT_FOUND"
-    response.message == "Account not found"
-  }
-
   def "should disable account instead of delete"() {
     given:
     def account = persistAccount("test_username")
@@ -504,8 +336,6 @@ class AccountControllerTest extends WiremockTestBase {
     return accountRepository.save(AccountEntity.builder()
         .id(UUID.randomUUID())
         .username(username)
-        .passwordHash("hash-${username}")
-        .passwordSalt("salt-${username}")
         .status(status)
         .failedLoginAttempts(0)
         .build())

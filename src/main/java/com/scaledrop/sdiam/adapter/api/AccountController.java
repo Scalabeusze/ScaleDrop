@@ -20,9 +20,7 @@ import static com.scaledrop.sdiam.configuration.Constants.API_V1_PREFIX;
 import static com.scaledrop.sdiam.configuration.Constants.BASIC_AUTH;
 
 import com.scaledrop.sdiam.adapter.api.mapper.AccountResponseMapper;
-import com.scaledrop.sdiam.adapter.api.model.request.CreateAccountAPIRequest;
 import com.scaledrop.sdiam.adapter.api.model.request.UpdateAccountAPIRequest;
-import com.scaledrop.sdiam.adapter.api.model.request.UpdatePasswordAPIRequest;
 import com.scaledrop.sdiam.adapter.api.model.response.AccountAPIResponse;
 import com.scaledrop.sdiam.adapter.api.model.response.AccountSearchAPIResponse;
 import com.scaledrop.sdiam.application.service.AccountService;
@@ -42,9 +40,7 @@ import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -63,18 +59,6 @@ public class AccountController {
 
   private final AccountService accountService;
   private final AccountResponseMapper accountResponseMapper;
-
-  @PostMapping(
-      consumes = MediaType.APPLICATION_JSON_VALUE,
-      produces = MediaType.APPLICATION_JSON_VALUE)
-  @Operation(summary = "Create account", description = "Creates a new account")
-  @SecurityRequirement(name = BASIC_AUTH)
-  @DefaultApiExceptionResponses
-  @ApiResponse(responseCode = "201", description = "Successfully created account")
-  @ResponseStatus(HttpStatus.CREATED)
-  public AccountAPIResponse createAccount(@Valid @RequestBody CreateAccountAPIRequest request) {
-    return accountResponseMapper.toResponse(accountService.createAccount(request));
-  }
 
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
   @Operation(summary = "List accounts", description = "Fetches all accounts")
@@ -124,20 +108,6 @@ public class AccountController {
   public AccountAPIResponse updateAccount(
       @PathVariable UUID accountId, @Valid @RequestBody UpdateAccountAPIRequest request) {
     return accountResponseMapper.toResponse(accountService.updateAccount(accountId, request));
-  }
-
-  @PatchMapping(
-      value = "/{accountId}/password",
-      consumes = MediaType.APPLICATION_JSON_VALUE,
-      produces = MediaType.APPLICATION_JSON_VALUE)
-  @Operation(summary = "Update password", description = "Changes account password")
-  @SecurityRequirement(name = BASIC_AUTH)
-  @DefaultApiExceptionResponses
-  @ApiResponse(responseCode = "200", description = "Successfully updated password")
-  @ResponseStatus(HttpStatus.OK)
-  public AccountAPIResponse updatePassword(
-      @PathVariable UUID accountId, @Valid @RequestBody UpdatePasswordAPIRequest request) {
-    return accountResponseMapper.toResponse(accountService.updatePassword(accountId, request));
   }
 
   @DeleteMapping("/{accountId}")

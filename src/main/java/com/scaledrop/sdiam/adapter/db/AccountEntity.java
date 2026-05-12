@@ -51,19 +51,10 @@ public class AccountEntity {
   @Column(nullable = false, length = 100)
   private String username;
 
-  @Column(name = "password_hash", nullable = false, length = 255)
-  private String passwordHash;
-
-  @Column(name = "password_salt", nullable = false, length = 255)
-  private String passwordSalt;
-
   @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 32)
   @Builder.Default
   private AccountStatus status = AccountStatus.ACTIVE;
-
-  @Column(name = "password_updated_at")
-  private OffsetDateTime passwordUpdatedAt;
 
   @Column(name = "last_login_at")
   private OffsetDateTime lastLoginAt;

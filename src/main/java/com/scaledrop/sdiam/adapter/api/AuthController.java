@@ -56,13 +56,16 @@ public class AuthController {
       produces = APPLICATION_JSON_VALUE)
   @Operation(
       summary = "Log in with Google account",
-      description = "Issues a signed JWT after successful Google authentication")
+      description =
+          "Issues a signed JWT after successful Google authentication and optionally creates an"
+              + " account")
   @SecurityRequirement(name = BASIC_AUTH)
   @DefaultApiExceptionResponses
   @ResponseStatus(HttpStatus.OK)
   public JwtAPIResponse loginWithGoogle(@RequestBody LoginWithGoogleAPIRequest request) {
     log.info("[AUTH] Received request to login with Google account");
-    SessionAccountPrincipal sessionAccountPrincipal = authenticationService.authGoogleWithToken(request.getGoogleIdToken());
+    SessionAccountPrincipal sessionAccountPrincipal =
+        authenticationService.authGoogleWithToken(request.getGoogleIdToken());
     return new JwtAPIResponse(jwtTokenService.createToken(sessionAccountPrincipal));
   }
 }

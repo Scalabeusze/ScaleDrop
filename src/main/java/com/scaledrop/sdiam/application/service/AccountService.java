@@ -16,18 +16,14 @@
 
 package com.scaledrop.sdiam.application.service;
 
-import com.scaledrop.sdiam.adapter.api.model.request.CreateAccountAPIRequest;
 import com.scaledrop.sdiam.adapter.api.model.request.UpdateAccountAPIRequest;
-import com.scaledrop.sdiam.adapter.api.model.request.UpdatePasswordAPIRequest;
 import com.scaledrop.sdiam.adapter.db.AccountEntity;
 import com.scaledrop.sdiam.adapter.db.AccountEntity.AccountStatus;
 import com.scaledrop.sdiam.adapter.db.AccountRepository;
 import com.scaledrop.sdiam.configuration.exception.AccountConflictException;
 import com.scaledrop.sdiam.configuration.exception.AccountNotFoundException;
-import com.scaledrop.sdiam.configuration.exception.AccountServiceException;
 import com.scaledrop.sdiam.configuration.exception.AccountValidationException;
 import com.scaledrop.sdiam.configuration.exception.AuthenticationFailedException;
-import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -52,39 +48,6 @@ public class AccountService {
   private static final int MAX_SEARCH_QUERY_LENGTH = 100;
 
   private final AccountRepository accountRepository;
-  private final AccountPasswordService hashingService;
-  private final Clock clock;
-
-  // Create
-
-  /**
-   * Creates a brand new account
-   *
-   * @param req request payload
-   * @return newly created AccountEntity
-   * @throws AccountConflictException if username is taken
-   * @throws AccountValidationException if new password does not meet validation requirements
-   * @throws AccountServiceException if hashing service fails
-   */
-  @Transactional
-  public AccountEntity createAccount(CreateAccountAPIRequest req) {
-    AccountStatus status = req.status() == null ? AccountStatus.ACTIVE : req.status();
-    validateUsernameAvailable(req.username(), status, null);
-
-    var passwordData = hashingService.hashPassword(req.plainPassword());
-
-    var accountEntity =
-        AccountEntity.builder()
-            .id(UUID.randomUUID())
-            .username(req.username())
-            .passwordHash(passwordData.hash())
-            .passwordSalt(passwordData.salt())
-            .status(status)
-            .lockedUntil(req.lockedUntil())
-            .build();
-
-    return accountRepository.save(accountEntity);
-  }
 
   // Read
 
@@ -156,7 +119,7 @@ public class AccountService {
    * Updates the user's account
    *
    * @param accountId UUID of the account
-   * @param req request payload
+   * @param req       request payload
    * @return updated AccountEntity
    * @throws AccountNotFoundException if accountId does not exist
    * @throws AccountConflictException if username is taken
@@ -187,28 +150,6 @@ public class AccountService {
     if (req.lockedUntil() != null) {
       accountEntity.setLockedUntil(req.lockedUntil());
     }
-
-    return accountRepository.save(accountEntity);
-  }
-
-  /**
-   * Updates the user's password
-   *
-   * @param accountId UUID of the account
-   * @param req request payload
-   * @return updated AccountEntity
-   * @throws AccountNotFoundException if accountId does not exist
-   * @throws AccountValidationException if new password does not meet validation requirements
-   * @throws AccountServiceException if hashing service fails
-   */
-  @Transactional
-  public AccountEntity updatePassword(UUID accountId, UpdatePasswordAPIRequest req) {
-    var accountEntity = getAccountById(accountId);
-    var passwordData = hashingService.hashPassword(req.plainPassword());
-
-    accountEntity.setPasswordHash(passwordData.hash());
-    accountEntity.setPasswordSalt(passwordData.salt());
-    accountEntity.setPasswordUpdatedAt(OffsetDateTime.now(clock));
 
     return accountRepository.save(accountEntity);
   }

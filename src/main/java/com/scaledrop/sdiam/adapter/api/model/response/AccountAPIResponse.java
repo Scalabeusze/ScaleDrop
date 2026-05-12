@@ -32,7 +32,5 @@ public record AccountAPIResponse(
     @Schema(description = "Lock expiration timestamp if the account is temporarily locked")
         OffsetDateTime lockedUntil,
     @Schema(description = "Timestamp of the last successful login") OffsetDateTime lastLoginAt,
-    @Schema(description = "Timestamp when the password was last changed")
-        OffsetDateTime passwordUpdatedAt,
     @Schema(description = "Timestamp when the account was created") @NotNull OffsetDateTime createdAt,
     @Schema(description = "Timestamp when the account was last updated") @NotNull OffsetDateTime updatedAt) {}

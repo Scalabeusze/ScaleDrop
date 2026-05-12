@@ -26,15 +26,11 @@ import org.mapstruct.Mapper;
 @Mapper(config = MapperConfiguration.class)
 public interface AccountResponseMapper {
 
-  @BeanMapping(ignoreUnmappedSourceProperties = {"passwordHash", "passwordSalt"})
   AccountAPIResponse toResponse(AccountEntity accountEntity);
 
   @BeanMapping(
       ignoreUnmappedSourceProperties = {
         "status",
-        "passwordHash",
-        "passwordSalt",
-        "passwordUpdatedAt",
         "lastLoginAt",
         "failedLoginAttempts",
         "lockedUntil",

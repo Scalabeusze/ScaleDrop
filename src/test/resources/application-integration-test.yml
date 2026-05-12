@@ -12,3 +12,5 @@ security:
   jwt:
     secret: jwt-secret-key-must-be-at-least-32-bytes
     ttl: PT24H
+  google:
+    client-id: google-client-id

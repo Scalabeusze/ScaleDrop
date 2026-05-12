@@ -76,7 +76,8 @@ resource "aws_ecs_task_definition" "sd_bff" {
         { name = "IAM_SERVICE_PASSWORD", valueFrom = aws_ssm_parameter.internal_password_param.arn },
         { name = "UPLOAD_SERVICE_PASSWORD", valueFrom = aws_ssm_parameter.upload_internal_password_param.arn },
         { name = "DOWNLOAD_SERVICE_PASSWORD", valueFrom = aws_ssm_parameter.download_internal_password_param.arn },
-        { name = "GOOGLE_CLIENT_ID", valueFrom = data.aws_ssm_parameter.bff_google_client_id.arn }
+        { name = "GOOGLE_CLIENT_ID", valueFrom = data.aws_ssm_parameter.bff_google_client_id.arn },
+        { name = "SECURITY_JWT_SECRET", valueFrom = aws_ssm_parameter.jwt_secret_param.arn }
       ]
 
       logConfiguration = {

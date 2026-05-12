@@ -1,5 +1,6 @@
-package com.scaledrop.sdbff.adapter.client.iam.model.request;
+package com.scaledrop.sdbff.adapter.api.model.iam.response;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,13 +16,10 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @NoArgsConstructor
 @AllArgsConstructor
-public class IAMLoginRequest {
+public class JwtAPIResponse {
 
-  private String googleIdToken;
-
-  public static IAMLoginRequest from(String googleIdToken) {
-    return IAMLoginRequest.builder()
-        .googleIdToken(googleIdToken)
-        .build();
-  }
+  @Schema(
+      description = "Signed JWT token",
+      example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM...")
+  private String jwt;
 }

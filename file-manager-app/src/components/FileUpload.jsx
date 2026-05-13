@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import { Box, Button, Typography, CircularProgress, TextField } from '@mui/material';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
-const USERNAME = import.meta.env.VITE_USERNAME;
-const PASSWORD = import.meta.env.VITE_PASSWORD;
 
 export const FileUpload = ({ onUploadSuccess }) => {
   const [file, setFile] = useState(null);
@@ -24,11 +22,12 @@ export const FileUpload = ({ onUploadSuccess }) => {
 
     try {
       // 1. Send metadata to backend to request a signed URL
+      const token = localStorage.getItem('jwt_token');
       const requestResponse = await fetch(`${API_BASE_URL}/api/v1/example`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Basic ${btoa(`${USERNAME}:${PASSWORD}`)}`,
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           filename: finalName,

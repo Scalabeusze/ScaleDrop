@@ -1,4 +1,4 @@
-# ScaleDrop documentation 
+# ScaleDrop documentation
 
 ## Local Development Environment
 
@@ -61,13 +61,15 @@ Default database instance for the application.
 
 #### LocalStack
 
+As of March 23, 2026, `localstack/localstack:latest` needs a localstack license and an API KEY. Read more [at this GitHub issue](https://github.com/testcontainers/testcontainers-java/issues/11568). You need to export the `LOCALSTACK_AUTH_TOKEN` variable before spinning up the containers or set it in `.env` file. For this project purposes, please use the joint Google account for logging in to <https://app.localstack.cloud/getting-started>.
+
 * **Endpoint:** `http://localhost:4566`
 * **Region:** `eu-west-1`
 * **Services enabled:**
 
-    * S3
-    * SNS
-    * SQS
+  * S3
+  * SNS
+  * SQS
 
 Provides a fully local AWS-like environment.
 
@@ -112,7 +114,7 @@ These are dummy credentials used only for LocalStack.
 
 ### Testing the Setup
 
-#### Send a message to SNS:
+#### Send a message to SNS
 
 ```bash
 aws --endpoint-url=http://localhost:4566 sns publish \
@@ -120,7 +122,7 @@ aws --endpoint-url=http://localhost:4566 sns publish \
   --message "test message"
 ```
 
-#### Receive message from SQS:
+#### Receive message from SQS
 
 ```bash
 aws --endpoint-url=http://localhost:4566 sqs receive-message \
@@ -131,7 +133,7 @@ aws --endpoint-url=http://localhost:4566 sqs receive-message \
 
 ### Notes
 
-* The `setup-resources` container waits ~10 seconds for LocalStack to start before provisioning resources.
+* The `setup-resources` container waits for LocalStack to report S3, SNS, and SQS as healthy before provisioning resources.
 * Resource names and ARNs are deterministic in LocalStack (`account id = 000000000000`).
 * All data is ephemeral unless volumes are persisted.
 
@@ -146,7 +148,8 @@ docker compose down -v
 Removes all containers and associated volumes.
 
 Alternatively, you can add the `docker-kill.sh` file to your bin directory and run:
-```
+
+```shell
 docker-kill.sh
 ```
 
@@ -161,6 +164,7 @@ This will stop all containers currently running on your machine, so be cautious 
   ```text
   http://localhost:4566
   ```
+
 * For Spring Boot, configure:
 
   ```yaml
@@ -177,4 +181,3 @@ This will stop all containers currently running on your machine, so be cautious 
 | ------- | ------------------------------------ |
 | default | Redis + PostgreSQL                   |
 | full    | Adds LocalStack + AWS resource setup |
-

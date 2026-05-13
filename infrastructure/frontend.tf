@@ -72,7 +72,7 @@ resource "aws_cloudfront_distribution" "frontend_dist" {
 
   # Route traffic to ALB
   ordered_cache_behavior {
-    path_pattern     = "/api/*"
+    path_pattern     = "/sd-bff/*"
     target_origin_id = "Backend-ALB"
 
     allowed_methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]

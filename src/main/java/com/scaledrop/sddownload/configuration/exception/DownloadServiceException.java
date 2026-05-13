@@ -14,28 +14,15 @@
  * permissions and limitations under the License.
  */
 
-package com.scaledrop.sddownload.configuration;
+package com.scaledrop.sddownload.configuration.exception;
 
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+public class DownloadServiceException extends RuntimeException {
 
-@Service
-@RequiredArgsConstructor
-@Getter
-public class TimeProvider {
-
-  private final Clock clock;
-
-  public Instant calculateThreshold(Duration timeout) {
-    return now().minus(timeout).toInstant();
+  public DownloadServiceException(String message) {
+    super(message);
   }
 
-  public OffsetDateTime now() {
-    return OffsetDateTime.now(clock);
+  public DownloadServiceException(String message, Throwable cause) {
+    super(message, cause);
   }
 }

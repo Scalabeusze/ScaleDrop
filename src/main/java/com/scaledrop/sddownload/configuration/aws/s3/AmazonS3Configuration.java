@@ -1,3 +1,19 @@
+/*
+ * Copyright 2026-present Scalabeusze
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *          http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
+
 package com.scaledrop.sddownload.configuration.aws.s3;
 
 import com.scaledrop.sddownload.configuration.aws.AmazonProperties;
@@ -36,7 +52,6 @@ public class AmazonS3Configuration {
         .build();
   }
 
-
   @Bean
   public S3AsyncClient s3AsyncClient(AwsCredentialsProvider awsCredentialsProvider) {
     return apply(amazonS3Properties.getFileserver().getEndpoint(), S3AsyncClient.builder())
@@ -51,18 +66,21 @@ public class AmazonS3Configuration {
     log.info("Assuming role {}", amazonS3Properties.getAssumeRole());
 
     if (StringUtils.isNotEmpty(amazonS3Properties.getAssumeRole())) {
-      StsClient stsClient = StsClient.builder()
-          .credentialsProvider(buildCredentialsProvider())
-          .region(Region.of(amazonProperties.getRegion()))
-          .build();
+      StsClient stsClient =
+          StsClient.builder()
+              .credentialsProvider(buildCredentialsProvider())
+              .region(Region.of(amazonProperties.getRegion()))
+              .build();
 
       return StsAssumeRoleCredentialsProvider.builder()
           .stsClient(stsClient)
           .asyncCredentialUpdateEnabled(true)
-          .refreshRequest(refreshRequestBuilder -> refreshRequestBuilder
-              .roleArn(amazonS3Properties.getAssumeRole())
-              .roleSessionName(SESSION_ROLE_NAME)
-              .build())
+          .refreshRequest(
+              refreshRequestBuilder ->
+                  refreshRequestBuilder
+                      .roleArn(amazonS3Properties.getAssumeRole())
+                      .roleSessionName(SESSION_ROLE_NAME)
+                      .build())
           .build();
     }
 
@@ -70,9 +88,7 @@ public class AmazonS3Configuration {
   }
 
   private DefaultCredentialsProvider buildCredentialsProvider() {
-    return DefaultCredentialsProvider.builder()
-        .asyncCredentialUpdateEnabled(true)
-        .build();
+    return DefaultCredentialsProvider.builder().asyncCredentialUpdateEnabled(true).build();
   }
 
   /**
@@ -84,7 +100,8 @@ public class AmazonS3Configuration {
    * @param <C>      - ClientT generic version
    * @return AwsClientBuilder
    */
-  private <T extends AwsClientBuilder<T, C>, C> AwsClientBuilder<T, C> apply(String endpoint, AwsClientBuilder<T, C> builder) {
+  private <T extends AwsClientBuilder<T, C>, C> AwsClientBuilder<T, C> apply(
+      String endpoint, AwsClientBuilder<T, C> builder) {
     if (StringUtils.isNotBlank(endpoint)) {
       builder.endpointOverride(URI.create(endpoint));
     }

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2026-present Scalabeusze
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *          http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
+
 package com.scaledrop.sddownload.configuration.exception.api;
 
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCauseMessage;
@@ -35,10 +51,10 @@ public class GlobalExceptionHandler {
   @Order(HIGHEST_PRECEDENCE)
   @ResponseStatus(BAD_REQUEST)
   @ExceptionHandler({
-      ConstraintViolationException.class,
-      MethodArgumentNotValidException.class,
-      HttpMessageNotReadableException.class,
-      MissingServletRequestParameterException.class
+    ConstraintViolationException.class,
+    MethodArgumentNotValidException.class,
+    HttpMessageNotReadableException.class,
+    MissingServletRequestParameterException.class
   })
   public ApiExceptionResponse handleBadRequest(Exception ex) {
     return buildApiExceptionResponse(ex);
@@ -47,8 +63,8 @@ public class GlobalExceptionHandler {
   @Order(HIGHEST_PRECEDENCE)
   @ResponseStatus(NOT_FOUND)
   @ExceptionHandler({
-      EntityNotFoundException.class,
-      JpaObjectRetrievalFailureException.class,
+    EntityNotFoundException.class,
+    JpaObjectRetrievalFailureException.class,
   })
   public ApiExceptionResponse handleNotFound(Exception ex) {
     return buildApiExceptionResponse(ex);
@@ -97,5 +113,4 @@ public class GlobalExceptionHandler {
   private boolean checkForBrokenPipe(IOException ex) {
     return Strings.CI.contains(getRootCauseMessage(ex), "Broken pipe");
   }
-
 }

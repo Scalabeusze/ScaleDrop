@@ -1,3 +1,19 @@
+/*
+ * Copyright 2026-present Scalabeusze
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *          http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
+
 package com.scaledrop.sddownload.configuration.exception.api;
 
 import com.scaledrop.sddownload.configuration.exception.api.ApiExceptionType.ExceptionTypeSeverity;
@@ -22,44 +38,39 @@ import lombok.extern.slf4j.Slf4j;
 @AllArgsConstructor
 public class ApiExceptionResponse {
 
-  @NotNull
-  @Schema(
+  @NotNull @Schema(
       requiredMode = RequiredMode.REQUIRED,
       example = "09abed2a-0a2b-48d5-b9e8-9da6ea309e44",
       description = "Error identification code")
   private UUID uuid;
 
-  @NotNull
-  @Schema(
+  @NotNull @Schema(
       requiredMode = RequiredMode.REQUIRED,
       example = "Incorrect process status, expected: [X] received: Y",
       description = "String message error")
   private String message;
 
-  @NotNull
-  @Schema(
+  @NotNull @Schema(
       requiredMode = RequiredMode.REQUIRED,
       example = "One of [UNAUTHORIZED, VALIDATION, NOT_FOUND, INTERNAL_SERVER_ERROR]",
       description = "Type of api exception error")
   private ApiExceptionType type;
 
-  @NotNull
-  @Schema(
+  @NotNull @Schema(
       requiredMode = RequiredMode.REQUIRED,
       example = "2020-05-27T11:17:22.439Z",
       description = "Error occurrence timestamp")
   private OffsetDateTime timestamp;
 
-  @Schema(
-      description = "List of validation errors")
+  @Schema(description = "List of validation errors")
   private List<ValidationError> errors;
 
   @Builder
   public ApiExceptionResponse(
-    @NonNull String message,
-    @NonNull ApiExceptionType type,
-    Exception exception,
-    List<ValidationError> errors) {
+      @NonNull String message,
+      @NonNull ApiExceptionType type,
+      Exception exception,
+      List<ValidationError> errors) {
     this.message = message;
     this.type = type;
     this.errors = errors;

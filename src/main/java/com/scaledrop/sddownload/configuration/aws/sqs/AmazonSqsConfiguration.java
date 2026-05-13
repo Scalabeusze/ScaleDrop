@@ -1,3 +1,19 @@
+/*
+ * Copyright 2026-present Scalabeusze
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *          http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
+
 package com.scaledrop.sddownload.configuration.aws.sqs;
 
 import static org.apache.commons.lang3.ObjectUtils.allNotNull;
@@ -34,15 +50,15 @@ public class AmazonSqsConfiguration {
 
   protected AwsCredentialsProvider buildCredentialsProvider() {
     if (allNotNull(amazonProperties.getAccessKeyId(), amazonProperties.getSecretKey())) {
-      return () -> AwsBasicCredentials.create(amazonProperties.getAccessKeyId(), amazonProperties.getSecretKey());
+      return () ->
+          AwsBasicCredentials.create(
+              amazonProperties.getAccessKeyId(), amazonProperties.getSecretKey());
     }
-    return DefaultCredentialsProvider.builder()
-        .asyncCredentialUpdateEnabled(true)
-        .build();
+    return DefaultCredentialsProvider.builder().asyncCredentialUpdateEnabled(true).build();
   }
 
-  private <T extends AwsClientBuilder<T, C>, C> AwsClientBuilder<T, C>
-  apply(AmazonSqsProperties amazonProperties, AwsClientBuilder<T, C> builder) {
+  private <T extends AwsClientBuilder<T, C>, C> AwsClientBuilder<T, C> apply(
+      AmazonSqsProperties amazonProperties, AwsClientBuilder<T, C> builder) {
     if (amazonProperties.getEndpoint() != null) {
       builder.endpointOverride(amazonProperties.getEndpoint());
     }

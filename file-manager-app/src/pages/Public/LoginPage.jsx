@@ -17,7 +17,8 @@ export const LoginPage = () => {
   const handleGoogleSuccess = async (credentialResponse) => {
     setErrorMsg('');
     try {
-      const response = await fetch('http://sd-alb-dev-1442333574.eu-north-1.elb.amazonaws.com/sd-bff/api/v1/login', {
+      const apiUrl = import.meta.env.VITE_API_URL;
+      const response = await fetch(`${apiUrl}/api/v1/login`, {
         method: 'POST',
         headers: {
           'accept': 'application/json',

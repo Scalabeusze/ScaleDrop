@@ -1,27 +1,44 @@
-import { Typography, Box, Button, Paper, Divider } from '@mui/material';
+import React, { useState } from 'react';
+import { Typography, Box, Button, Paper, Divider, Alert } from '@mui/material';
 import { useNavigate } from 'react-router';
 import { useAuth } from '../../context/AuthContext';
+import { GoogleLogin } from '@react-oauth/google';
 
 export const LoginPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleMockLogin = () => {
     login('user');
     navigate('/user/my-files');
   };
 
-  const handleOAuthLogin = () => {
-    // Redirect the user to the backend's OAuth2 authorization endpoint.
-    window.location.href = 'http://sd-alb-dev-1442333574.eu-north-1.elb.amazonaws.com/sd-iam/api/v1/session/google';
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setErrorMsg('');
+    try {
+      const response = await fetch('http://sd-alb-dev-1442333574.eu-north-1.elb.amazonaws.com/sd-bff/api/v1/login', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ googleIdToken: credentialResponse.credential })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.message || 'Logowanie w BFF nie powiodło się');
+      }
+
+      const data = await response.json();
+      login(data);
+      navigate('/user/my-files');
+    } catch (error) {
+      console.error('Błąd podczas logowania Google:', error);
+      setErrorMsg(error.message);
+    }
   };
-  /* https://accounts.google.com/o/oauth2/v2/auth?
-  scope=https%3A//www.googleapis.com/auth/drive.metadata.readonly%20https%3A//www.googleapis.com/auth/calendar.readonly&
-  include_granted_scopes=true&
-  response_type=token&
-  state=state_parameter_passthrough_value&
-  redirect_uri=https%3A//developers.google.com/oauthplayground&
-  client_id=client_id   */
 
   return (
     <Box sx={{ display: 'flex', justifyContent: 'center', mt: 10 }}>
@@ -30,8 +47,15 @@ export const LoginPage = () => {
           Login
         </Typography>
         <Typography variant="body1" color="text.secondary" paragraph>
-          Mock authentication for development.
+          Zaloguj się, aby uzyskać dostęp do swoich plików.
         </Typography>
+
+        {errorMsg && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {errorMsg}
+          </Alert>
+        )}
+
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 4 }}>
           <Button variant="contained" color="primary" onClick={() => handleMockLogin('user')}>
             Login as User
@@ -39,13 +63,12 @@ export const LoginPage = () => {
           
           <Divider sx={{ my: 1 }}>OR</Divider>
 
-          <Button
-            variant="outlined"
-            color="primary"
-            onClick={handleOAuthLogin}
-          >
-            Sign In with Google
-          </Button>
+          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => setErrorMsg('Logowanie z Google zakończone wewnętrznym błędem paczki')}
+            />
+          </Box>
         </Box>
       </Paper>
     </Box>

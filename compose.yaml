@@ -5,7 +5,7 @@ services:
       context: .
     container_name: sd_download
     ports:
-      - "8080:8080"
+      - "6200:6200"
     environment:
       DB_URL: ${DB_URL:?DB_URL must point to an external PostgreSQL instance}
       DB_USERNAME: ${DB_USERNAME:?DB_USERNAME is required}
@@ -16,7 +16,7 @@ services:
       AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME:-sd-fileserver-local}
       AWS_FILE_UPDATES_SQS_QUEUE_URL: ${AWS_FILE_UPDATES_SQS_QUEUE_URL:-}
     healthcheck:
-      test: [ "CMD-SHELL", "curl --fail --silent http://127.0.0.1:8080/sd-download/actuator/health >/dev/null" ]
+      test: [ "CMD-SHELL", "curl --fail --silent http://127.0.0.1:6200/sd-download/actuator/health >/dev/null" ]
       interval: 15s
       timeout: 5s
       retries: 10

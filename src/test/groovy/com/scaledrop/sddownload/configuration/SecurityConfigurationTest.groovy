@@ -27,7 +27,7 @@ class SecurityConfigurationTest extends WiremockTestBase {
   private static final String WRONG_USER = "wrongUser"
   private static final String WRONG_PASSWORD = "wrongPassword"
   private static final String SWAGGER_PATH = "/swagger-ui/index.html"
-  private static final String EXAMPLE_ENDPOINT = "/api/v1/example"
+  private static final String FILES_ENDPOINT = "/api/v1/files"
 
   // ACTUATOR
   def "should be able to access actuator endpoints"() {
@@ -57,30 +57,30 @@ class SecurityConfigurationTest extends WiremockTestBase {
         .andExpect(status().isOk())
   }
 
-  // EXAMPLE
-  def 'should not allow access to example endpoint without credentials'() {
+  // FILES
+  def 'should not allow access to files endpoint without credentials'() {
     expect:
-    mockMvc.perform(get(EXAMPLE_ENDPOINT))
+    mockMvc.perform(get(FILES_ENDPOINT))
         .andExpect(status().isUnauthorized())
   }
 
-  def 'should not allow access to example endpoint with invalid credentials'() {
+  def 'should not allow access to files endpoint with invalid credentials'() {
     expect:
-    mockMvc.perform(get(EXAMPLE_ENDPOINT)
+    mockMvc.perform(get(FILES_ENDPOINT)
         .with(httpBasic(WRONG_USER, WRONG_PASSWORD)))
         .andExpect(status().isUnauthorized())
   }
 
-  def 'should not allow access to example endpoint with documentation credentials'() {
+  def 'should not allow access to files endpoint with documentation credentials'() {
     expect:
-    mockMvc.perform(get(EXAMPLE_ENDPOINT)
+    mockMvc.perform(get(FILES_ENDPOINT)
         .with(httpBasic(DOCUMENTATION_USERNAME, DOCUMENTATION_PASSWORD)))
         .andExpect(status().isForbidden())
   }
 
-  def 'should allow access to example endpoint with internal credentials'() {
+  def 'should allow access to files endpoint with internal credentials'() {
     expect:
-    mockMvc.perform(get(EXAMPLE_ENDPOINT)
+    mockMvc.perform(get(FILES_ENDPOINT)
         .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
         .andExpect(status().isOk())
   }

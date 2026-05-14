@@ -16,6 +16,7 @@
 
 package com.scaledrop.sddownload.utilities
 
+import static org.testcontainers.containers.localstack.LocalStackContainer.Service.S3
 import static org.testcontainers.containers.localstack.LocalStackContainer.Service.SQS
 
 import groovy.util.logging.Slf4j
@@ -31,11 +32,12 @@ import org.testcontainers.utility.DockerImageName
 class Initializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
   public static final String FILE_UPDATES_QUEUE_URL = "file-updates-queue-url"
+  public static final String FILESERVER_BUCKET_NAME = "sd-fileserver-test"
 
   public static final LocalStackContainer AWS_CONTAINER =  new LocalStackContainer(DockerImageName
   .parse("localstack/localstack:3.1.0"))
   .withClasspathResourceMapping("/localstack", "/etc/localstack/init/ready.d", BindMode.READ_ONLY)
-  .withServices(SQS)
+  .withServices(S3, SQS)
   .waitingFor(Wait.forLogMessage(".*Ready\\.\n", 1));
 
   static {
@@ -53,6 +55,9 @@ class Initializer implements ApplicationContextInitializer<ConfigurableApplicati
     pairs.add("aws.access-key-id=" + AWS_CONTAINER.getAccessKey())
     pairs.add("aws.secret-key=" + AWS_CONTAINER.getSecretKey())
 
+    pairs.add("AWS_S3_ENDPOINT=" + AWS_CONTAINER.getEndpointOverride(S3))
+    pairs.add("AWS_S3_BUCKET_REGION=" + AWS_CONTAINER.getRegion())
+    pairs.add("AWS_S3_BUCKET_NAME=" + FILESERVER_BUCKET_NAME)
     pairs.add("AWS_SQS_ENDPOINT=" + AWS_CONTAINER.getEndpointOverride(SQS))
     pairs.add("AWS_FILE_UPDATES_SQS_QUEUE_URL=" + AWS_CONTAINER.getEndpointOverride(SQS) + "/000000000000/" + FILE_UPDATES_QUEUE_URL)
 

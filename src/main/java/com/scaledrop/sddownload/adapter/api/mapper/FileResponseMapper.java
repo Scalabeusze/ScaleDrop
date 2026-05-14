@@ -16,13 +16,13 @@
 
 package com.scaledrop.sddownload.adapter.api.mapper;
 
-import com.scaledrop.sddownload.adapter.api.model.response.ExampleAPIResponse;
+import com.scaledrop.sddownload.adapter.api.model.response.FileAPIResponse;
 import com.scaledrop.sddownload.configuration.MapperConfiguration;
-import com.scaledrop.sddownload.domain.example.ExampleObject;
+import com.scaledrop.sddownload.domain.file.FileObject;
 import org.mapstruct.Mapper;
 
 @Mapper(config = MapperConfiguration.class)
-public interface ExampleResponseMapper {
+public interface FileResponseMapper {
 
-  ExampleAPIResponse toResponse(ExampleObject exampleObject);
+  FileAPIResponse toResponse(FileObject fileObject);
 }

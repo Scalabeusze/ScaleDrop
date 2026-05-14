@@ -14,11 +14,8 @@
  * permissions and limitations under the License.
  */
 
-package com.scaledrop.sddownload.application.port.in;
+package com.scaledrop.sddownload.domain.file;
 
-import com.scaledrop.sddownload.domain.example.ExampleObject;
+import java.time.Instant;
 
-public interface ExampleUseCase {
-
-  ExampleObject getExampleObject();
-}
+public record FileObject(String key, Long size, Instant lastModified, String eTag) {}

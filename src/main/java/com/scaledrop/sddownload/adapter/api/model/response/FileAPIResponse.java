@@ -17,27 +17,13 @@
 package com.scaledrop.sddownload.adapter.api.model.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import java.util.UUID;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import java.time.Instant;
 
-@Getter
-@Setter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class ExampleAPIResponse {
-
-  @Schema(
-      example = "498ecc77-a12c-409b-a37d-12631c75896c",
-      description = "This is an example UUID field in the API response")
-  UUID exampleId;
-
-  @Schema(
-      example = "Some example value",
-      description = "This is an example field in the API response")
-  String exampleField;
-}
+public record FileAPIResponse(
+    @Schema(example = "exports/2026-05/report.csv", description = "S3 object key") @NotBlank String key,
+    @Schema(example = "1024", description = "Object size in bytes") @NotNull Long size,
+    @Schema(description = "Timestamp when the object was last modified") @NotNull Instant lastModified,
+    @Schema(example = "\"9b2cf535f27731c974343645a3985328\"", description = "S3 object ETag")
+        @NotBlank String eTag) {}

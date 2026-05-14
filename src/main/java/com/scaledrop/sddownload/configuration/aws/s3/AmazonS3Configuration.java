@@ -20,16 +20,19 @@ import com.scaledrop.sddownload.configuration.aws.AmazonProperties;
 import java.net.URI;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.sts.StsClient;
 import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider;
 
@@ -48,7 +51,8 @@ public class AmazonS3Configuration {
   public S3Client s3Client() {
     return apply(amazonS3Properties.getFileserver().getEndpoint(), S3Client.builder())
         .region(Region.of(amazonS3Properties.getFileserver().getRegion()))
-        .credentialsProvider(buildCredentialsProvider())
+        .credentialsProvider(awsCredentialsProvider())
+        .serviceConfiguration(s3ServiceConfiguration())
         .build();
   }
 
@@ -57,7 +61,11 @@ public class AmazonS3Configuration {
     return apply(amazonS3Properties.getFileserver().getEndpoint(), S3AsyncClient.builder())
         .region(Region.of(amazonS3Properties.getFileserver().getRegion()))
         .credentialsProvider(awsCredentialsProvider)
-        .serviceConfiguration(builder -> builder.checksumValidationEnabled(false))
+        .serviceConfiguration(
+            builder ->
+                builder
+                    .checksumValidationEnabled(false)
+                    .pathStyleAccessEnabled(isCustomEndpointConfigured()))
         .build();
   }
 
@@ -87,7 +95,21 @@ public class AmazonS3Configuration {
     return buildCredentialsProvider();
   }
 
-  private DefaultCredentialsProvider buildCredentialsProvider() {
+  private S3Configuration s3ServiceConfiguration() {
+    return S3Configuration.builder().pathStyleAccessEnabled(isCustomEndpointConfigured()).build();
+  }
+
+  private boolean isCustomEndpointConfigured() {
+    return StringUtils.isNotBlank(amazonS3Properties.getFileserver().getEndpoint());
+  }
+
+  private AwsCredentialsProvider buildCredentialsProvider() {
+    if (ObjectUtils.allNotNull(
+        amazonProperties.getAccessKeyId(), amazonProperties.getSecretKey())) {
+      return () ->
+          AwsBasicCredentials.create(
+              amazonProperties.getAccessKeyId(), amazonProperties.getSecretKey());
+    }
     return DefaultCredentialsProvider.builder().asyncCredentialUpdateEnabled(true).build();
   }
 

@@ -95,7 +95,7 @@ public class SecurityConfiguration {
           .logout(AbstractHttpConfigurer::disable)
           .anonymous(AbstractHttpConfigurer::disable)
           .authorizeHttpRequests(
-              r -> r.requestMatchers(GET, API_V1_PREFIX + "/example").hasAnyRole(INTERNAL.name()))
+              r -> r.requestMatchers(GET, API_V1_PREFIX + "/files").hasAnyRole(INTERNAL.name()))
           .httpBasic(
               customizer -> customizer.authenticationEntryPoint(basicAuthenticationEntryPoint))
           .exceptionHandling(eh -> eh.accessDeniedHandler(customAccessDeniedHandler))

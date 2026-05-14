@@ -19,43 +19,45 @@ package com.scaledrop.sddownload.adapter.api;
 import static com.scaledrop.sddownload.configuration.Constants.API_V1_PREFIX;
 import static com.scaledrop.sddownload.configuration.Constants.BASIC_AUTH;
 
-import com.scaledrop.sddownload.adapter.api.mapper.ExampleResponseMapper;
-import com.scaledrop.sddownload.adapter.api.model.response.ExampleAPIResponse;
-import com.scaledrop.sddownload.application.port.in.ExampleUseCase;
+import com.scaledrop.sddownload.adapter.api.mapper.FileResponseMapper;
+import com.scaledrop.sddownload.adapter.api.model.response.FileAPIResponse;
+import com.scaledrop.sddownload.application.service.FileService;
 import com.scaledrop.sddownload.configuration.annotations.DefaultApiExceptionResponses;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-@Slf4j
 @Validated
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "Example", description = "Example controller")
-public class ExampleController {
+@RequestMapping(FileController.FILES_ENDPOINT)
+@Tag(name = "Files", description = "Files controller")
+public class FileController {
 
-  private static final String EXAMPLE_ENDPOINT = API_V1_PREFIX + "/example";
+  static final String FILES_ENDPOINT = API_V1_PREFIX + "/files";
 
-  private final ExampleUseCase exampleUseCase;
-  private final ExampleResponseMapper exampleResponseMapper;
+  private final FileService fileService;
+  private final FileResponseMapper fileResponseMapper;
 
-  @GetMapping(value = EXAMPLE_ENDPOINT, produces = MediaType.APPLICATION_JSON_VALUE)
-  @Operation(summary = "Fetch example object", description = "Just an example")
+  @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+  @Operation(summary = "List files", description = "Lists files from the configured S3 bucket")
   @SecurityRequirement(name = BASIC_AUTH)
   @DefaultApiExceptionResponses
-  @ApiResponse(responseCode = "200", description = "Successfully fetched example object")
+  @ApiResponse(responseCode = "200", description = "Successfully fetched files")
   @ResponseStatus(HttpStatus.OK)
-  public ExampleAPIResponse getExample() {
-    log.info("[EXAMPLE] Received a request");
-    return exampleResponseMapper.toResponse(exampleUseCase.getExampleObject());
+  public List<FileAPIResponse> listFiles(
+      @RequestParam(value = "prefix", required = false) String prefix) {
+    return fileService.listFiles(prefix).stream().map(fileResponseMapper::toResponse).toList();
   }
 }

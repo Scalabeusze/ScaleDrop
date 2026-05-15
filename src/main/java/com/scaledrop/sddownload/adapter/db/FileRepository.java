@@ -14,10 +14,22 @@
  * permissions and limitations under the License.
  */
 
-package com.scaledrop.sddownload.domain.file;
+package com.scaledrop.sddownload.adapter.db;
 
-import java.time.OffsetDateTime;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public record FileObject(
-    UUID id, String key, Long size, OffsetDateTime lastModified, String eTag) {}
+public interface FileRepository extends JpaRepository<FileEntity, UUID> {
+
+  List<FileEntity> findByKeyStartingWithOrderByKeyAsc(String prefix);
+
+  List<FileEntity> findByOwnerIdOrderByKeyAsc(UUID ownerId);
+
+  List<FileEntity> findByOwnerIdAndKeyStartingWithOrderByKeyAsc(UUID ownerId, String prefix);
+
+  List<FileEntity> findAllByOrderByKeyAsc();
+
+  Optional<FileEntity> findByKey(String key);
+}

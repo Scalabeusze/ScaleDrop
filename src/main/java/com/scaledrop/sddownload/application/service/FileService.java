@@ -16,44 +16,112 @@
 
 package com.scaledrop.sddownload.application.service;
 
+import com.scaledrop.sddownload.adapter.db.FileEntity;
+import com.scaledrop.sddownload.adapter.db.FileRepository;
 import com.scaledrop.sddownload.configuration.aws.s3.AmazonS3Properties;
 import com.scaledrop.sddownload.configuration.exception.DownloadServiceException;
 import com.scaledrop.sddownload.domain.file.FileObject;
+import jakarta.persistence.EntityNotFoundException;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FileService {
 
   private static final int S3_MAX_KEYS = 1000;
   private static final String LIST_FILES_ERROR_MESSAGE = "Could not list files";
+  private static final String FILE_NOT_FOUND = "File not found";
 
   private final S3Client s3Client;
   private final AmazonS3Properties amazonS3Properties;
+  private final FileRepository fileRepository;
 
-  public List<FileObject> listFiles(String prefix) {
+  @Transactional(readOnly = true)
+  public List<FileEntity> listFiles(String prefix, UUID ownerId) {
+    if (ownerId != null && StringUtils.isNotBlank(prefix)) {
+      return fileRepository.findByOwnerIdAndKeyStartingWithOrderByKeyAsc(ownerId, prefix);
+    }
+    if (ownerId != null) {
+      return fileRepository.findByOwnerIdOrderByKeyAsc(ownerId);
+    }
+    if (StringUtils.isNotBlank(prefix)) {
+      return fileRepository.findByKeyStartingWithOrderByKeyAsc(prefix);
+    }
+    return fileRepository.findAllByOrderByKeyAsc();
+  }
+
+  @Transactional(readOnly = true)
+  public FileEntity getFile(UUID fileId) {
+    return fileRepository
+        .findById(fileId)
+        .orElseThrow(() -> new EntityNotFoundException(FILE_NOT_FOUND));
+  }
+
+  @Transactional
+  public List<FileEntity> syncFiles() {
+    List<FileObject> s3Files = listS3Files();
+    Map<String, FileEntity> existingFiles =
+        fileRepository.findAll().stream()
+            .collect(Collectors.toMap(FileEntity::getKey, Function.identity()));
+    Set<String> syncedKeys = new HashSet<>();
+
+    for (FileObject s3File : s3Files) {
+      syncedKeys.add(s3File.key());
+      FileEntity fileEntity =
+          existingFiles.getOrDefault(
+              s3File.key(), FileEntity.builder().id(UUID.randomUUID()).key(s3File.key()).build());
+
+      fileEntity.setSize(s3File.size());
+      fileEntity.setLastModified(s3File.lastModified());
+      fileEntity.setETag(s3File.eTag());
+      fileRepository.save(fileEntity);
+    }
+
+    List<FileEntity> staleFiles =
+        existingFiles.values().stream()
+            .filter(file -> !syncedKeys.contains(file.getKey()))
+            .toList();
+    fileRepository.deleteAll(staleFiles);
+
+    return fileRepository.findAllByOrderByKeyAsc();
+  }
+
+  private List<FileObject> listS3Files() {
     List<FileObject> files = new ArrayList<>();
     String continuationToken = null;
 
     try {
       do {
-        ListObjectsV2Response response = listObjects(prefix, continuationToken);
+        ListObjectsV2Response response = listObjects(continuationToken);
 
         for (S3Object s3Object : response.contents()) {
           files.add(
               new FileObject(
+                  null,
                   s3Object.key(),
                   s3Object.size(),
-                  s3Object.lastModified(),
-                  s3Object.eTag().replaceAll("\"", "")));
+                  OffsetDateTime.ofInstant(s3Object.lastModified(), ZoneOffset.UTC),
+                  normalizeETag(s3Object.eTag())));
         }
 
         continuationToken = response.isTruncated() ? response.nextContinuationToken() : null;
@@ -65,13 +133,16 @@ public class FileService {
     return files;
   }
 
-  private ListObjectsV2Response listObjects(String prefix, String continuationToken) {
+  private ListObjectsV2Response listObjects(String continuationToken) {
     return s3Client.listObjectsV2(
         ListObjectsV2Request.builder()
             .bucket(amazonS3Properties.getFileserver().getBucket())
-            .prefix(prefix)
             .continuationToken(continuationToken)
             .maxKeys(S3_MAX_KEYS)
             .build());
+  }
+
+  private String normalizeETag(String eTag) {
+    return eTag.replace("\"", "");
   }
 }

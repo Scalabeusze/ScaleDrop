@@ -84,4 +84,11 @@ class SecurityConfigurationTest extends WiremockTestBase {
         .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
         .andExpect(status().isOk())
   }
+
+  def 'should allow access to files sync endpoint with internal credentials'() {
+    expect:
+    mockMvc.perform(get("${FILES_ENDPOINT}/sync")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+  }
 }

@@ -21,8 +21,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 import com.scaledrop.sddownload.WiremockTestBase
+import com.scaledrop.sddownload.adapter.db.FileEntity
+import com.scaledrop.sddownload.adapter.db.FileRepository
 import com.scaledrop.sddownload.utilities.Initializer
 import groovy.json.JsonSlurper
+import java.time.OffsetDateTime
 import org.springframework.beans.factory.annotation.Autowired
 import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.services.s3.S3Client
@@ -34,11 +37,18 @@ class FileControllerTest extends WiremockTestBase {
   @Autowired
   S3Client s3Client
 
-  def "should list all files when prefix is not provided"() {
+  @Autowired
+  FileRepository fileRepository
+
+  def setup() {
+    fileRepository.deleteAll()
+  }
+
+  def "should list all files from database when prefix is not provided"() {
     given:
-    putObject("exports/list/report.csv", "report")
-    putObject("exports/list/archive.csv", "archive")
-    putObject("exports/other/report.csv", "other")
+    def report = persistFile("exports/list/report.csv")
+    def archive = persistFile("exports/list/archive.csv")
+    def other = persistFile("exports/other/report.csv")
 
     when:
     def result = mockMvc.perform(get(FILES_ENDPOINT)
@@ -50,20 +60,25 @@ class FileControllerTest extends WiremockTestBase {
 
     then:
     response*.key as Set == [
-      "exports/list/report.csv",
-      "exports/list/archive.csv",
-      "exports/other/report.csv"
+      report.key,
+      archive.key,
+      other.key
+    ] as Set
+    response*.id as Set == [
+      report.id.toString(),
+      archive.id.toString(),
+      other.id.toString()
     ] as Set
     response.every { it.size != null }
     response.every { it.lastModified != null }
     response.every { it.eTag != null }
   }
 
-  def "should list files by optional prefix"() {
+  def "should list files from database by optional prefix"() {
     given:
-    putObject("exports/prefix/report.csv", "report")
-    putObject("exports/prefix/archive.csv", "archive")
-    putObject("exports/other/report.csv", "other")
+    persistFile("exports/prefix/report.csv")
+    persistFile("exports/prefix/archive.csv")
+    persistFile("exports/other/report.csv")
 
     when:
     def result = mockMvc.perform(get(FILES_ENDPOINT)
@@ -81,15 +96,16 @@ class FileControllerTest extends WiremockTestBase {
     ] as Set
   }
 
-  def "should handle s3 pagination internally"() {
+  def "should list files from database by optional owner id"() {
     given:
-    (1..1005).each {
-      putObject(String.format("exports/page/file-%04d.txt", it), it.toString())
-    }
+    def ownerId = UUID.randomUUID()
+    persistFile("exports/owner/report.csv", ownerId)
+    persistFile("exports/owner/archive.csv", ownerId)
+    persistFile("exports/owner/other-user.csv", UUID.randomUUID())
 
     when:
     def result = mockMvc.perform(get(FILES_ENDPOINT)
-        .param("prefix", "exports/page/")
+        .param("ownerId", ownerId.toString())
         .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
         .andExpect(status().isOk())
         .andReturn()
@@ -97,15 +113,153 @@ class FileControllerTest extends WiremockTestBase {
     def response = parseJson(result.response.contentAsString)
 
     then:
-    response.size() == 1005
-    response*.key.contains("exports/page/file-0001.txt")
-    response*.key.contains("exports/page/file-1005.txt")
+    response*.key as Set == [
+      "exports/owner/report.csv",
+      "exports/owner/archive.csv"
+    ] as Set
+    response.every { it.ownerId == ownerId.toString() }
+  }
+
+  def "should list files from database by optional owner id and prefix"() {
+    given:
+    def ownerId = UUID.randomUUID()
+    persistFile("exports/combined/report.csv", ownerId)
+    persistFile("exports/combined/archive.csv", ownerId)
+    persistFile("exports/other/report.csv", ownerId)
+    persistFile("exports/combined/other-user.csv", UUID.randomUUID())
+
+    when:
+    def result = mockMvc.perform(get(FILES_ENDPOINT)
+        .param("ownerId", ownerId.toString())
+        .param("prefix", "exports/combined/")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+        .andReturn()
+
+    def response = parseJson(result.response.contentAsString)
+
+    then:
+    response*.key as Set == [
+      "exports/combined/report.csv",
+      "exports/combined/archive.csv"
+    ] as Set
+    response.every { it.ownerId == ownerId.toString() }
+  }
+
+  def "should get file by id from database"() {
+    given:
+    def file = persistFile("exports/single/report.csv")
+
+    when:
+    def result = mockMvc.perform(get("${FILES_ENDPOINT}/${file.id}")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+        .andReturn()
+
+    def response = parseJson(result.response.contentAsString)
+
+    then:
+    response.id == file.id.toString()
+    response.key == file.key
+    response.size == file.size
+    response.lastModified
+    response.eTag == file.eTag
+  }
+
+  def "should return not found when file does not exist"() {
+    when:
+    def result = mockMvc.perform(get("${FILES_ENDPOINT}/${UUID.randomUUID()}")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isNotFound())
+        .andReturn()
+
+    def response = parseJson(result.response.contentAsString)
+
+    then:
+    response.type == "NOT_FOUND"
+    response.message == "File not found"
+  }
+
+  def "should sync database to s3"() {
+    given:
+    def staleFile = persistFile("exports/stale/report.csv")
+    putObject("exports/sync/report.csv", "report")
+    putObject("exports/sync/archive.csv", "archive")
+
+    when:
+    def result = mockMvc.perform(get("${FILES_ENDPOINT}/sync")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+        .andReturn()
+
+    def response = parseJson(result.response.contentAsString)
+
+    then:
+    response*.key.contains("exports/sync/report.csv")
+    response*.key.contains("exports/sync/archive.csv")
+    !fileRepository.findById(staleFile.id).isPresent()
+
+    and:
+    def report = fileRepository.findByKey("exports/sync/report.csv").orElseThrow()
+    report.id
+    report.size == 6
+    report.lastModified
+    report.eTag
+    !report.eTag.contains('"')
+  }
+
+  def "should update changed metadata during sync"() {
+    given:
+    putObject("exports/update/report.csv", "old")
+
+    and:
+    mockMvc.perform(get("${FILES_ENDPOINT}/sync")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+
+    def syncedFile = fileRepository.findByKey("exports/update/report.csv").orElseThrow()
+
+    when:
+    putObject("exports/update/report.csv", "new content")
+
+    and:
+    mockMvc.perform(get("${FILES_ENDPOINT}/sync")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+
+    def updatedFile = fileRepository.findByKey("exports/update/report.csv").orElseThrow()
+
+    then:
+    updatedFile.id == syncedFile.id
+    updatedFile.size == 11
+    updatedFile.eTag != syncedFile.eTag
   }
 
   private void putObject(String key, String content) {
     s3Client.putObject({
       it.bucket(Initializer.FILESERVER_BUCKET_NAME).key(key)
     }, RequestBody.fromString(content))
+  }
+
+  private FileEntity persistFile(String key) {
+    persistFile(key, UUID.randomUUID())
+  }
+
+  private FileEntity persistFile(String key, UUID ownerId) {
+    def fileName = key.substring(key.lastIndexOf("/") + 1)
+    def location = key.substring(0, key.length() - fileName.length())
+
+    fileRepository.save(FileEntity.builder()
+        .id(UUID.randomUUID())
+        .ownerId(ownerId)
+        .key(key)
+        .name(fileName)
+        .location(location)
+        .contentType("text/csv")
+        .size(1024L)
+        .lastModified(OffsetDateTime.parse("2026-05-15T10:00:00Z"))
+        .eTag(UUID.randomUUID().toString())
+        .build())
   }
 
   private static Object parseJson(String json) {

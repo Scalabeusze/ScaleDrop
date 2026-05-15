@@ -17,6 +17,7 @@
 package com.scaledrop.sddownload.adapter.api.mapper;
 
 import com.scaledrop.sddownload.adapter.api.model.response.FileAPIResponse;
+import com.scaledrop.sddownload.adapter.db.FileEntity;
 import com.scaledrop.sddownload.configuration.MapperConfiguration;
 import com.scaledrop.sddownload.domain.file.FileObject;
 import org.mapstruct.Mapper;
@@ -24,5 +25,21 @@ import org.mapstruct.Mapper;
 @Mapper(config = MapperConfiguration.class)
 public interface FileResponseMapper {
 
-  FileAPIResponse toResponse(FileObject fileObject);
+  default FileAPIResponse toResponse(FileObject fileObject) {
+    return new FileAPIResponse(
+        fileObject.id(),
+        fileObject.key(),
+        fileObject.size(),
+        fileObject.lastModified(),
+        fileObject.eTag());
+  }
+
+  default FileAPIResponse toResponse(FileEntity fileEntity) {
+    return new FileAPIResponse(
+        fileEntity.getId(),
+        fileEntity.getKey(),
+        fileEntity.getSize(),
+        fileEntity.getLastModified(),
+        fileEntity.getETag());
+  }
 }

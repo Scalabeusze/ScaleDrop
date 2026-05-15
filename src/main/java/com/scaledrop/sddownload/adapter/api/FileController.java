@@ -28,11 +28,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -51,13 +53,39 @@ public class FileController {
   private final FileResponseMapper fileResponseMapper;
 
   @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-  @Operation(summary = "List files", description = "Lists files from the configured S3 bucket")
+  @Operation(summary = "List files", description = "Lists files from the database")
   @SecurityRequirement(name = BASIC_AUTH)
   @DefaultApiExceptionResponses
   @ApiResponse(responseCode = "200", description = "Successfully fetched files")
   @ResponseStatus(HttpStatus.OK)
   public List<FileAPIResponse> listFiles(
-      @RequestParam(value = "prefix", required = false) String prefix) {
-    return fileService.listFiles(prefix).stream().map(fileResponseMapper::toResponse).toList();
+      @RequestParam(value = "prefix", required = false) String prefix,
+      @RequestParam(value = "ownerId", required = false) UUID ownerId) {
+    return fileService.listFiles(prefix, ownerId).stream()
+        .map(fileResponseMapper::toResponse)
+        .toList();
+  }
+
+  @GetMapping(value = "/{fileId}", produces = MediaType.APPLICATION_JSON_VALUE)
+  @Operation(summary = "Get file", description = "Fetches a file by id")
+  @SecurityRequirement(name = BASIC_AUTH)
+  @DefaultApiExceptionResponses
+  @ApiResponse(responseCode = "200", description = "Successfully fetched file")
+  @ResponseStatus(HttpStatus.OK)
+  public FileAPIResponse getFile(@PathVariable UUID fileId) {
+    return fileResponseMapper.toResponse(fileService.getFile(fileId));
+  }
+
+  @GetMapping(value = "/sync", produces = MediaType.APPLICATION_JSON_VALUE)
+  @Operation(
+      summary = "Sync files",
+      description =
+          "Expensive operation that scans the configured S3 bucket and syncs files to the database")
+  @SecurityRequirement(name = BASIC_AUTH)
+  @DefaultApiExceptionResponses
+  @ApiResponse(responseCode = "200", description = "Successfully synced files")
+  @ResponseStatus(HttpStatus.OK)
+  public List<FileAPIResponse> syncFiles() {
+    return fileService.syncFiles().stream().map(fileResponseMapper::toResponse).toList();
   }
 }

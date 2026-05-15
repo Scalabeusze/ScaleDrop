@@ -19,11 +19,13 @@ package com.scaledrop.sddownload.adapter.api.model.response;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.util.UUID;
 
 public record FileAPIResponse(
+    @Schema(example = "498ecc77-a12c-409b-a37d-12631c75896c", description = "File identifier")
+        @NotNull UUID id,
     @Schema(example = "exports/2026-05/report.csv", description = "S3 object key") @NotBlank String key,
     @Schema(example = "1024", description = "Object size in bytes") @NotNull Long size,
-    @Schema(description = "Timestamp when the object was last modified") @NotNull Instant lastModified,
-    @Schema(example = "\"9b2cf535f27731c974343645a3985328\"", description = "S3 object ETag")
-        @NotBlank String eTag) {}
+    @Schema(description = "Timestamp when the object was last modified") @NotNull OffsetDateTime lastModified,
+    @Schema(example = "9b2cf535f27731c974343645a3985328", description = "S3 object ETag") @NotBlank String eTag) {}

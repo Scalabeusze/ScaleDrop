@@ -16,12 +16,17 @@
 
 package com.scaledrop.sddownload.application.service;
 
+import static com.scaledrop.sddownload.adapter.event.model.UploadType.FILE;
+
 import com.scaledrop.sddownload.adapter.db.FileEntity;
 import com.scaledrop.sddownload.adapter.db.FileRepository;
+import com.scaledrop.sddownload.adapter.event.model.FileMetadataEvent;
 import com.scaledrop.sddownload.configuration.aws.s3.AmazonS3Properties;
 import com.scaledrop.sddownload.configuration.exception.DownloadServiceException;
+import com.scaledrop.sddownload.configuration.exception.FileUpdateEventException;
 import com.scaledrop.sddownload.domain.file.FileObject;
 import jakarta.persistence.EntityNotFoundException;
+import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -51,10 +56,12 @@ public class FileService {
   private static final int S3_MAX_KEYS = 1000;
   private static final String LIST_FILES_ERROR_MESSAGE = "Could not list files";
   private static final String FILE_NOT_FOUND = "File not found";
+  private static final String UPLOADED_STATUS = "UPLOADED";
 
   private final S3Client s3Client;
   private final AmazonS3Properties amazonS3Properties;
   private final FileRepository fileRepository;
+  private final Clock clock;
 
   @Transactional(readOnly = true)
   public List<FileEntity> listFiles(String prefix, UUID ownerId) {
@@ -106,6 +113,27 @@ public class FileService {
     return fileRepository.findAllByOrderByKeyAsc();
   }
 
+  @Transactional
+  public void upsertFileFromUploadEvent(FileMetadataEvent event) {
+    if (event == null) {
+      throw new FileUpdateEventException("Invalid file update event: payload is empty");
+    }
+    validateEventRoutingFields(event);
+
+    if (event.type() != FILE || !UPLOADED_STATUS.equals(event.status())) {
+      return;
+    }
+    validateUploadEvent(event);
+
+    FileEntity fileEntity =
+        fileRepository
+            .findById(event.fileId())
+            .orElseGet(() -> resolveFileEntityForUploadEvent(event));
+
+    updateFileEntityFromUploadEvent(fileEntity, event);
+    fileRepository.save(fileEntity);
+  }
+
   private List<FileObject> listS3Files() {
     List<FileObject> files = new ArrayList<>();
     String continuationToken = null;
@@ -144,5 +172,76 @@ public class FileService {
 
   private String normalizeETag(String eTag) {
     return eTag.replace("\"", "");
+  }
+
+  private FileEntity resolveFileEntityForUploadEvent(FileMetadataEvent event) {
+    String key = resolveKey(event);
+    return fileRepository
+        .findByKey(key)
+        .map(
+            existingFile -> {
+              fileRepository.delete(existingFile);
+              fileRepository.flush();
+              return FileEntity.builder().id(event.fileId()).key(key).build();
+            })
+        .orElseGet(() -> FileEntity.builder().id(event.fileId()).key(key).build());
+  }
+
+  private void updateFileEntityFromUploadEvent(FileEntity fileEntity, FileMetadataEvent event) {
+    fileEntity.setKey(resolveKey(event));
+    fileEntity.setSize(event.size());
+    fileEntity.setLastModified(OffsetDateTime.now(clock));
+    fileEntity.setETag(event.hash());
+    fileEntity.setOwnerId(event.ownerId());
+    fileEntity.setName(event.name());
+    fileEntity.setLocation(event.location());
+    fileEntity.setContentType(event.contentType());
+    fileEntity.setStatus(event.status());
+  }
+
+  private void validateUploadEvent(FileMetadataEvent event) {
+    List<String> missingFields = new ArrayList<>();
+    if (event.fileId() == null) {
+      missingFields.add("fileId");
+    }
+    if (StringUtils.isBlank(event.name())) {
+      missingFields.add("name");
+    }
+    if (event.size() == null) {
+      missingFields.add("size");
+    }
+    if (StringUtils.isBlank(event.hash())) {
+      missingFields.add("hash");
+    }
+
+    if (!missingFields.isEmpty()) {
+      throw new FileUpdateEventException(
+          "Invalid uploaded file event, missing required fields: "
+              + String.join(", ", missingFields));
+    }
+  }
+
+  private void validateEventRoutingFields(FileMetadataEvent event) {
+    List<String> missingFields = new ArrayList<>();
+    if (event.type() == null) {
+      missingFields.add("type");
+    }
+    if (StringUtils.isBlank(event.status())) {
+      missingFields.add("status");
+    }
+
+    if (!missingFields.isEmpty()) {
+      throw new FileUpdateEventException(
+          "Invalid file update event, missing required fields: "
+              + String.join(", ", missingFields));
+    }
+  }
+
+  private String resolveKey(FileMetadataEvent event) {
+    String key = StringUtils.defaultString(event.location()) + event.name();
+    if (key.startsWith("/")) {
+      return key.substring(1);
+    }
+    return key;
   }
 }

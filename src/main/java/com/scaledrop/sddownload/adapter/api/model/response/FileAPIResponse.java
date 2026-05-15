@@ -24,8 +24,14 @@ import java.util.UUID;
 
 public record FileAPIResponse(
     @Schema(example = "498ecc77-a12c-409b-a37d-12631c75896c", description = "File identifier")
-        @NotNull UUID id,
-    @Schema(example = "exports/2026-05/report.csv", description = "S3 object key") @NotBlank String key,
-    @Schema(example = "1024", description = "Object size in bytes") @NotNull Long size,
-    @Schema(description = "Timestamp when the object was last modified") @NotNull OffsetDateTime lastModified,
-    @Schema(example = "9b2cf535f27731c974343645a3985328", description = "S3 object ETag") @NotBlank String eTag) {}
+        @NotNull UUID fileId,
+    @Schema(example = "d884ed12-cf74-4b57-8c31-fcb221d5dd50", description = "Owner identifier")
+        UUID ownerId,
+    @Schema(example = "ersms/lectures/01-introduction.md", description = "S3 object key") @NotBlank String key,
+    @Schema(example = "01-introduction.md", description = "Original file name") String name,
+    @Schema(example = "/ersms/lectures/", description = "Original file location") String location,
+    @Schema(example = "text/markdown", description = "File content type") String contentType,
+    @Schema(example = "578", description = "Object size in bytes") @NotNull Long size,
+    @Schema(example = "9b2cf535f27731c974343645a3985328", description = "S3 object ETag") @NotBlank String eTag,
+    @Schema(example = "UPLOADED", description = "Upload status") String status,
+    @Schema(description = "Timestamp when the object was last modified") @NotNull OffsetDateTime lastModified) {}

@@ -64,7 +64,7 @@ class FileControllerTest extends WiremockTestBase {
       archive.key,
       other.key
     ] as Set
-    response*.id as Set == [
+    response*.fileId as Set == [
       report.id.toString(),
       archive.id.toString(),
       other.id.toString()
@@ -72,6 +72,11 @@ class FileControllerTest extends WiremockTestBase {
     response.every { it.size != null }
     response.every { it.lastModified != null }
     response.every { it.eTag != null }
+    response.every { it.ownerId != null }
+    response.every { it.name != null }
+    response.every { it.location != null }
+    response.every { it.contentType != null }
+    response.every { it.status == "UPLOADED" }
   }
 
   def "should list files from database by optional prefix"() {
@@ -159,11 +164,16 @@ class FileControllerTest extends WiremockTestBase {
     def response = parseJson(result.response.contentAsString)
 
     then:
-    response.id == file.id.toString()
+    response.fileId == file.id.toString()
+    response.ownerId == file.ownerId.toString()
     response.key == file.key
+    response.name == file.name
+    response.location == file.location
+    response.contentType == file.contentType
     response.size == file.size
-    response.lastModified
     response.eTag == file.eTag
+    response.status == file.status
+    response.lastModified
   }
 
   def "should return not found when file does not exist"() {
@@ -206,6 +216,15 @@ class FileControllerTest extends WiremockTestBase {
     report.lastModified
     report.eTag
     !report.eTag.contains('"')
+
+    and:
+    def syncedResponse = response.find { it.key == "exports/sync/report.csv" }
+    syncedResponse.fileId == report.id.toString()
+    syncedResponse.ownerId == null
+    syncedResponse.name == null
+    syncedResponse.location == null
+    syncedResponse.contentType == null
+    syncedResponse.status == null
   }
 
   def "should update changed metadata during sync"() {
@@ -251,7 +270,7 @@ class FileControllerTest extends WiremockTestBase {
 
     fileRepository.save(FileEntity.builder()
         .id(UUID.randomUUID())
-        .ownerId(ownerId)
+        .ownerId(UUID.randomUUID())
         .key(key)
         .name(fileName)
         .location(location)
@@ -259,6 +278,7 @@ class FileControllerTest extends WiremockTestBase {
         .size(1024L)
         .lastModified(OffsetDateTime.parse("2026-05-15T10:00:00Z"))
         .eTag(UUID.randomUUID().toString())
+        .status("UPLOADED")
         .build())
   }
 

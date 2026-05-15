@@ -16,7 +16,6 @@
 
 package com.scaledrop.sddownload.configuration.exception.api;
 
-import com.scaledrop.sddownload.configuration.exception.api.ApiExceptionType.ExceptionTypeSeverity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
 import jakarta.validation.constraints.NotNull;
@@ -29,9 +28,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.ToString;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @Getter
 @ToString
 @NoArgsConstructor
@@ -50,10 +47,7 @@ public class ApiExceptionResponse {
       description = "String message error")
   private String message;
 
-  @NotNull @Schema(
-      requiredMode = RequiredMode.REQUIRED,
-      example = "One of [UNAUTHORIZED, VALIDATION, NOT_FOUND, INTERNAL_SERVER_ERROR]",
-      description = "Type of api exception error")
+  @NotNull @Schema(requiredMode = RequiredMode.REQUIRED, description = "Type of api exception error")
   private ApiExceptionType type;
 
   @NotNull @Schema(
@@ -76,11 +70,5 @@ public class ApiExceptionResponse {
     this.errors = errors;
     this.uuid = UUID.randomUUID();
     this.timestamp = OffsetDateTime.now();
-
-    ExceptionTypeSeverity severity = type.getSeverity();
-    switch (severity) {
-      case WARN -> log.warn("{}", this, exception);
-      case ERROR -> log.error("{}", this, exception);
-    }
   }
 }

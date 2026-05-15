@@ -38,9 +38,7 @@ public class TransactionOutboxScheduler {
     if (!Thread.interrupted()) {
       try {
         // Keep flushing work until there's nothing left to flush
-        while (transactionOutbox.flush()) {
-          log.info("[TransactionOutbox] - Flushing the message");
-        }
+        while (transactionOutbox.flush()) {}
       } catch (Exception e) {
         log.error("[TransactionOutbox] - Error flushing transaction inbox", e);
       }

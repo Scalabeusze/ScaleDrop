@@ -14,30 +14,9 @@
  * permissions and limitations under the License.
  */
 
-package com.scaledrop.sddownload.configuration.aws.s3;
+package com.scaledrop.sddownload.adapter.event.model;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
-
-@Getter
-@Setter
-@Component
-@ToString
-@ConfigurationProperties(prefix = "aws.s3")
-public class AmazonS3Properties {
-
-  private String assumeRole;
-  private BucketProperties fileserver;
-
-  @Getter
-  @Setter
-  @ToString
-  public static class BucketProperties {
-    private String bucket;
-    private String endpoint;
-    private String region;
-  }
+public enum UploadType {
+  FILE,
+  FOLDER
 }

@@ -19,7 +19,6 @@ package com.scaledrop.sddownload.utilities
 import static org.testcontainers.containers.localstack.LocalStackContainer.Service.S3
 import static org.testcontainers.containers.localstack.LocalStackContainer.Service.SQS
 
-import groovy.util.logging.Slf4j
 import org.springframework.boot.test.util.TestPropertyValues
 import org.springframework.context.ApplicationContextInitializer
 import org.springframework.context.ConfigurableApplicationContext
@@ -28,7 +27,6 @@ import org.testcontainers.containers.localstack.LocalStackContainer
 import org.testcontainers.containers.wait.strategy.Wait
 import org.testcontainers.utility.DockerImageName
 
-@Slf4j
 class Initializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
   public static final String FILE_UPDATES_QUEUE_URL = "file-updates-queue-url"
@@ -59,8 +57,12 @@ class Initializer implements ApplicationContextInitializer<ConfigurableApplicati
     pairs.add("AWS_S3_BUCKET_REGION=" + AWS_CONTAINER.getRegion())
     pairs.add("AWS_S3_BUCKET_NAME=" + FILESERVER_BUCKET_NAME)
     pairs.add("AWS_SQS_ENDPOINT=" + AWS_CONTAINER.getEndpointOverride(SQS))
-    pairs.add("AWS_FILE_UPDATES_SQS_QUEUE_URL=" + AWS_CONTAINER.getEndpointOverride(SQS) + "/000000000000/" + FILE_UPDATES_QUEUE_URL)
+    pairs.add("AWS_FILE_UPDATES_SQS_QUEUE_URL=" + fileUpdatesQueueUrlValue())
 
     return TestPropertyValues.of(pairs)
+  }
+
+  static String fileUpdatesQueueUrlValue() {
+    AWS_CONTAINER.getEndpointOverride(SQS).toString() + "/000000000000/" + FILE_UPDATES_QUEUE_URL
   }
 }

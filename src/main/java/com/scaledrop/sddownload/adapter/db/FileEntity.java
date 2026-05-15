@@ -52,4 +52,19 @@ public class FileEntity {
 
   @Column(name = "e_tag", nullable = false, length = 255)
   private String eTag;
+
+  @Column(name = "owner_id")
+  private UUID ownerId;
+
+  @Column(length = 255)
+  private String name;
+
+  @Column(length = 1024)
+  private String location;
+
+  @Column(name = "content_type", length = 128)
+  private String contentType;
+
+  @Column(length = 32)
+  private String status;
 }

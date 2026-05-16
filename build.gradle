@@ -2,7 +2,7 @@ plugins {
   id 'java'
   id 'groovy'
   id 'jacoco'
-//  id "com.gorylenko.gradle-git-properties" version "${gradleGitPropertiesVersion}"
+  //  id "com.gorylenko.gradle-git-properties" version "${gradleGitPropertiesVersion}"
   id 'org.springframework.boot' version "${springBootVersion}"
   id 'io.spring.dependency-management' version "${springDependencyManagementVersion}"
   id 'com.diffplug.spotless' version "8.4.0"
@@ -135,7 +135,7 @@ build.dependsOn(copyToLib)
 
 spotless {
   format 'misc', {
-    target '*.gradle', '.gitattributes', '.gitignore'
+    target '.gitattributes', '.gitignore'
     trimTrailingWhitespace()
     endWithNewline()
   }
@@ -143,5 +143,18 @@ spotless {
     removeUnusedImports()
     googleJavaFormat().reflowLongStrings().reorderImports(true).skipJavadocFormatting()
     formatAnnotations()
+    licenseHeaderFile(rootProject.file("gradle/spotless/header.txt"))
+  }
+  groovy {
+    importOrder()
+    greclipse()
+    leadingTabsToSpaces(2)
+    excludeJava()
+    licenseHeaderFile(rootProject.file("gradle/spotless/header.txt"))
+  }
+  groovyGradle {
+    target '*.gradle'
+    greclipse()
+    leadingTabsToSpaces(2)
   }
 }

@@ -35,10 +35,8 @@ import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -116,10 +114,8 @@ public class FileService {
     Map<String, FileEntity> existingFiles =
         fileRepository.findAll().stream()
             .collect(Collectors.toMap(FileEntity::getKey, Function.identity()));
-    Set<String> syncedKeys = new HashSet<>();
 
     for (FileObject s3File : s3Files) {
-      syncedKeys.add(s3File.key());
       FileEntity fileEntity =
           existingFiles.getOrDefault(
               s3File.key(), FileEntity.builder().id(UUID.randomUUID()).key(s3File.key()).build());
@@ -129,12 +125,6 @@ public class FileService {
       fileEntity.setETag(s3File.eTag());
       fileRepository.save(fileEntity);
     }
-
-    List<FileEntity> staleFiles =
-        existingFiles.values().stream()
-            .filter(file -> !syncedKeys.contains(file.getKey()))
-            .toList();
-    fileRepository.deleteAll(staleFiles);
 
     return fileRepository.findAllByOrderByKeyAsc();
   }

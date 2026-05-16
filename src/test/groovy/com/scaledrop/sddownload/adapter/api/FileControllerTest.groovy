@@ -373,9 +373,12 @@ class FileControllerTest extends WiremockTestBase {
     def response = parseJson(result.response.contentAsString)
 
     then:
-    response*.key.contains("exports/sync/report.csv")
-    response*.key.contains("exports/sync/archive.csv")
-    !fileRepository.findById(staleFile.id).isPresent()
+    response*.key.containsAll([
+      "exports/sync/report.csv",
+      "exports/sync/archive.csv",
+      staleFile.key
+    ])
+    fileRepository.findById(staleFile.id).isPresent()
 
     and:
     def report = fileRepository.findByKey("exports/sync/report.csv").orElseThrow()
@@ -393,6 +396,26 @@ class FileControllerTest extends WiremockTestBase {
     syncedResponse.location == null
     syncedResponse.contentType == null
     syncedResponse.status == null
+  }
+
+  def "should keep stale files with download history during sync"() {
+    given:
+    def staleFile = persistFile("exports/stale/downloaded.csv")
+
+    and:
+    mockMvc.perform(get("${FILES_ENDPOINT}/${staleFile.id}/download")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isFound())
+
+    when:
+    mockMvc.perform(get("${FILES_ENDPOINT}/sync")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+
+    then:
+    fileRepository.findById(staleFile.id).isPresent()
+    fileDownloadRepository.findAll().size() == 1
+    fileDownloadRepository.findAll().first().fileId == staleFile.id
   }
 
   def "should update changed metadata during sync"() {

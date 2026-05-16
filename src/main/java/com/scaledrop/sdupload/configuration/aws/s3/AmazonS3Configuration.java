@@ -4,10 +4,12 @@ import com.scaledrop.sdupload.configuration.aws.AmazonProperties;
 import java.net.URI;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder;
@@ -93,7 +95,13 @@ public class AmazonS3Configuration {
     return builder.build();
   }
 
-  private DefaultCredentialsProvider buildCredentialsProvider() {
+  private AwsCredentialsProvider buildCredentialsProvider() {
+    if (ObjectUtils.allNotNull(
+        amazonProperties.getAccessKeyId(), amazonProperties.getSecretKey())) {
+      return () ->
+          AwsBasicCredentials.create(
+              amazonProperties.getAccessKeyId(), amazonProperties.getSecretKey());
+    }
     return DefaultCredentialsProvider.builder().asyncCredentialUpdateEnabled(true).build();
   }
 

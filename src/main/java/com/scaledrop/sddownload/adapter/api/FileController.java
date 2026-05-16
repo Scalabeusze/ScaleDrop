@@ -34,6 +34,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -78,6 +79,18 @@ public class FileController {
   @ResponseStatus(HttpStatus.OK)
   public FileAPIResponse getFile(@PathVariable UUID fileId) {
     return fileResponseMapper.toResponse(fileService.getFile(fileId));
+  }
+
+  @GetMapping(value = "/{fileId}/download")
+  @Operation(summary = "Download file", description = "Redirects to a pre-signed S3 download URL")
+  @SecurityRequirement(name = BASIC_AUTH)
+  @DefaultApiExceptionResponses
+  @ApiResponse(responseCode = "302", description = "Redirect to pre-signed S3 download URL")
+  @ResponseStatus(HttpStatus.FOUND)
+  public ResponseEntity<Void> downloadFile(@PathVariable UUID fileId) {
+    return ResponseEntity.status(HttpStatus.FOUND)
+        .location(fileService.createDownloadUrl(fileId))
+        .build();
   }
 
   @GetMapping(value = "/sync", produces = MediaType.APPLICATION_JSON_VALUE)

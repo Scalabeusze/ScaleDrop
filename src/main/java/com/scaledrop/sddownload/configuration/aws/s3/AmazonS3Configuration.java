@@ -31,6 +31,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.sts.StsClient;
 import software.amazon.awssdk.services.sts.auth.StsAssumeRoleCredentialsProvider;
 
@@ -70,6 +71,21 @@ public class AmazonS3Configuration {
                     configuration
                         .checksumValidationEnabled(false)
                         .pathStyleAccessEnabled(isCustomEndpointConfigured()));
+
+    if (isCustomEndpointConfigured()) {
+      builder.endpointOverride(URI.create(amazonS3Properties.getFileserver().getEndpoint()));
+    }
+
+    return builder.build();
+  }
+
+  @Bean
+  public S3Presigner s3Presigner(AwsCredentialsProvider awsCredentialsProvider) {
+    var builder =
+        S3Presigner.builder()
+            .region(Region.of(amazonS3Properties.getFileserver().getRegion()))
+            .credentialsProvider(awsCredentialsProvider)
+            .serviceConfiguration(s3ServiceConfiguration());
 
     if (isCustomEndpointConfigured()) {
       builder.endpointOverride(URI.create(amazonS3Properties.getFileserver().getEndpoint()));

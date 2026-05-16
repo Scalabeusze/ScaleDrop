@@ -18,6 +18,9 @@ package com.scaledrop.sddownload.application.service;
 
 import static com.scaledrop.sddownload.adapter.event.model.UploadType.FILE;
 
+import com.scaledrop.sddownload.adapter.aws.S3DownloadAdapter;
+import com.scaledrop.sddownload.adapter.db.FileDownloadEntity;
+import com.scaledrop.sddownload.adapter.db.FileDownloadRepository;
 import com.scaledrop.sddownload.adapter.db.FileEntity;
 import com.scaledrop.sddownload.adapter.db.FileRepository;
 import com.scaledrop.sddownload.adapter.db.OffsetBasedPageRequest;
@@ -27,6 +30,7 @@ import com.scaledrop.sddownload.configuration.exception.DownloadServiceException
 import com.scaledrop.sddownload.configuration.exception.FileUpdateEventException;
 import com.scaledrop.sddownload.domain.file.FileObject;
 import jakarta.persistence.EntityNotFoundException;
+import java.net.URI;
 import java.time.Clock;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -63,6 +67,8 @@ public class FileService {
   private final S3Client s3Client;
   private final AmazonS3Properties amazonS3Properties;
   private final FileRepository fileRepository;
+  private final FileDownloadRepository fileDownloadRepository;
+  private final S3DownloadAdapter s3DownloadAdapter;
   private final Clock clock;
 
   @Transactional(readOnly = true)
@@ -85,6 +91,23 @@ public class FileService {
     return fileRepository
         .findById(fileId)
         .orElseThrow(() -> new EntityNotFoundException(FILE_NOT_FOUND));
+  }
+
+  @Transactional
+  public URI createDownloadUrl(UUID fileId) {
+    FileEntity fileEntity = getFile(fileId);
+    URI downloadUrl = s3DownloadAdapter.generatePresignedDownloadUrl(fileEntity);
+    OffsetDateTime requestedAt = OffsetDateTime.now(clock);
+
+    fileDownloadRepository.save(
+        FileDownloadEntity.builder()
+            .id(UUID.randomUUID())
+            .fileId(fileEntity.getId())
+            .requestedAt(requestedAt)
+            .expiresAt(requestedAt.plus(s3DownloadAdapter.downloadUrlExpiration()))
+            .build());
+
+    return downloadUrl;
   }
 
   @Transactional

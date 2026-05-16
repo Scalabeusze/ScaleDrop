@@ -21,10 +21,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 import com.scaledrop.sddownload.WiremockTestBase
+import com.scaledrop.sddownload.adapter.db.FileDownloadRepository
 import com.scaledrop.sddownload.adapter.db.FileEntity
 import com.scaledrop.sddownload.adapter.db.FileRepository
 import com.scaledrop.sddownload.utilities.Initializer
 import groovy.json.JsonSlurper
+import java.net.URLDecoder
 import java.time.OffsetDateTime
 import org.springframework.beans.factory.annotation.Autowired
 import software.amazon.awssdk.core.sync.RequestBody
@@ -40,7 +42,11 @@ class FileControllerTest extends WiremockTestBase {
   @Autowired
   FileRepository fileRepository
 
+  @Autowired
+  FileDownloadRepository fileDownloadRepository
+
   def setup() {
+    fileDownloadRepository.deleteAll()
     fileRepository.deleteAll()
   }
 
@@ -297,6 +303,59 @@ class FileControllerTest extends WiremockTestBase {
     then:
     response.type == "NOT_FOUND"
     response.message == "File not found"
+  }
+
+  def "should redirect to pre-signed s3 download url"() {
+    given:
+    def file = persistFile("exports/download/report.csv")
+
+    when:
+    def result = mockMvc.perform(get("${FILES_ENDPOINT}/${file.id}/download")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isFound())
+        .andReturn()
+
+    def location = result.response.getHeader("Location")
+    def decodedLocation = URLDecoder.decode(location, "UTF-8")
+
+    then:
+    location
+    decodedLocation.contains("exports/download/report.csv")
+    decodedLocation.contains("X-Amz-Signature")
+    decodedLocation.contains("response-content-disposition=attachment; filename=\"report.csv\"")
+    decodedLocation.contains("response-content-type=text/csv")
+  }
+
+  def "should create minimal download history when download url is issued"() {
+    given:
+    def file = persistFile("exports/download/history.csv")
+
+    when:
+    mockMvc.perform(get("${FILES_ENDPOINT}/${file.id}/download")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isFound())
+
+    then:
+    def downloads = fileDownloadRepository.findAll()
+    downloads.size() == 1
+    downloads.first().fileId == file.id
+    downloads.first().requestedAt
+    downloads.first().expiresAt.isAfter(downloads.first().requestedAt)
+  }
+
+  def "should return not found when downloading missing file"() {
+    when:
+    def result = mockMvc.perform(get("${FILES_ENDPOINT}/${UUID.randomUUID()}/download")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isNotFound())
+        .andReturn()
+
+    def response = parseJson(result.response.contentAsString)
+
+    then:
+    response.type == "NOT_FOUND"
+    response.message == "File not found"
+    fileDownloadRepository.findAll().isEmpty()
   }
 
   def "should sync database to s3"() {

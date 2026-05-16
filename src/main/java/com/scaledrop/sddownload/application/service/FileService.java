@@ -20,6 +20,7 @@ import static com.scaledrop.sddownload.adapter.event.model.UploadType.FILE;
 
 import com.scaledrop.sddownload.adapter.aws.S3DownloadAdapter;
 import com.scaledrop.sddownload.adapter.db.FileDownloadEntity;
+import com.scaledrop.sddownload.adapter.db.FileDownloadHistoryProjection;
 import com.scaledrop.sddownload.adapter.db.FileDownloadRepository;
 import com.scaledrop.sddownload.adapter.db.FileEntity;
 import com.scaledrop.sddownload.adapter.db.FileRepository;
@@ -73,15 +74,23 @@ public class FileService {
   public List<FileEntity> listFiles(String prefix, UUID ownerId, Integer limit, Integer offset) {
     Pageable pageable = new OffsetBasedPageRequest(limit, offset);
     if (ownerId != null && StringUtils.isNotBlank(prefix)) {
-      return fileRepository.findByOwnerIdAndKeyStartingWithOrderByKeyAsc(ownerId, prefix, pageable);
+      return fileRepository.findByOwnerIdAndKeyStartingWithOrderByLastModifiedDescKeyAsc(
+          ownerId, prefix, pageable);
     }
     if (ownerId != null) {
-      return fileRepository.findByOwnerIdOrderByKeyAsc(ownerId, pageable);
+      return fileRepository.findByOwnerIdOrderByLastModifiedDescKeyAsc(ownerId, pageable);
     }
     if (StringUtils.isNotBlank(prefix)) {
-      return fileRepository.findByKeyStartingWithOrderByKeyAsc(prefix, pageable);
+      return fileRepository.findByKeyStartingWithOrderByLastModifiedDescKeyAsc(prefix, pageable);
     }
-    return fileRepository.findAllByOrderByKeyAsc(pageable);
+    return fileRepository.findAllByOrderByLastModifiedDescKeyAsc(pageable);
+  }
+
+  @Transactional(readOnly = true)
+  public List<FileDownloadHistoryProjection> listFileDownloads(
+      UUID fileId, UUID ownerId, Integer limit, Integer offset) {
+    return fileDownloadRepository.findHistory(
+        fileId, ownerId, new OffsetBasedPageRequest(limit, offset));
   }
 
   @Transactional(readOnly = true)

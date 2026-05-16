@@ -28,6 +28,7 @@ class SecurityConfigurationTest extends WiremockTestBase {
   private static final String WRONG_PASSWORD = "wrongPassword"
   private static final String SWAGGER_PATH = "/swagger-ui/index.html"
   private static final String FILES_ENDPOINT = "/api/v1/files"
+  private static final String FILE_DOWNLOADS_ENDPOINT = "/api/v1/file-downloads"
 
   // ACTUATOR
   def "should be able to access actuator endpoints"() {
@@ -88,6 +89,34 @@ class SecurityConfigurationTest extends WiremockTestBase {
   def 'should allow access to files sync endpoint with internal credentials'() {
     expect:
     mockMvc.perform(get("${FILES_ENDPOINT}/sync")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+  }
+
+  // FILE DOWNLOADS
+  def 'should not allow access to file downloads endpoint without credentials'() {
+    expect:
+    mockMvc.perform(get(FILE_DOWNLOADS_ENDPOINT))
+        .andExpect(status().isUnauthorized())
+  }
+
+  def 'should not allow access to file downloads endpoint with invalid credentials'() {
+    expect:
+    mockMvc.perform(get(FILE_DOWNLOADS_ENDPOINT)
+        .with(httpBasic(WRONG_USER, WRONG_PASSWORD)))
+        .andExpect(status().isUnauthorized())
+  }
+
+  def 'should not allow access to file downloads endpoint with documentation credentials'() {
+    expect:
+    mockMvc.perform(get(FILE_DOWNLOADS_ENDPOINT)
+        .with(httpBasic(DOCUMENTATION_USERNAME, DOCUMENTATION_PASSWORD)))
+        .andExpect(status().isForbidden())
+  }
+
+  def 'should allow access to file downloads endpoint with internal credentials'() {
+    expect:
+    mockMvc.perform(get(FILE_DOWNLOADS_ENDPOINT)
         .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
         .andExpect(status().isOk())
   }

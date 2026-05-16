@@ -24,14 +24,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface FileRepository extends JpaRepository<FileEntity, UUID> {
 
-  List<FileEntity> findByKeyStartingWithOrderByKeyAsc(String prefix, Pageable pageable);
+  List<FileEntity> findByKeyStartingWithOrderByLastModifiedDescKeyAsc(
+      String prefix, Pageable pageable);
 
-  List<FileEntity> findByOwnerIdOrderByKeyAsc(UUID ownerId, Pageable pageable);
+  List<FileEntity> findByOwnerIdOrderByLastModifiedDescKeyAsc(UUID ownerId, Pageable pageable);
 
-  List<FileEntity> findByOwnerIdAndKeyStartingWithOrderByKeyAsc(
+  List<FileEntity> findByOwnerIdAndKeyStartingWithOrderByLastModifiedDescKeyAsc(
       UUID ownerId, String prefix, Pageable pageable);
 
-  List<FileEntity> findAllByOrderByKeyAsc(Pageable pageable);
+  List<FileEntity> findAllByOrderByLastModifiedDescKeyAsc(Pageable pageable);
 
   Optional<FileEntity> findByKey(String key);
 

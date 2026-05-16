@@ -21,6 +21,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 import com.scaledrop.sddownload.WiremockTestBase
+import com.scaledrop.sddownload.adapter.db.FileDownloadEntity
 import com.scaledrop.sddownload.adapter.db.FileDownloadRepository
 import com.scaledrop.sddownload.adapter.db.FileEntity
 import com.scaledrop.sddownload.adapter.db.FileRepository
@@ -35,6 +36,7 @@ import software.amazon.awssdk.services.s3.S3Client
 class FileControllerTest extends WiremockTestBase {
 
   private static final String FILES_ENDPOINT = "/api/v1/files"
+  private static final String FILE_DOWNLOADS_ENDPOINT = "/api/v1/file-downloads"
 
   @Autowired
   S3Client s3Client
@@ -105,6 +107,29 @@ class FileControllerTest extends WiremockTestBase {
       "exports/prefix/report.csv",
       "exports/prefix/archive.csv"
     ] as Set
+  }
+
+  def "should list files from database by last modified descending"() {
+    given:
+    persistFile("exports/modified/old.csv", UUID.randomUUID(), OffsetDateTime.parse("2026-05-15T10:00:00Z"))
+    persistFile("exports/modified/new.csv", UUID.randomUUID(), OffsetDateTime.parse("2026-05-16T10:00:00Z"))
+    persistFile("exports/modified/same-time-a.csv", UUID.randomUUID(), OffsetDateTime.parse("2026-05-16T10:00:00Z"))
+
+    when:
+    def result = mockMvc.perform(get(FILES_ENDPOINT)
+        .param("prefix", "exports/modified/")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+        .andReturn()
+
+    def response = parseJson(result.response.contentAsString)
+
+    then:
+    response*.key == [
+      "exports/modified/new.csv",
+      "exports/modified/same-time-a.csv",
+      "exports/modified/old.csv"
+    ]
   }
 
   def "should list files from database by optional owner id"() {
@@ -418,6 +443,177 @@ class FileControllerTest extends WiremockTestBase {
     fileDownloadRepository.findAll().first().fileId == staleFile.id
   }
 
+  def "should list file download history newest first"() {
+    given:
+    def file = persistFile("exports/download-history/report.csv")
+    def oldDownload = persistDownload(file, OffsetDateTime.parse("2026-05-15T10:00:00Z"))
+    def newDownload = persistDownload(file, OffsetDateTime.parse("2026-05-16T10:00:00Z"))
+
+    when:
+    def result = mockMvc.perform(get(FILE_DOWNLOADS_ENDPOINT)
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+        .andReturn()
+
+    def response = parseJson(result.response.contentAsString)
+
+    then:
+    response*.downloadId == [
+      newDownload.id.toString(),
+      oldDownload.id.toString()
+    ]
+    response*.fileId == [
+      file.id.toString(),
+      file.id.toString()
+    ]
+    response.every { it.ownerId == file.ownerId.toString() }
+    response.every { it.requestedAt != null }
+    response.every { it.expiresAt != null }
+  }
+
+  def "should list file download history by optional file id"() {
+    given:
+    def file = persistFile("exports/download-history/file.csv")
+    def otherFile = persistFile("exports/download-history/other-file.csv")
+    def download = persistDownload(file, OffsetDateTime.parse("2026-05-16T10:00:00Z"))
+    persistDownload(otherFile, OffsetDateTime.parse("2026-05-17T10:00:00Z"))
+
+    when:
+    def result = mockMvc.perform(get(FILE_DOWNLOADS_ENDPOINT)
+        .param("fileId", file.id.toString())
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+        .andReturn()
+
+    def response = parseJson(result.response.contentAsString)
+
+    then:
+    response*.downloadId == [download.id.toString()]
+    response.every { it.fileId == file.id.toString() }
+  }
+
+  def "should list file download history by optional owner id"() {
+    given:
+    def ownerId = UUID.randomUUID()
+    def file = persistFile("exports/download-history/owner.csv", ownerId)
+    def otherFile = persistFile("exports/download-history/other-owner.csv", UUID.randomUUID())
+    def download = persistDownload(file, OffsetDateTime.parse("2026-05-16T10:00:00Z"))
+    persistDownload(otherFile, OffsetDateTime.parse("2026-05-17T10:00:00Z"))
+
+    when:
+    def result = mockMvc.perform(get(FILE_DOWNLOADS_ENDPOINT)
+        .param("ownerId", ownerId.toString())
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+        .andReturn()
+
+    def response = parseJson(result.response.contentAsString)
+
+    then:
+    response*.downloadId == [download.id.toString()]
+    response.every { it.ownerId == ownerId.toString() }
+  }
+
+  def "should list file download history by optional file id and owner id"() {
+    given:
+    def ownerId = UUID.randomUUID()
+    def file = persistFile("exports/download-history/combined.csv", ownerId)
+    def otherOwnerFile = persistFile("exports/download-history/other-owner-combined.csv", UUID.randomUUID())
+    def download = persistDownload(file, OffsetDateTime.parse("2026-05-16T10:00:00Z"))
+    persistDownload(otherOwnerFile, OffsetDateTime.parse("2026-05-17T10:00:00Z"))
+
+    when:
+    def result = mockMvc.perform(get(FILE_DOWNLOADS_ENDPOINT)
+        .param("fileId", file.id.toString())
+        .param("ownerId", ownerId.toString())
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+        .andReturn()
+
+    def response = parseJson(result.response.contentAsString)
+
+    then:
+    response*.downloadId == [download.id.toString()]
+    response.every { it.fileId == file.id.toString() }
+    response.every { it.ownerId == ownerId.toString() }
+  }
+
+  def "should return empty file download history when file id does not belong to owner id"() {
+    given:
+    def file = persistFile("exports/download-history/mismatch.csv", UUID.randomUUID())
+    persistDownload(file, OffsetDateTime.parse("2026-05-16T10:00:00Z"))
+
+    when:
+    def result = mockMvc.perform(get(FILE_DOWNLOADS_ENDPOINT)
+        .param("fileId", file.id.toString())
+        .param("ownerId", UUID.randomUUID().toString())
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+        .andReturn()
+
+    then:
+    parseJson(result.response.contentAsString).isEmpty()
+  }
+
+  def "should list file download history by optional limit and offset"() {
+    given:
+    def file = persistFile("exports/download-history/paging.csv")
+    persistDownload(file, OffsetDateTime.parse("2026-05-14T10:00:00Z"))
+    def middleDownload = persistDownload(file, OffsetDateTime.parse("2026-05-15T10:00:00Z"))
+    persistDownload(file, OffsetDateTime.parse("2026-05-16T10:00:00Z"))
+
+    when:
+    def result = mockMvc.perform(get(FILE_DOWNLOADS_ENDPOINT)
+        .param("limit", "1")
+        .param("offset", "1")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+        .andReturn()
+
+    def response = parseJson(result.response.contentAsString)
+
+    then:
+    response*.downloadId == [middleDownload.id.toString()]
+  }
+
+  def "should return empty file download history when limit is zero"() {
+    given:
+    def file = persistFile("exports/download-history/empty-page.csv")
+    persistDownload(file, OffsetDateTime.parse("2026-05-16T10:00:00Z"))
+
+    when:
+    def result = mockMvc.perform(get(FILE_DOWNLOADS_ENDPOINT)
+        .param("limit", "0")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+        .andReturn()
+
+    then:
+    parseJson(result.response.contentAsString).isEmpty()
+  }
+
+  def "should return validation error when file download history paging params are out of range"() {
+    when:
+    def result = mockMvc.perform(get(FILE_DOWNLOADS_ENDPOINT)
+        .param(paramName, paramValue)
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isBadRequest())
+        .andReturn()
+
+    def response = parseJson(result.response.contentAsString)
+
+    then:
+    response.type == "VALIDATION"
+
+    where:
+    paramName | paramValue
+    "limit"  | "1001"
+    "limit"  | "-1"
+    "offset" | "-1"
+    "fileId" | "invalid"
+    "ownerId" | "invalid"
+  }
+
   def "should update changed metadata during sync"() {
     given:
     putObject("exports/update/report.csv", "old")
@@ -456,6 +652,10 @@ class FileControllerTest extends WiremockTestBase {
   }
 
   private FileEntity persistFile(String key, UUID ownerId) {
+    persistFile(key, ownerId, OffsetDateTime.parse("2026-05-15T10:00:00Z"))
+  }
+
+  private FileEntity persistFile(String key, UUID ownerId, OffsetDateTime lastModified) {
     def fileName = key.substring(key.lastIndexOf("/") + 1)
     def location = key.substring(0, key.length() - fileName.length())
 
@@ -467,9 +667,18 @@ class FileControllerTest extends WiremockTestBase {
         .location(location)
         .contentType("text/csv")
         .size(1024L)
-        .lastModified(OffsetDateTime.parse("2026-05-15T10:00:00Z"))
+        .lastModified(lastModified)
         .eTag(UUID.randomUUID().toString())
         .status("UPLOADED")
+        .build())
+  }
+
+  private FileDownloadEntity persistDownload(FileEntity file, OffsetDateTime requestedAt) {
+    fileDownloadRepository.save(FileDownloadEntity.builder()
+        .id(UUID.randomUUID())
+        .fileId(file.id)
+        .requestedAt(requestedAt)
+        .expiresAt(requestedAt.plusHours(1))
         .build())
   }
 

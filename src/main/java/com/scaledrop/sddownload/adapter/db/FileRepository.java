@@ -19,17 +19,21 @@ package com.scaledrop.sddownload.adapter.db;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface FileRepository extends JpaRepository<FileEntity, UUID> {
 
-  List<FileEntity> findByKeyStartingWithOrderByKeyAsc(String prefix);
+  List<FileEntity> findByKeyStartingWithOrderByKeyAsc(String prefix, Pageable pageable);
 
-  List<FileEntity> findByOwnerIdOrderByKeyAsc(UUID ownerId);
+  List<FileEntity> findByOwnerIdOrderByKeyAsc(UUID ownerId, Pageable pageable);
 
-  List<FileEntity> findByOwnerIdAndKeyStartingWithOrderByKeyAsc(UUID ownerId, String prefix);
+  List<FileEntity> findByOwnerIdAndKeyStartingWithOrderByKeyAsc(
+      UUID ownerId, String prefix, Pageable pageable);
 
-  List<FileEntity> findAllByOrderByKeyAsc();
+  List<FileEntity> findAllByOrderByKeyAsc(Pageable pageable);
 
   Optional<FileEntity> findByKey(String key);
+
+  List<FileEntity> findAllByOrderByKeyAsc();
 }

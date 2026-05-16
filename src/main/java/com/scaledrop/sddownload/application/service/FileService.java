@@ -20,6 +20,7 @@ import static com.scaledrop.sddownload.adapter.event.model.UploadType.FILE;
 
 import com.scaledrop.sddownload.adapter.db.FileEntity;
 import com.scaledrop.sddownload.adapter.db.FileRepository;
+import com.scaledrop.sddownload.adapter.db.OffsetBasedPageRequest;
 import com.scaledrop.sddownload.adapter.event.model.FileMetadataEvent;
 import com.scaledrop.sddownload.configuration.aws.s3.AmazonS3Properties;
 import com.scaledrop.sddownload.configuration.exception.DownloadServiceException;
@@ -40,6 +41,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -64,17 +66,18 @@ public class FileService {
   private final Clock clock;
 
   @Transactional(readOnly = true)
-  public List<FileEntity> listFiles(String prefix, UUID ownerId) {
+  public List<FileEntity> listFiles(String prefix, UUID ownerId, Integer limit, Integer offset) {
+    Pageable pageable = new OffsetBasedPageRequest(limit, offset);
     if (ownerId != null && StringUtils.isNotBlank(prefix)) {
-      return fileRepository.findByOwnerIdAndKeyStartingWithOrderByKeyAsc(ownerId, prefix);
+      return fileRepository.findByOwnerIdAndKeyStartingWithOrderByKeyAsc(ownerId, prefix, pageable);
     }
     if (ownerId != null) {
-      return fileRepository.findByOwnerIdOrderByKeyAsc(ownerId);
+      return fileRepository.findByOwnerIdOrderByKeyAsc(ownerId, pageable);
     }
     if (StringUtils.isNotBlank(prefix)) {
-      return fileRepository.findByKeyStartingWithOrderByKeyAsc(prefix);
+      return fileRepository.findByKeyStartingWithOrderByKeyAsc(prefix, pageable);
     }
-    return fileRepository.findAllByOrderByKeyAsc();
+    return fileRepository.findAllByOrderByKeyAsc(pageable);
   }
 
   @Transactional(readOnly = true)

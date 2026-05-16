@@ -151,6 +151,115 @@ class FileControllerTest extends WiremockTestBase {
     response.every { it.ownerId == ownerId.toString() }
   }
 
+  def "should list files from database by optional limit"() {
+    given:
+    persistFile("exports/paging/01.csv")
+    persistFile("exports/paging/02.csv")
+    persistFile("exports/paging/03.csv")
+
+    when:
+    def result = mockMvc.perform(get(FILES_ENDPOINT)
+        .param("limit", "2")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+        .andReturn()
+
+    def response = parseJson(result.response.contentAsString)
+
+    then:
+    response*.key == [
+      "exports/paging/01.csv",
+      "exports/paging/02.csv"
+    ]
+  }
+
+  def "should list files from database by optional limit and offset"() {
+    given:
+    persistFile("exports/paging/01.csv")
+    persistFile("exports/paging/02.csv")
+    persistFile("exports/paging/03.csv")
+    persistFile("exports/paging/04.csv")
+
+    when:
+    def result = mockMvc.perform(get(FILES_ENDPOINT)
+        .param("limit", "2")
+        .param("offset", "1")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+        .andReturn()
+
+    def response = parseJson(result.response.contentAsString)
+
+    then:
+    response*.key == [
+      "exports/paging/02.csv",
+      "exports/paging/03.csv"
+    ]
+  }
+
+  def "should return empty list when limit is zero"() {
+    given:
+    persistFile("exports/paging/01.csv")
+
+    when:
+    def result = mockMvc.perform(get(FILES_ENDPOINT)
+        .param("limit", "0")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+        .andReturn()
+
+    then:
+    parseJson(result.response.contentAsString).isEmpty()
+  }
+
+  def "should list files from database by owner id and prefix with paging"() {
+    given:
+    def ownerId = UUID.randomUUID()
+    persistFile("exports/paged-combined/01.csv", ownerId)
+    persistFile("exports/paged-combined/02.csv", ownerId)
+    persistFile("exports/paged-combined/03.csv", ownerId)
+    persistFile("exports/other/01.csv", ownerId)
+    persistFile("exports/paged-combined/other-user.csv", UUID.randomUUID())
+
+    when:
+    def result = mockMvc.perform(get(FILES_ENDPOINT)
+        .param("ownerId", ownerId.toString())
+        .param("prefix", "exports/paged-combined/")
+        .param("limit", "1")
+        .param("offset", "1")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+        .andReturn()
+
+    def response = parseJson(result.response.contentAsString)
+
+    then:
+    response*.key == [
+      "exports/paged-combined/02.csv"
+    ]
+    response.every { it.ownerId == ownerId.toString() }
+  }
+
+  def "should return validation error when paging params are out of range"() {
+    when:
+    def result = mockMvc.perform(get(FILES_ENDPOINT)
+        .param(paramName, paramValue)
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isBadRequest())
+        .andReturn()
+
+    def response = parseJson(result.response.contentAsString)
+
+    then:
+    response.type == "VALIDATION"
+
+    where:
+    paramName | paramValue
+    "limit"  | "1001"
+    "limit"  | "-1"
+    "offset" | "-1"
+  }
+
   def "should get file by id from database"() {
     given:
     def file = persistFile("exports/single/report.csv")
@@ -270,7 +379,7 @@ class FileControllerTest extends WiremockTestBase {
 
     fileRepository.save(FileEntity.builder()
         .id(UUID.randomUUID())
-        .ownerId(UUID.randomUUID())
+        .ownerId(ownerId)
         .key(key)
         .name(fileName)
         .location(location)

@@ -27,6 +27,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -60,8 +62,10 @@ public class FileController {
   @ResponseStatus(HttpStatus.OK)
   public List<FileAPIResponse> listFiles(
       @RequestParam(value = "prefix", required = false) String prefix,
-      @RequestParam(value = "ownerId", required = false) UUID ownerId) {
-    return fileService.listFiles(prefix, ownerId).stream()
+      @RequestParam(value = "ownerId", required = false) UUID ownerId,
+      @RequestParam(value = "limit", required = true, defaultValue = "1000") @Min(0) @Max(1000) Integer limit,
+      @RequestParam(value = "offset", required = true, defaultValue = "0") @Min(0) Integer offset) {
+    return fileService.listFiles(prefix, ownerId, limit, offset).stream()
         .map(fileResponseMapper::toResponse)
         .toList();
   }

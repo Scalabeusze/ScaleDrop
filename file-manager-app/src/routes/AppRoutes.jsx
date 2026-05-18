@@ -8,6 +8,7 @@ import { LoginPage } from '../pages/Public/LoginPage';
 import { MyFilesPage } from '../pages/User/MyFilesPage';
 import { SharedFilesPage } from '../pages/User/SharedFilesPage';
 import { ProfilePage } from '../pages/User/ProfilePage';
+import { DiskUsagePage } from '../pages/User/DiskUsagePage';
 
 import { ProtectedRoute } from './ProtectedRoute';
 
@@ -25,6 +26,7 @@ export const AppRoutes = () => {
         <Route element={<UserLayout />}>
           <Route path="/user/my-files" element={<MyFilesPage />} />
           <Route path="/user/shared-files" element={<SharedFilesPage />} />
+          <Route path="/user/disk-usage" element={<DiskUsagePage />} />
           <Route path="/user/profile" element={<ProfilePage />} />
         </Route>
       </Route>

@@ -2,7 +2,7 @@ import React from 'react';
 import { Outlet, Link, useNavigate } from 'react-router';
 import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
 import { ThemeSwitcher } from '../Shared/ThemeSwitcher';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 
 export const UserLayout = () => {
   const { logout, user } = useAuth();
@@ -24,6 +24,7 @@ export const UserLayout = () => {
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
             <Button color="inherit" component={Link} to="/user/my-files">My Files</Button>
             <Button color="inherit" component={Link} to="/user/shared-files">Shared With Me</Button>
+            <Button color="inherit" component={Link} to="/user/disk-usage">Disk Usage</Button>
             <Button color="inherit" component={Link} to="/user/profile">Profile</Button>
             
             <ThemeSwitcher color="default" sx={{ ml: 2 }} />
@@ -32,7 +33,7 @@ export const UserLayout = () => {
           </Box>
         </Toolbar>
       </AppBar>
-      <Box component="main" sx={{ flexGrow: 1, p: 3, display: 'flex', flexDirection: 'column' }}>
+      <Box component="main" sx={{ flexGrow: 1, p: 3, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Outlet />
       </Box>
     </Box>

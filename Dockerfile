@@ -23,6 +23,6 @@ COPY --from=builder /workspace/build/libs/*.jar /app/app.jar
 
 USER appuser
 
-EXPOSE 6200
+EXPOSE 8080
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

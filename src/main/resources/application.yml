@@ -30,7 +30,7 @@ spring:
   main.banner-mode: off
 
 server:
-  port: 6200
+  port: 8080
   servlet:
     context-path: ${SERVER_SERVLET_CONTEXT_PATH:/sd-download}
 management:

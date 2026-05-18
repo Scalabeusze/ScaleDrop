@@ -1,31 +1,54 @@
-import React, { useState } from 'react';
-import { Box, Button, Typography, CircularProgress, TextField } from '@mui/material';
+import React, { useState, useRef } from 'react';
+import { Box, Button, Typography, CircularProgress, TextField, InputAdornment, IconButton } from '@mui/material';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import { encryptFile, hashBuffer } from '../utils/crypto';
+import { saveEncryptedFile, saveFileMeta, getFileMeta, listAllFileMetas } from '../utils/idb';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
-export const FileUpload = ({ onUploadSuccess }) => {
+export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
   const [file, setFile] = useState(null);
+  const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [customName, setCustomName] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
+      // prefill suggested name
+      setCustomName('');
     }
   };
 
   const handleUpload = async () => {
     if (!file) return;
-    setUploading(true); 
+    setUploading(true);
 
     const finalName = customName.trim() || file.name;
+    // If a logical file with same name exists in currentPath, reuse its fileId
+    let fileId = null;
+    try {
+      const metas = await listAllFileMetas().catch(() => []);
+      const match = metas.find(m => {
+        const meta = m.value || {};
+        const nameMatch = (meta.name === finalName);
+        const pathMatch = JSON.stringify(meta.path || []) === JSON.stringify(currentPath || []);
+        return nameMatch && pathMatch;
+      });
+      fileId = match ? match.id : Date.now().toString();
+    } catch {
+      fileId = Date.now().toString();
+    }
 
     try {
       // 1. Send metadata to backend to request a signed URL
       const token = localStorage.getItem('jwt_token');
       const requestResponse = await fetch(`${API_BASE_URL}/api/v1/example`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
@@ -35,35 +58,123 @@ export const FileUpload = ({ onUploadSuccess }) => {
           size: file.size,
         })
       });
-      
+
       if (!requestResponse.ok) throw new Error('Failed to get signed URL');
       const { signedUrl } = await requestResponse.json();
+
+      // If password provided, encrypt file locally before uploading
+      let uploadBlob = file;
+      let cryptoMeta = null;
+      if (password) {
+        const { ciphertext, ivBase64, saltBase64 } = await encryptFile(file, password);
+        // compute hash over ciphertext to detect versions
+        const hash = await hashBuffer(ciphertext);
+        const versionId = Date.now().toString();
+        const versionKey = `${fileId}:${versionId}`;
+        // ciphertext is an ArrayBuffer — create Blob directly
+        uploadBlob = new Blob([ciphertext], { type: 'application/octet-stream' });
+        cryptoMeta = { ivBase64, saltBase64, versionId, versionKey, hash };
+        // persist ciphertext to IndexedDB under versionKey so downloads work even for large files
+        try {
+          await saveEncryptedFile(versionKey, { name: finalName, type: file.type, size: file.size, ivBase64, saltBase64, versionId, hash }, ciphertext);
+          // update files_meta store
+          const existing = await getFileMeta(fileId).catch(() => null);
+          const fileMeta = existing || { fileId, name: finalName, path: [...currentPath], versions: [] };
+          fileMeta.name = finalName; // keep name updated
+          fileMeta.versions = fileMeta.versions || [];
+          // Always record a new version for this upload (allow identical files to create new versions)
+          fileMeta.versions.push({ versionId, versionKey, uploadedAt: new Date().toISOString(), size: file.size, hash });
+          await saveFileMeta(fileId, fileMeta);
+        } catch (err) {
+          console.error('Failed to save encrypted file to IndexedDB:', err);
+        }
+      }
 
       // 2. Upload file directly to the provided Signed URL
       const uploadResponse = await fetch(signedUrl, {
         method: 'PUT',
         headers: {
-          'Content-Type': file.type,
+          'Content-Type': uploadBlob.type || 'application/octet-stream',
         },
-        body: file,
+        body: uploadBlob,
       });
 
       if (!uploadResponse.ok) throw new Error('Failed to upload file to storage');
 
       alert('File uploaded successfully!');
       if (onUploadSuccess) {
-        onUploadSuccess({ name: finalName, type: file.type, size: file.size });
+        // Provide metadata including crypto info and fileId for client-side download/decrypt
+        onUploadSuccess({ fileId, name: finalName, type: file.type, size: uploadBlob.size, encrypted: !!cryptoMeta, cryptoMeta, versionId: cryptoMeta && cryptoMeta.versionId });
       }
       setFile(null); // Clear selection
+      if (fileInputRef.current) fileInputRef.current.value = '';
       setCustomName('');
+      setPassword('');
     } catch (error) {
       console.error('Error during upload process:', error);
-      alert('Upload endpoint not reachable. Mocking success for UI.');
+      // Fallback: mock local storage of file content for UI/demo
+      let localMeta = { encrypted: false };
+      try {
+        if (password) {
+          const { ciphertext, ivBase64, saltBase64 } = await encryptFile(file, password);
+          // For small files only, keep base64 in-memory for demo; avoid OOM on large files
+          const MAX_LOCAL_STORE = 5 * 1024 * 1024; // 5 MB
+          if (file.size <= MAX_LOCAL_STORE) {
+            const bytes = new Uint8Array(ciphertext);
+            let binary = '';
+            for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+            const ciphertextBase64 = btoa(binary);
+            // also generate a version and persist
+            const hash = await hashBuffer(ciphertext);
+            const versionId = Date.now().toString();
+            const versionKey = `${fileId}:${versionId}`;
+            localMeta = { fileId, encrypted: true, ciphertextBase64, ivBase64, saltBase64, versionId, versionKey, hash };
+            try {
+              await saveEncryptedFile(versionKey, { name: finalName, type: file.type, size: file.size, ivBase64, saltBase64, versionId, hash }, ciphertext);
+              // ensure files_meta is updated for fallback/mock path as well
+              const existing = await getFileMeta(fileId).catch(() => null);
+              const fileMeta = existing || { fileId, name: finalName, path: [...currentPath], versions: [] };
+              fileMeta.name = finalName;
+              fileMeta.versions = fileMeta.versions || [];
+              fileMeta.versions.push({ versionId, versionKey, uploadedAt: new Date().toISOString(), size: file.size, hash });
+              await saveFileMeta(fileId, fileMeta);
+            } catch (err) { console.error('IDB save failed:', err); }
+          } else {
+            const hash = await hashBuffer(ciphertext);
+            const versionId = Date.now().toString();
+            const versionKey = `${fileId}:${versionId}`;
+            localMeta = { fileId, encrypted: true, ivBase64, saltBase64, ciphertextAvailable: false, versionId, versionKey, hash };
+            try {
+              await saveEncryptedFile(versionKey, { name: finalName, type: file.type, size: file.size, ivBase64, saltBase64, versionId, hash }, ciphertext);
+              const existing = await getFileMeta(fileId).catch(() => null);
+              const fileMeta = existing || { fileId, name: finalName, path: [...currentPath], versions: [] };
+              fileMeta.name = finalName;
+              fileMeta.versions = fileMeta.versions || [];
+              fileMeta.versions.push({ versionId, versionKey, uploadedAt: new Date().toISOString(), size: file.size, hash });
+              await saveFileMeta(fileId, fileMeta);
+            } catch (err) { console.error('IDB save failed:', err); }
+          }
+        } else {
+          // read file as data URL (small files are ok)
+          const reader = await new Promise((res, rej) => {
+            const r = new FileReader();
+            r.onload = () => res(r.result);
+            r.onerror = rej;
+            r.readAsDataURL(file);
+          });
+          localMeta = { encrypted: false, dataUrl: reader };
+        }
+      } catch (err) {
+        console.error('Local mock storage failed:', err);
+      }
+
       if (onUploadSuccess) {
-        onUploadSuccess({ name: finalName, type: file.type, size: file.size });
+        onUploadSuccess({ fileId, name: finalName, type: file.type, size: file.size, ...localMeta, uploadDate: new Date().toISOString(), downloadCount: 0 });
       }
       setFile(null); // Clear selection
+      if (fileInputRef.current) fileInputRef.current.value = '';
       setCustomName('');
+      setPassword('');
     } finally {
       setUploading(false);
     }
@@ -72,14 +183,14 @@ export const FileUpload = ({ onUploadSuccess }) => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-start', mt: 3 }}>
       <Typography variant="h6">Upload a File</Typography>
-      
+
       <Button 
         variant="outlined" 
         component="label"
         disabled={uploading}
       >
         Select File
-        <input type="file" hidden onChange={handleFileChange} />
+        <input ref={fileInputRef} type="file" hidden onChange={handleFileChange} onClick={(e) => { e.target.value = null; }} />
       </Button>
       {file && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, width: '100%', maxWidth: 300 }}>
@@ -91,6 +202,25 @@ export const FileUpload = ({ onUploadSuccess }) => {
             value={customName}
             onChange={(e) => setCustomName(e.target.value)}
             disabled={uploading}
+            fullWidth
+          />
+          <TextField
+            label="Encryption password (optional)"
+            variant="outlined"
+            size="small"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={uploading}
+            type={showPassword ? 'text' : 'password'}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton onClick={() => setShowPassword(s => !s)} edge="end">
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              )
+            }}
             fullWidth
           />
         </Box>

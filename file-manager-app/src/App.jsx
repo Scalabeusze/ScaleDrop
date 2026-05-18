@@ -1,6 +1,6 @@
 import { BrowserRouter } from 'react-router';
-import { ThemeContextProvider } from './context/ThemeContext';
-import { AuthProvider } from './context/AuthContext';
+import { ThemeContextProvider } from './context/ThemeContext.jsx';
+import { AuthProvider } from './context/AuthContext.jsx';
 import { AppRoutes } from './routes/AppRoutes';
 
 function App() {

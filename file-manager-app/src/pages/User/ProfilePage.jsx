@@ -1,11 +1,18 @@
 import { Box, Typography, Paper, Avatar, Divider, Button } from '@mui/material';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
+import { motion } from 'motion/react';
 
 export const ProfilePage = () => {
   const { user } = useAuth();
 
   return (
-    <Box sx={{ maxWidth: 600, mx: 'auto', width: '100%', mt: 4 }}>
+    <Box 
+      component={motion.div} 
+      initial={{ opacity: 0, y: 15 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      transition={{ duration: 0.3 }}
+      sx={{ maxWidth: 600, mx: 'auto', width: '100%', mt: 4 }}
+    >
       <Paper sx={{ p: 4 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
           <Avatar sx={{ width: 64, height: 64, mr: 3 }}>{user?.name?.[0]}</Avatar>

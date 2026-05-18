@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Typography, Box, Button, Paper, Divider, Alert } from '@mui/material';
 import { useNavigate } from 'react-router';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { GoogleLogin } from '@react-oauth/google';
+import { motion } from 'motion/react';
 
 export const LoginPage = () => {
   const { login } = useAuth();
@@ -42,7 +43,13 @@ export const LoginPage = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 10 }}>
+    <Box 
+      component={motion.div} 
+      initial={{ opacity: 0, y: 15 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      transition={{ duration: 0.3 }}
+      sx={{ display: 'flex', justifyContent: 'center', mt: 10 }}
+    >
       <Paper sx={{ p: 4, textAlign: 'center', width: '400px' }}>
         <Typography variant="h4" gutterBottom>
           Login

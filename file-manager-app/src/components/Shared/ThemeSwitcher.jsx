@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { Switch, FormControlLabel } from '@mui/material';
-import { ThemeContext } from '../../context/ThemeContext';
+import { ThemeContext } from '../../context/themeContext';
 
 export const ThemeSwitcher = ({ color = "default", sx = {} }) => {
   const { isDarkMode, toggleTheme } = useContext(ThemeContext);

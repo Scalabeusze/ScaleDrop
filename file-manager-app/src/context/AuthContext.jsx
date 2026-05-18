@@ -1,16 +1,19 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-
-const AuthContext = createContext(null);
+import React, { useState, useEffect } from 'react';
+import { AuthContext } from './authContext';
 
 export const AuthProvider = ({ children }) => {
   // Pobierz token z localStorage na starcie, jeśli istnieje
   const [token, setToken] = useState(() => localStorage.getItem('jwt_token'));
   const [user, setUser] = useState(null);
+  const logout = () => {
+    localStorage.removeItem('jwt_token');
+    setToken(null);
+    setUser(null);
+  };
 
   useEffect(() => {
     if (token) {
       try {
-        // Podstawowe zdekodowanie payloadu JWT zapisanej w formacie Base64Url
         const base64Url = token.split('.')[1];
         const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
         const jsonPayload = decodeURIComponent(
@@ -20,17 +23,20 @@ export const AuthProvider = ({ children }) => {
             .join('')
         );
         const decoded = JSON.parse(jsonPayload);
-        
-        // Wyciągnięcie nowych pól z internalowego tokena JWT
-        setUser({ 
-          accountId: decoded.sub,
-          name: decoded.name || decoded.sub || 'User',
-          iat: decoded.iat,
-          exp: decoded.exp
-        });
+
+        // Call setUser asynchronously to avoid synchronous state update inside effect
+        setTimeout(() => {
+          setUser({
+            accountId: decoded.sub,
+            name: decoded.name || decoded.sub || 'User',
+            iat: decoded.iat,
+            exp: decoded.exp,
+          });
+        }, 0);
       } catch (error) {
         console.error('Błąd podczas dekodowania tokenu JWT:', error);
-        logout(); // Token jest zniekształcony, usuwamy go i wylogowujemy usera
+        // Avoid calling setState synchronously inside effect; schedule logout asynchronously
+        setTimeout(() => logout(), 0);
       }
     }
   }, [token]);
@@ -46,11 +52,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('jwt_token');
-    setToken(null);
-    setUser(null);
-  };
 
   return (
     <AuthContext.Provider value={{ token, user, login, logout, isAuthenticated: !!token || !!user }}>
@@ -59,4 +60,4 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+// Note: `useAuth` hook lives in `src/context/useAuth.jsx` to keep this file exporting only components (fast-refresh friendly).

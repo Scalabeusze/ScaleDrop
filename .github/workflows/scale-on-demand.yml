@@ -1,0 +1,54 @@
+name: Environment management
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'What would you like to do with the system?'
+        required: true
+        type: choice
+        options:
+          - 'START containers on demand (overrides current limits)'
+          - 'STOP containers on demand (overrides current limits)'
+
+env:
+  AWS_REGION: "eu-north-1"
+  CLUSTER_NAME: "sd-cluster-dev"
+  SERVICES: "sd-iam-service sd-download-service sd-upload-service sd-bff-service"
+
+jobs:
+  manage-ecs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Change Auto Scaling limits
+        run: |
+          for SERVICE in ${{ env.SERVICES }}; do
+            echo "======================================"
+            echo "Service: $SERVICE"
+            
+            if [[ "${{ github.event.inputs.action }}" == "START"* ]]; then
+              echo "STARTING container (Setting Min=1, Max=2)......"
+              aws application-autoscaling register-scalable-target \
+                --service-namespace ecs \
+                --scalable-dimension ecs:service:DesiredCount \
+                --resource-id service/${{ env.CLUSTER_NAME }}/$SERVICE \
+                --min-capacity 1 --max-capacity 2
+              
+            elif [[ "${{ github.event.inputs.action }}" == "STOP"* ]]; then
+              echo "STOPPING container (Setting Min=0, Max=0)......"
+              aws application-autoscaling register-scalable-target \
+                --service-namespace ecs \
+                --scalable-dimension ecs:service:DesiredCount \
+                --resource-id service/${{ env.CLUSTER_NAME }}/$SERVICE \
+                --min-capacity 0 --max-capacity 0
+            fi
+          done
+          echo "======================================"
+          echo "Done! Auto Scaling will adjust the number of containers."

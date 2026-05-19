@@ -95,7 +95,7 @@ public class SecurityConfiguration {
           .anonymous(AbstractHttpConfigurer::disable)
           .authorizeHttpRequests(
               r ->
-                  r.requestMatchers(API_V1_PREFIX + "/uploads/**")
+                  r.requestMatchers(API_V1_PREFIX + "/upload/**")
                       .hasAnyRole(INTERNAL.name(), DOCUMENTATION.name()))
           .httpBasic(
               customizer -> customizer.authenticationEntryPoint(basicAuthenticationEntryPoint))

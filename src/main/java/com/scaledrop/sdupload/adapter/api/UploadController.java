@@ -46,13 +46,13 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Upload", description = "File upload and metadata management")
 public class UploadController {
 
-  private static final String REGISTER_UPLOAD_ENDPOINT = API_V1_PREFIX + "/uploads";
+  private static final String UPLOAD_ENDPOINT = API_V1_PREFIX + "/upload";
 
   private final RegisterUploadUseCase registerUploadUseCase;
   private final UploadResponseMapper uploadResponseMapper;
 
   @PostMapping(
-      value = REGISTER_UPLOAD_ENDPOINT,
+      value = UPLOAD_ENDPOINT,
       consumes = MediaType.APPLICATION_JSON_VALUE,
       produces = MediaType.APPLICATION_JSON_VALUE)
   @Operation(
@@ -73,14 +73,14 @@ public class UploadController {
     return uploadResponseMapper.toResponse(registerUploadUseCase.registerUpload(ownerId, request));
   }
 
-  @PostMapping(value = API_V1_PREFIX + "/uploads/{fileId}/confirm")
+  @PostMapping(value = UPLOAD_ENDPOINT + "/{fileId}/confirm")
   @Operation(
       summary = "Confirm physical file upload",
       description = "Updates status to UPLOADED and triggers SNS notification via Outbox")
   @ResponseStatus(HttpStatus.OK)
   public void confirmUpload(@PathVariable("fileId") UUID fileId) {
-    log.info("[UPLOAD-CONTROLLER] Received confirmation trigger for file ID: {}", fileId);
 
+    log.info("[UPLOAD-CONTROLLER] Received confirmation trigger for file ID: {}", fileId);
     registerUploadUseCase.confirmUpload(fileId);
   }
 }

@@ -110,10 +110,7 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
 
       // 3. Confirm the upload with the backend
       const confirmResponse = await fetch(`${API_BASE_URL}/api/v1/upload/${fileId}/confirm`, {
-        method: 'POST',
-        headers: {
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        }
+        method: 'POST'
       });
       if (!confirmResponse.ok) throw new Error('Failed to confirm upload');
 

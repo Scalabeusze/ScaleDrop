@@ -1,3 +1,11 @@
+data "aws_cloudfront_cache_policy" "no_cache" {
+  name = "Managed-CachingDisabled"
+}
+
+data "aws_cloudfront_origin_request_policy" "all_viewer" {
+  name = "Managed-AllViewer"
+}
+
 # S3 bucket for frontend files
 resource "aws_s3_bucket" "frontend" {
   bucket        = "sd-frontend-dev"
@@ -24,10 +32,25 @@ resource "aws_cloudfront_origin_access_control" "default" {
 
 # CloudFront Distribution
 resource "aws_cloudfront_distribution" "frontend_dist" {
+
+  # S3 origin
   origin {
     domain_name              = aws_s3_bucket.frontend.bucket_regional_domain_name
     origin_id                = "S3-Frontend"
     origin_access_control_id = aws_cloudfront_origin_access_control.default.id
+  }
+
+  # ALB origin
+  origin {
+    domain_name = aws_lb.main.dns_name
+    origin_id   = "Backend-ALB"
+
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "http-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
   }
 
   enabled             = true
@@ -40,13 +63,28 @@ resource "aws_cloudfront_distribution" "frontend_dist" {
     response_code      = 200
     response_page_path = "/index.html"
   }
-  
+
   custom_error_response {
     error_code         = 404
     response_code      = 200
     response_page_path = "/index.html"
   }
 
+  # Route traffic to ALB
+  ordered_cache_behavior {
+    path_pattern     = "/sd-bff/*"
+    target_origin_id = "Backend-ALB"
+
+    allowed_methods = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+    cached_methods  = ["GET", "HEAD"]
+
+    viewer_protocol_policy = "redirect-to-https"
+
+    cache_policy_id          = data.aws_cloudfront_cache_policy.no_cache.id
+    origin_request_policy_id = data.aws_cloudfront_origin_request_policy.all_viewer.id
+  }
+
+  # Default behavior - route traffic to S3
   default_cache_behavior {
     allowed_methods  = ["GET", "HEAD"]
     cached_methods   = ["GET", "HEAD"]

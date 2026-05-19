@@ -67,7 +67,7 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
       });
 
       if (!requestResponse.ok) throw new Error('Failed to get signed URL');
-      const { signedUrl } = await requestResponse.json();
+      const { uploadUrl, fileId } = await requestResponse.json();
 
       // If password provided, encrypt file locally before uploading
       let uploadBlob = file;
@@ -98,7 +98,7 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
       }
 
       // 2. Upload file directly to the provided Signed URL
-      const uploadResponse = await fetch(signedUrl, {
+      const uploadResponse = await fetch(uploadUrl, {
         method: 'PUT',
         headers: {
           'Content-Type': uploadBlob.type || 'application/octet-stream',
@@ -107,6 +107,15 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
       });
 
       if (!uploadResponse.ok) throw new Error('Failed to upload file to storage');
+
+      // 3. Confirm the upload with the backend
+      const confirmResponse = await fetch(`${API_BASE_URL}/api/v1/upload/${fileId}/confirm`, {
+        method: 'POST',
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
+      if (!confirmResponse.ok) throw new Error('Failed to confirm upload');
 
       alert('File uploaded successfully!');
       if (onUploadSuccess) {

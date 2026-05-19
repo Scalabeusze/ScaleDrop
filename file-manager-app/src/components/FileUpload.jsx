@@ -101,7 +101,7 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
       const uploadResponse = await fetch(uploadUrl, {
         method: 'PUT',
         headers: {
-          'Content-Type': uploadBlob.type || 'application/octet-stream',
+          'Content-Type': file.type || 'application/octet-stream',
         },
         body: uploadBlob,
       });

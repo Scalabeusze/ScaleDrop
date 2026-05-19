@@ -46,6 +46,10 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
     try {
       // 1. Send metadata to backend to request a signed URL
       const token = localStorage.getItem('jwt_token');
+
+      const fileBuffer = await file.arrayBuffer();
+      const fileHash = await hashBuffer(fileBuffer);
+
       const requestResponse = await fetch(`${API_BASE_URL}/api/v1/upload`, {
         method: 'POST',
         headers: {
@@ -53,9 +57,12 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
-          filename: finalName,
+          location: '/',
+          name: finalName,
+          type: 'FILE',
           contentType: file.type,
           size: file.size,
+          hash: fileHash
         })
       });
 

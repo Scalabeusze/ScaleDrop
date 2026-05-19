@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
     configuration = {ScaleDropFeignConfiguration.class, UploadClientConfiguration.class})
 public interface UploadClient {
 
-  String UPLOADS_BASE_URL = "/api/v1/uploads";
+  String UPLOADS_BASE_URL = "/api/v1/upload";
 
   @PostMapping(value = UPLOADS_BASE_URL, consumes = "application/json")
   RegisterUploadResponse registerUpload(

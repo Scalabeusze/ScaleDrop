@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "Upload", description = "File upload management (S3 & SNS integration)")
 public class UploadController {
 
-  private static final String UPLOAD_ENDPOINT = API_V1_PREFIX + "/uploads";
+  private static final String UPLOAD_ENDPOINT = API_V1_PREFIX + "/upload";
 
   private final UploadUseCase uploadUseCase;
   private final UploadRequestMapper uploadRequestMapper;

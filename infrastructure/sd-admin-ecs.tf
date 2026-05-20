@@ -90,7 +90,18 @@ resource "aws_ecs_task_definition" "sd_admin" {
       {
         name      = "ADMIN_PASSWORD"
         valueFrom = aws_ssm_parameter.admin_password_param.arn
+      },
+      {
+        name      = "DB_PASSWORD"
+        valueFrom = aws_ssm_parameter.db_password_param.arn
       }
+    ]
+
+    environment = [
+      { name = "DB_HOST", value = aws_db_instance.postgres.address },
+      { name = "DB_PORT", value = tostring(aws_db_instance.postgres.port) },
+      { name = "DB_NAME", value = aws_db_instance.postgres.db_name },
+      { name = "DB_USER", value = aws_db_instance.postgres.username }
     ]
 
     logConfiguration = {

@@ -2,3 +2,4 @@ streamlit==1.57.0
 boto3==1.43.6
 psycopg2-binary==2.9.12
 streamlit-autorefresh==1.0.1
+python-dotenv==1.2.2

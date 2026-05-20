@@ -1,6 +1,9 @@
 import streamlit as st
 import os
 from modules import services, monitoring, users
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Page config always has to be first
 st.set_page_config(page_title="ScaleDrop Admin", page_icon="⚙️", layout="wide")

@@ -66,10 +66,11 @@ def render_user_details(user_data):
         status_color = "green" if status == "ACTIVE" else "red" if status == "LOCKED" else "orange"
         st.markdown(f"**Status:** :{status_color}[{status}]")
         
-        if user_data['avatar_url']:
-            st.image(user_data['avatar_url'], width=80)
+        avatar = user_data['avatar_url']
+        if pd.notna(avatar) and str(avatar).strip() != "":
+            st.image(avatar, width=80)
         else:
-            st.write("**Avatar:** None")
+            st.write("**Avatar:** Brak")
 
     st.divider()
     

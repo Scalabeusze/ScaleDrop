@@ -23,8 +23,8 @@ resource "aws_iam_role" "admin_task_role" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
       Principal = { Service = "ecs-tasks.amazonaws.com" }
     }]
   })
@@ -45,6 +45,14 @@ resource "aws_iam_role_policy" "admin_task_policy" {
           "ecs:ListClusters"
         ]
         Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:DescribeLogGroups",
+          "logs:FilterLogEvents"
+        ]
+        Resource = "*"
       }
     ]
   })
@@ -63,16 +71,16 @@ resource "aws_ecs_task_definition" "sd_admin" {
   requires_compatibilities = ["FARGATE"]
   cpu                      = 256 # Lowest resources
   memory                   = 512
-  
+
   # Using existing roles
-  execution_role_arn       = aws_iam_role.ecs_execution_role.arn
-  task_role_arn            = aws_iam_role.admin_task_role.arn
+  execution_role_arn = aws_iam_role.ecs_execution_role.arn
+  task_role_arn      = aws_iam_role.admin_task_role.arn
 
   container_definitions = jsonencode([{
     name      = "sd-admin"
     image     = "${aws_ecr_repository.sd_admin_repo.repository_url}:latest"
     essential = true
-    
+
     portMappings = [{
       containerPort = 8501
       hostPort      = 8501
@@ -101,8 +109,8 @@ resource "aws_ecs_service" "sd_admin_service" {
   name            = "sd-admin-service"
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.sd_admin.arn
-  
-  desired_count   = 1
+
+  desired_count = 1
 
   capacity_provider_strategy {
     capacity_provider = "FARGATE_SPOT"

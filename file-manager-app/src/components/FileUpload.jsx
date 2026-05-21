@@ -125,7 +125,7 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
           title: 'Failed to upload file to storage',
           text: 'An error occurred while uploading to the storage bucket.',
           icon: 'error',
-        })
+        }) 
         throw new Error('Failed to upload file to storage');
       }
 
@@ -134,7 +134,7 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         }
       });
       if (!confirmResponse.ok) {

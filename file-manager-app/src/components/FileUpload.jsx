@@ -111,8 +111,6 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
         }
       }
 
-      const fileExtension = finalName.includes('.') ? finalName.substring(finalName.lastIndexOf('.')) : '';
-      uploadBlob = new File([uploadBlob], `${fileId}${fileExtension}`, { type: file.type || 'application/octet-stream' });
 
       // 2. Upload file directly to the provided Signed URL
       const uploadResponse = await fetch(uploadUrl, {

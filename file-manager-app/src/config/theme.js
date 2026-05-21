@@ -6,15 +6,15 @@ const lightPalette = {
     main: '#4B75F2',
   },
   secondary: {
-    main: '#578BF2',
+    main: '#0EA5E9',
   },
   background: {
-    default: '#C5D0D9',
+    default: '#F1F5F9',
     paper: '#FFFFFF',
   },
   text: {
-    primary: '#5550F2',
-    secondary: '#2d4ba6',
+    primary: '#1E293B',
+    secondary: '#64748B',
   },
 };
 
@@ -24,18 +24,18 @@ const darkPalette = {
     main: '#6B8DF2',
   },
   secondary: {
-    main: '#5A73BF',
+    main: '#38BDF8',
   },
   info: {
     main: '#91CCD9',
   },
   background: {
     default: '#0B0B0D',
-    paper: '#2F3940',
+    paper: '#1E293B',
   },
   text: {
-    primary: '#91CCD9',
-    secondary: '#6B8DF2',
+    primary: '#E2E8F0',
+    secondary: '#94A3B8',
   },
 };
 

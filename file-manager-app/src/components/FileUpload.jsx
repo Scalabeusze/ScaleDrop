@@ -4,6 +4,7 @@ import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { encryptFile, hashBuffer } from '../utils/crypto';
 import { saveEncryptedFile, saveFileMeta, getFileMeta, listAllFileMetas } from '../utils/idb';
+import { useAppSwal } from '../hooks/useAppSwal';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
@@ -14,6 +15,7 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
   const [customName, setCustomName] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const { swal, toast } = useAppSwal();
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
@@ -66,7 +68,14 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
         })
       });
 
-      if (!requestResponse.ok) throw new Error('Failed to get signed URL');
+      if (!requestResponse.ok) {
+        swal.fire({
+          title: 'Failed to get signed URL',
+          text: 'The server rejected the upload request.',
+          icon: 'error',
+        })
+        throw new Error('Failed to get signed URL');
+      }
       const { uploadUrl, fileId } = await requestResponse.json();
 
       // If password provided, encrypt file locally before uploading
@@ -94,6 +103,11 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
           await saveFileMeta(fileId, fileMeta);
         } catch (err) {
           console.error('Failed to save encrypted file to IndexedDB:', err);
+          swal.fire({
+            title: 'Failed to save encrypted file to IndexedDB',
+            text: err.message,
+            icon: 'error'
+          })
         }
       }
 
@@ -106,15 +120,32 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
         body: uploadBlob,
       });
 
-      if (!uploadResponse.ok) throw new Error('Failed to upload file to storage');
+      if (!uploadResponse.ok) {
+        swal.fire({
+          title: 'Failed to upload file to storage',
+          text: 'An error occurred while uploading to the storage bucket.',
+          icon: 'error',
+        })
+        throw new Error('Failed to upload file to storage');
+      }
 
       // 3. Confirm the upload with the backend
       const confirmResponse = await fetch(`${API_BASE_URL}/api/v1/upload/${fileId}/confirm`, {
         method: 'POST'
       });
-      if (!confirmResponse.ok) throw new Error('Failed to confirm upload');
+      if (!confirmResponse.ok) {
+        swal.fire({
+          title: 'Failed to confirm upload',
+          text: 'The server could not confirm the file upload.',
+          icon: 'error',
+        })
+        throw new Error('Failed to confirm upload');
+      }
 
-      alert('File uploaded successfully!');
+      toast.fire({
+        icon: 'success',
+        title: 'File upload confirmed!'
+      });
       if (onUploadSuccess) {
         // Provide metadata including crypto info and fileId for client-side download/decrypt
         onUploadSuccess({ fileId, name: finalName, type: file.type, size: uploadBlob.size, encrypted: !!cryptoMeta, cryptoMeta, versionId: cryptoMeta && cryptoMeta.versionId });
@@ -125,6 +156,11 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
       setPassword('');
     } catch (error) {
       console.error('Error during upload process:', error);
+      swal.fire({
+        title: 'Upload Failed',
+        text: error.message,
+        icon: 'error'
+      })
       // Fallback: mock local storage of file content for UI/demo
       let localMeta = { encrypted: false };
       try {
@@ -151,7 +187,14 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
               fileMeta.versions = fileMeta.versions || [];
               fileMeta.versions.push({ versionId, versionKey, uploadedAt: new Date().toISOString(), size: file.size, hash });
               await saveFileMeta(fileId, fileMeta);
-            } catch (err) { console.error('IDB save failed:', err); }
+            } catch (err) { 
+              console.error('IDB save failed:', err); 
+              swal.fire({
+                title: 'Failed to save encrypted file to IndexedDB',
+                text: err.message,
+                icon: 'error'
+              });
+            }
           } else {
             const hash = await hashBuffer(ciphertext);
             const versionId = Date.now().toString();
@@ -165,7 +208,14 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
               fileMeta.versions = fileMeta.versions || [];
               fileMeta.versions.push({ versionId, versionKey, uploadedAt: new Date().toISOString(), size: file.size, hash });
               await saveFileMeta(fileId, fileMeta);
-            } catch (err) { console.error('IDB save failed:', err); }
+            } catch (err) { 
+              console.error('IDB save failed:', err); 
+              swal.fire({
+                title: 'Failed to save encrypted file to IndexedDB',
+                text: err.message,
+                icon: 'error'
+              });
+            }
           }
         } else {
           // read file as data URL (small files are ok)
@@ -179,6 +229,11 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
         }
       } catch (err) {
         console.error('Local mock storage failed:', err);
+        swal.fire({
+          title: 'Failed to save file to local storage',
+          text: err.message,
+          icon: 'error'
+        })
       }
 
       if (onUploadSuccess) {

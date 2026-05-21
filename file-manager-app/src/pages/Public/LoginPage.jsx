@@ -4,11 +4,13 @@ import { useNavigate } from 'react-router';
 import { useAuth } from '../../context/useAuth';
 import { GoogleLogin } from '@react-oauth/google';
 import { motion } from 'motion/react';
+import { useAppSwal } from '../../hooks/useAppSwal';
 
 export const LoginPage = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [errorMsg, setErrorMsg] = useState('');
+  const { swal } = useAppSwal();
 
   const handleMockLogin = () => {
     login('user');
@@ -30,6 +32,11 @@ export const LoginPage = () => {
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
+        swal.fire({
+          title: 'Login Failed',
+          text: errData.message || 'Logowanie w BFF nie powiodło się',
+          icon: 'error'
+        });
         throw new Error(errData.message || 'Logowanie w BFF nie powiodło się');
       }
 
@@ -38,6 +45,11 @@ export const LoginPage = () => {
       navigate('/user/my-files');
     } catch (error) {
       console.error('Błąd podczas logowania Google:', error);
+      swal.fire({
+        title: 'Login Failed',
+        text: error.message || 'Logowanie z Google zakończone wewnętrznym błędem paczki',
+        icon: 'error'
+      });
       setErrorMsg(error.message);
     }
   };

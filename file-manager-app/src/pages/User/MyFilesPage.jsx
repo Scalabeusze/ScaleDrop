@@ -11,6 +11,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { decryptData, arrayBufferToBlob } from '../../utils/crypto';
 import { getEncryptedFile, listAllFileMetas, getFileMeta, deleteEncryptedFile, saveFileMeta, deleteFileMeta } from '../../utils/idb';
 import ShareForm from '../../components/Shared/ShareForm';
+import { useAppSwal } from '../../hooks/useAppSwal';
 
 export const MyFilesPage = () => {
   const [currentPath, setCurrentPath] = useState([]);
@@ -34,6 +35,7 @@ export const MyFilesPage = () => {
   const [revokeTargetId, setRevokeTargetId] = useState(null);
   const [confirmDeleteFolderOpen, setConfirmDeleteFolderOpen] = useState(false);
   const [deleteFolderTarget, setDeleteFolderTarget] = useState(null);
+  const { swal, toast } = useAppSwal();
 
   const currentPathString = '/' + currentPath.join('/');
 
@@ -51,10 +53,20 @@ export const MyFilesPage = () => {
       await saveFileMeta(folderId, newFolder);
     } catch (err) {
       console.error('Failed to save folder meta', err);
+      swal.fire({
+        title: 'Failed to save folder meta',
+        text: err.message,
+        icon: 'error'
+      })
     }
 
     setItems(prev => [...prev, newFolder]);
     setNewFolderName('');
+    toast.fire({
+      icon: 'success',
+      title: 'Folder Created',
+      text: `Folder "${newFolder.name}" has been successfully created.`
+    });
   };
 
   useEffect(() => {
@@ -97,6 +109,11 @@ export const MyFilesPage = () => {
         });
       } catch (err) {
         console.error('Failed to restore file metas from IDB', err);
+        swal.fire({
+          title: 'Failed to restore file metadata',
+          text: err.message,
+          icon: 'error'
+        })
       }
     })();
   }, []);
@@ -128,6 +145,11 @@ export const MyFilesPage = () => {
           });
         } catch (err) {
           console.error('Failed to read file meta after upload', err);
+          swal.fire({
+            title: 'Failed to read file metadata after upload',
+            text: err.message,
+            icon: 'error'
+          })
         }
       } else {
         setItems(prev => [...prev, {
@@ -179,6 +201,11 @@ export const MyFilesPage = () => {
     if (revokeTargetId) revokeShare(revokeTargetId);
     setRevokeConfirmOpen(false);
     setRevokeTargetId(null);
+    toast.fire({
+      icon: 'success',
+      title: 'Share Revoked',
+      text: 'Access has been removed for the recipient.'
+    });
   };
 
   const handleCancelRevoke = () => { setRevokeConfirmOpen(false); setRevokeTargetId(null); };
@@ -212,9 +239,17 @@ export const MyFilesPage = () => {
         a.remove();
         URL.revokeObjectURL(url);
         setItems(prev => prev.map(i => i.id === itemId ? { ...i, downloadCount: (i.downloadCount || 0) + 1 } : i));
+        toast.fire({
+          icon: 'success',
+          title: 'Download Started',
+        });
       } catch (err) {
         console.error('Download failed', err);
-        alert('Download failed: ' + err.message);
+        swal.fire({
+          title: 'Download failed',
+          text: err.message,
+          icon: 'error'
+        })
       }
     })();
   };
@@ -242,7 +277,11 @@ export const MyFilesPage = () => {
       saveSharesToLocal(share);
     }
     setShareOpen(false);
-    alert('Shared with ' + recipient);
+    toast.fire({
+      icon: 'success',
+      title: 'Files Shared',
+      text: `Successfully shared with ${recipient}.`
+    });
   };
 
   const handleDecryptConfirm = async () => {
@@ -302,9 +341,18 @@ export const MyFilesPage = () => {
       a.remove();
       URL.revokeObjectURL(url);
       setItems(prev => prev.map(i => i.id === decryptItemId ? { ...i, downloadCount: (i.downloadCount || 0) + 1 } : i));
+      toast.fire({
+        icon: 'success',
+        title: 'Decryption Successful',
+        text: 'The file has been decrypted and the download has started.'
+      });
     } catch (err) {
       console.error('Decryption failed', err);
-      alert('Decryption failed: ' + err.message);
+      swal.fire({
+        title: 'Decryption failed',
+        text: err.message,
+        icon: 'error'
+      });
     } finally {
       setDecryptOpen(false);
       setDecryptPassword('');
@@ -333,8 +381,18 @@ export const MyFilesPage = () => {
       }
       try { await deleteFileMeta(fileId); } catch (e) { console.error('Failed deleting file meta', e); }
       setItems(prev => prev.filter(i => i.id !== fileId));
+      toast.fire({
+        icon: 'success',
+        title: 'Deleted!',
+        text: 'The file has been permanently deleted.'
+      });
     } catch (err) {
       console.error('Error deleting file', err);
+      swal.fire({
+        title: 'Failed to delete file',
+        text: err.message,
+        icon: 'error'
+      });
     } finally {
       setConfirmDeleteOpen(false);
       setDeleteTargetId(null);
@@ -373,8 +431,18 @@ export const MyFilesPage = () => {
         try { await deleteFileMeta(item.id); } catch (e) { console.error('Failed deleting meta', e); }
       }
       setItems(prev => prev.filter(i => !itemsToDelete.find(td => td.id === i.id)));
+      toast.fire({
+        icon: 'success',
+        title: 'Folder Deleted!',
+        text: 'The folder and all its contents were removed.'
+      });
     } catch (err) {
       console.error('Error deleting folder', err);
+      swal.fire({
+        title: 'Failed to delete folder',
+        text: err.message,
+        icon: 'error'
+      });
     } finally {
       setConfirmDeleteFolderOpen(false);
       setDeleteFolderTarget(null);
@@ -597,6 +665,10 @@ export const MyFilesPage = () => {
                 await saveFileMeta(target.fileId, meta);
                 setItems(prev => prev.map(i => i.id === target.fileId ? { ...i, versions: meta.versions, size: (meta.versions && meta.versions[meta.versions.length-1] && meta.versions[meta.versions.length-1].size) || i.size } : i));
                 if (historyItem && historyItem.id === target.fileId) setHistoryItem(prev => ({ ...prev, versions: meta.versions }));
+                toast.fire({
+                  icon: 'success',
+                  title: 'Version Deleted'
+                });
               }
             } catch (err) { console.error('Failed to delete version', err); }
             setConfirmDeleteVersionOpen(false);

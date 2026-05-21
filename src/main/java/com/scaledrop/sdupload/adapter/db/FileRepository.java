@@ -21,6 +21,4 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface FileRepository extends JpaRepository<FileEntity, UUID> {
-  boolean existsByOwnerIdAndLocationAndName(UUID ownerId, String location, String name);
-}
+public interface FileRepository extends JpaRepository<FileEntity, UUID> {}

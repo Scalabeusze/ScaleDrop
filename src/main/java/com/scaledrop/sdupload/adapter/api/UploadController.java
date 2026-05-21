@@ -19,9 +19,9 @@ package com.scaledrop.sdupload.adapter.api;
 import static com.scaledrop.sdupload.configuration.Constants.API_V1_PREFIX;
 
 import com.scaledrop.sdupload.adapter.api.mapper.UploadResponseMapper;
-import com.scaledrop.sdupload.adapter.api.model.request.RegisterUploadRequest;
-import com.scaledrop.sdupload.adapter.api.model.response.RegisterUploadResponse;
-import com.scaledrop.sdupload.application.port.in.RegisterUploadUseCase;
+import com.scaledrop.sdupload.adapter.api.model.request.UploadRequest;
+import com.scaledrop.sdupload.adapter.api.model.response.UploadResponse;
+import com.scaledrop.sdupload.application.port.in.UploadUseCase;
 import com.scaledrop.sdupload.configuration.annotations.DefaultApiExceptionResponses;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -32,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -48,7 +49,7 @@ public class UploadController {
 
   private static final String UPLOAD_ENDPOINT = API_V1_PREFIX + "/upload";
 
-  private final RegisterUploadUseCase registerUploadUseCase;
+  private final UploadUseCase registerUploadUseCase;
   private final UploadResponseMapper uploadResponseMapper;
 
   @PostMapping(
@@ -61,9 +62,8 @@ public class UploadController {
   @DefaultApiExceptionResponses
   @ApiResponse(responseCode = "201", description = "Successfully registered upload metadata")
   @ResponseStatus(HttpStatus.CREATED)
-  public RegisterUploadResponse registerUpload(
-      @RequestHeader("X-User-Id") UUID ownerId,
-      @RequestBody @Validated RegisterUploadRequest request) {
+  public UploadResponse registerUpload(
+      @RequestHeader("X-User-Id") UUID ownerId, @RequestBody @Validated UploadRequest request) {
 
     log.info(
         "[UPLOAD-CONTROLLER] Received upload registration request for user: {} file: {}",
@@ -82,5 +82,21 @@ public class UploadController {
 
     log.info("[UPLOAD-CONTROLLER] Received confirmation trigger for file ID: {}", fileId);
     registerUploadUseCase.confirmUpload(fileId);
+  }
+
+  @DeleteMapping(value = UPLOAD_ENDPOINT + "/{fileId}")
+  @Operation(
+      summary = "Delete file or folder",
+      description = "Deletes file metadata from DB and physically removes it from S3")
+  @ApiResponse(responseCode = "204", description = "Successfully deleted file or folder")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void deleteUpload(
+      @RequestHeader("X-User-Id") UUID ownerId, @PathVariable("fileId") UUID fileId) {
+
+    log.info(
+        "[UPLOAD-CONTROLLER] Received delete request from user: {} for file ID: {}",
+        ownerId,
+        fileId);
+    registerUploadUseCase.deleteUpload(ownerId, fileId);
   }
 }

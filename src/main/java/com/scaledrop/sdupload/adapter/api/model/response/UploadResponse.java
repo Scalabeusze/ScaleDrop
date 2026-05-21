@@ -30,7 +30,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Schema(
     description = "Response containing the registration details and S3 upload URL if applicable")
-public class RegisterUploadResponse {
+public class UploadResponse {
 
   @Schema(
       description = "Unique identifier of the registered object (file or folder) in the database",

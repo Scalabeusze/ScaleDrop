@@ -30,7 +30,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "Request to register file or folder metadata before upload/creation")
-public class RegisterUploadRequest {
+public class UploadRequest {
 
   @NotBlank(message = "Location cannot be blank") @Schema(description = "Target folder location", example = "/documents/")
   private String location;

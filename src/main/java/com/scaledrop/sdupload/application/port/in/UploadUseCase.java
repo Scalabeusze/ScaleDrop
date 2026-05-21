@@ -16,12 +16,14 @@
 
 package com.scaledrop.sdupload.application.port.in;
 
-import com.scaledrop.sdupload.adapter.api.model.request.RegisterUploadRequest;
+import com.scaledrop.sdupload.adapter.api.model.request.UploadRequest;
 import com.scaledrop.sdupload.domain.upload.UploadObject;
 import java.util.UUID;
 
-public interface RegisterUploadUseCase {
-  UploadObject registerUpload(UUID ownerId, RegisterUploadRequest request);
+public interface UploadUseCase {
+  UploadObject registerUpload(UUID ownerId, UploadRequest request);
 
   void confirmUpload(UUID fileId);
+
+  void deleteUpload(UUID ownerId, UUID fileId);
 }

@@ -23,6 +23,8 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
@@ -34,6 +36,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 public class S3Adapter {
 
   private final S3Presigner s3Presigner;
+  private final S3Client s3Client;
   private final AmazonS3Properties amazonS3Properties;
 
   public String generatePreSignedUploadUrl(
@@ -63,6 +66,28 @@ public class S3Adapter {
     } catch (Exception ex) {
       log.error("[S3-ADAPTER] Failed to generate pre-signed URL for key: {}", s3Key, ex);
       throw new SdUploadServiceException("Could not generate S3 upload link", ex);
+    }
+  }
+
+  public void deleteFile(String s3Key) {
+    String bucketName = amazonS3Properties.getFileserver().getBucket();
+    String sanitizedKey = sanitizeKey(s3Key);
+
+    log.info(
+        "[S3-ADAPTER] Deleting file from S3 with key: {} from bucket: {}",
+        sanitizedKey,
+        bucketName);
+
+    try {
+      DeleteObjectRequest deleteObjectRequest =
+          DeleteObjectRequest.builder().bucket(bucketName).key(sanitizedKey).build();
+
+      s3Client.deleteObject(deleteObjectRequest);
+      log.info("[S3-ADAPTER] Successfully deleted file from S3");
+
+    } catch (Exception ex) {
+      log.error("[S3-ADAPTER] Failed to delete file from S3 for key: {}", sanitizedKey, ex);
+      throw new SdUploadServiceException("Could not delete file from S3", ex);
     }
   }
 

@@ -16,12 +16,14 @@
 
 package com.scaledrop.sdupload.application.service;
 
-import com.scaledrop.sdupload.adapter.api.model.request.RegisterUploadRequest;
+import com.scaledrop.sdupload.adapter.api.model.request.UploadRequest;
 import com.scaledrop.sdupload.adapter.aws.S3Adapter;
 import com.scaledrop.sdupload.adapter.db.FileEntity;
 import com.scaledrop.sdupload.adapter.db.FileRepository;
 import com.scaledrop.sdupload.adapter.event.publisher.UploadPublisher;
-import com.scaledrop.sdupload.application.port.in.RegisterUploadUseCase;
+import com.scaledrop.sdupload.application.mapper.FileEntityMapper;
+import com.scaledrop.sdupload.application.mapper.FileMetadataMapper;
+import com.scaledrop.sdupload.application.port.in.UploadUseCase;
 import com.scaledrop.sdupload.configuration.exception.SdUploadServiceException;
 import com.scaledrop.sdupload.domain.upload.FileMetadata;
 import com.scaledrop.sdupload.domain.upload.UploadObject;
@@ -35,52 +37,33 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class UploadService implements RegisterUploadUseCase {
+public class UploadService implements UploadUseCase {
 
   private final FileRepository fileRepository;
   private final S3Adapter s3Adapter;
   private final UploadPublisher uploadPublisher;
+  private final FileEntityMapper fileEntityMapper;
+  private final FileMetadataMapper fileMetadataMapper;
 
   @Override
   @Transactional
-  public UploadObject registerUpload(UUID ownerId, RegisterUploadRequest request) {
+  public UploadObject registerUpload(UUID ownerId, UploadRequest request) {
     log.info(
         "[UPLOAD-SERVICE] Processing {} registration: '{}' for user: {}",
         request.getType(),
         request.getName(),
         ownerId);
 
-    String finalName = resolveUniqueName(ownerId, request.getLocation(), request.getName());
-
-    if (!finalName.equals(request.getName())) {
-      log.info(
-          "[UPLOAD-SERVICE] Name collision detected. Renamed '{}' to '{}'",
-          request.getName(),
-          finalName);
-    }
-
     UUID fileId = UUID.randomUUID();
     String status = (request.getType() == UploadType.FOLDER) ? "UPLOADED" : "PENDING";
     String uploadUrl = null;
 
     if (request.getType() == UploadType.FILE) {
-      uploadUrl =
-          s3Adapter.generatePreSignedUploadUrl(
-              fileId, request.getContentType(), request.getLocation(), finalName);
+      String s3Key = ownerId.toString() + "/" + fileId.toString();
+      uploadUrl = s3Adapter.generatePreSignedUploadUrl(fileId, request.getContentType(), "", s3Key);
     }
 
-    FileEntity fileEntity =
-        FileEntity.builder()
-            .id(fileId)
-            .ownerId(ownerId)
-            .name(finalName)
-            .location(request.getLocation())
-            .type(request.getType())
-            .contentType(request.getContentType())
-            .size(request.getSize())
-            .hash(request.getHash())
-            .status(status)
-            .build();
+    FileEntity fileEntity = fileEntityMapper.toEntity(request, fileId, ownerId, status);
 
     fileRepository.save(fileEntity);
     log.info(
@@ -122,35 +105,40 @@ public class UploadService implements RegisterUploadUseCase {
     publishUploadEvent(fileEntity);
   }
 
-  private String resolveUniqueName(UUID ownerId, String location, String originalName) {
-    String currentName = originalName;
-    int counter = 1;
+  @Transactional
+  public void deleteUpload(UUID ownerId, UUID fileId) {
+    log.info("[UPLOAD-SERVICE] User {} requested deletion of file {}", ownerId, fileId);
 
-    int lastDot = originalName.lastIndexOf('.');
-    String baseName = (lastDot != -1) ? originalName.substring(0, lastDot) : originalName;
-    String extension = (lastDot != -1) ? originalName.substring(lastDot) : "";
+    FileEntity fileEntity =
+        fileRepository
+            .findById(fileId)
+            .orElseThrow(() -> new SdUploadServiceException("Object not found: " + fileId));
 
-    while (fileRepository.existsByOwnerIdAndLocationAndName(ownerId, location, currentName)) {
-      currentName = String.format("%s(%d)%s", baseName, counter, extension);
-      counter++;
+    if (!fileEntity.getOwnerId().equals(ownerId)) {
+      log.warn(
+          "Security alert! User {} tried to delete file {} belonging to {}",
+          ownerId,
+          fileId,
+          fileEntity.getOwnerId());
+      throw new SdUploadServiceException("You do not have permission to delete this file");
     }
-    return currentName;
+
+    if (fileEntity.getType() == UploadType.FILE) {
+      String s3Key = ownerId.toString() + "/" + fileId.toString();
+      s3Adapter.deleteFile(s3Key);
+    }
+
+    fileRepository.delete(fileEntity);
+
+    fileEntity.setStatus("DELETED");
+    publishUploadEvent(fileEntity);
+
+    log.info("[UPLOAD-SERVICE] Successfully deleted file {}", fileId);
   }
 
   private void publishUploadEvent(FileEntity entity) {
-    FileMetadata metadata =
-        FileMetadata.builder()
-            .fileId(entity.getId())
-            .ownerId(entity.getOwnerId())
-            .name(entity.getName())
-            .location(entity.getLocation())
-            .contentType(entity.getContentType())
-            .size(entity.getSize())
-            .hash(entity.getHash())
-            .status(entity.getStatus())
-            .type(entity.getType())
-            .build();
 
+    FileMetadata metadata = fileMetadataMapper.toMetadata(entity);
     uploadPublisher.publishEvent(metadata);
   }
 }

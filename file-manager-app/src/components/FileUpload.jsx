@@ -131,7 +131,11 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
 
       // 3. Confirm the upload with the backend
       const confirmResponse = await fetch(`${API_BASE_URL}/api/v1/upload/${fileId}/confirm`, {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
       });
       if (!confirmResponse.ok) {
         swal.fire({

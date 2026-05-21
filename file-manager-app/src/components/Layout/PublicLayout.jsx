@@ -12,7 +12,6 @@ export const PublicLayout = () => {
             ScaleDrop FM
           </Typography>
           <ThemeSwitcher color="primary" />
-          <Button color="inherit" component={Link} to="/login">Login</Button>
         </Toolbar>
       </AppBar>
       <Box sx={{ flexGrow: 1, p: 3, display: 'flex', flexDirection: 'column' }}>

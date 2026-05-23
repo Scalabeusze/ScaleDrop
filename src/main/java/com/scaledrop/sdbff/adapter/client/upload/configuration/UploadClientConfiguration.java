@@ -1,6 +1,6 @@
 package com.scaledrop.sdbff.adapter.client.upload.configuration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import feign.Logger;
 import feign.RequestInterceptor;
 import feign.auth.BasicAuthRequestInterceptor;
 import feign.codec.ErrorDecoder;
@@ -20,7 +20,12 @@ public class UploadClientConfiguration {
   }
 
   @Bean
-  ErrorDecoder uploadErrorDecoder(ObjectMapper objectMapper) {
-    return new UploadErrorDecoder(objectMapper);
+  ErrorDecoder uploadErrorDecoder() {
+    return new UploadErrorDecoder();
+  }
+
+  @Bean
+  Logger.Level feignLoggerLevel() {
+    return Logger.Level.FULL;
   }
 }

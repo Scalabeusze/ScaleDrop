@@ -8,4 +8,6 @@ public interface UploadUseCase {
   RegisterUploadResponse registerUpload(UploadObject uploadObject);
 
   void confirmUpload(UUID fileId);
+
+  void deleteUpload(UUID ownerId, UUID fileId);
 }

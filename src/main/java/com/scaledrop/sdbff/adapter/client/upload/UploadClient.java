@@ -6,6 +6,7 @@ import com.scaledrop.sdbff.adapter.client.upload.configuration.UploadClientConfi
 import com.scaledrop.sdbff.configuration.feign.ScaleDropFeignConfiguration;
 import java.util.UUID;
 import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,4 +26,7 @@ public interface UploadClient {
 
   @PostMapping(value = UPLOADS_BASE_URL + "/{fileId}/confirm")
   void confirmUpload(@PathVariable("fileId") UUID fileId);
+
+  @DeleteMapping(value = UPLOADS_BASE_URL + "/{fileId}")
+  void deleteUpload(@RequestHeader("X-User-Id") UUID ownerId, @PathVariable("fileId") UUID fileId);
 }

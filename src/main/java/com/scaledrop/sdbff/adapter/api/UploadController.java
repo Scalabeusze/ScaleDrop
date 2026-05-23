@@ -77,4 +77,24 @@ public class UploadController {
 
     uploadUseCase.confirmUpload(fileId);
   }
+
+  @DeleteMapping(UPLOAD_ENDPOINT + "/{fileId}")
+  @Operation(
+      summary = "Delete upload",
+      description =
+          "Deletes file metadata and physically removes it from S3. "
+              + "Owner ID is automatically extracted from the JWT token for security validation.")
+  @DefaultApiSecurity
+  @DefaultApiExceptionResponses
+  @ApiResponse(responseCode = "204", description = "Successfully deleted upload")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  public void deleteUpload(@PathVariable("fileId") UUID fileId, @AuthenticationPrincipal Jwt jwt) {
+
+    UUID ownerId = UUID.fromString(jwt.getSubject());
+
+    log.info(
+        "[BFF-CONTROLLER] Received delete request for file ID: {} from owner: {}", fileId, ownerId);
+
+    uploadUseCase.deleteUpload(ownerId, fileId);
+  }
 }

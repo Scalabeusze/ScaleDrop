@@ -53,4 +53,14 @@ public class UploadRepositoryAdapter implements UploadRepository {
 
     log.info("[UPLOAD-ADAPTER] Confirmation sent successfully for file ID: {}", fileId);
   }
+
+  @Override
+  public void deleteUpload(UUID ownerId, UUID fileId) {
+    log.info(
+        "[UPLOAD-ADAPTER] Forwarding delete request for file ID: {} (owner: {})", fileId, ownerId);
+
+    uploadClient.deleteUpload(ownerId, fileId);
+
+    log.info("[UPLOAD-ADAPTER] Delete request sent successfully for file ID: {}", fileId);
+  }
 }

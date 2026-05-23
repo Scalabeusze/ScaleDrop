@@ -1,44 +1,37 @@
 package com.scaledrop.sdbff.adapter.client.upload.configuration;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.scaledrop.sdbff.configuration.exception.SdBffServiceException;
-import com.scaledrop.sdbff.configuration.exception.api.ApiExceptionResponse;
+import com.scaledrop.sdbff.configuration.exception.upload.UploadNotFoundException;
+import com.scaledrop.sdbff.configuration.exception.upload.UploadServiceException;
+import com.scaledrop.sdbff.configuration.exception.upload.UploadValidationException;
 import feign.Response;
-import feign.Response.Body;
 import feign.codec.ErrorDecoder;
-import java.io.IOException;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 
 @Slf4j
-public record UploadErrorDecoder(ObjectMapper objectMapper) implements ErrorDecoder {
+public class UploadErrorDecoder implements ErrorDecoder {
 
+  private final ErrorDecoder defaultErrorDecoder = new Default();
+
+  @Override
   public Exception decode(String methodKey, Response response) {
-    return Optional.ofNullable(response)
-        .map(
-            res -> {
-              String requestUrl = response.request().url();
-              HttpStatus status = HttpStatus.resolve(res.status());
+    HttpStatus status = HttpStatus.valueOf(response.status());
+    log.error(
+        "[UPLOAD-CLIENT] Upload Communication error: Method={}, Status={}", methodKey, status);
 
-              ApiExceptionResponse apiExceptionResponse = parseBody(res.body());
-              log.info(
-                  "Error on url: {}, status: {}, body: {}",
-                  requestUrl,
-                  status,
-                  apiExceptionResponse);
-              return new SdBffServiceException(apiExceptionResponse.getMessage());
-            })
-        .orElseThrow(() -> new SdBffServiceException("Empty error body"));
-  }
-
-  private ApiExceptionResponse parseBody(Body body) {
-    try {
-      return objectMapper.readValue(body.asReader(UTF_8), ApiExceptionResponse.class);
-    } catch (IOException ex) {
-      throw new SdBffServiceException("Error on parsing body", ex);
+    if (status == HttpStatus.NOT_FOUND) {
+      return new UploadNotFoundException("Upload not found for the provided ID.");
     }
+
+    if (status == HttpStatus.BAD_REQUEST || status == HttpStatus.UNPROCESSABLE_ENTITY) {
+      return new UploadValidationException("Upload request validation failed.");
+    }
+
+    if (status.is4xxClientError() || status.is5xxServerError()) {
+      return new UploadServiceException(
+          "Upload service Exception: " + status.value() + " " + status.getReasonPhrase());
+    }
+
+    return defaultErrorDecoder.decode(methodKey, response);
   }
 }

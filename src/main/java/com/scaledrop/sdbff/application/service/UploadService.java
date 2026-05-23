@@ -33,4 +33,10 @@ public class UploadService implements UploadUseCase {
 
     uploadRepository.confirmUpload(fileId);
   }
+
+  @Override
+  public void deleteUpload(UUID ownerId, UUID fileId) {
+    log.info("[UPLOAD-SERVICE] Delegating delete request for file {} by owner {}", fileId, ownerId);
+    uploadRepository.deleteUpload(ownerId, fileId);
+  }
 }

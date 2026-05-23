@@ -1,6 +1,8 @@
 package com.scaledrop.sdbff.configuration.exception.download;
 
-public class DownloadNotFoundException extends RuntimeException {
+import com.scaledrop.sdbff.configuration.exception.SdBffServiceException;
+
+public class DownloadNotFoundException extends SdBffServiceException {
   public DownloadNotFoundException(String message) {
     super(message);
   }

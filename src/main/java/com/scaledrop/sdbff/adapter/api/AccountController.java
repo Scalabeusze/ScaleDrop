@@ -12,6 +12,7 @@ import com.scaledrop.sdbff.adapter.api.model.account.response.JwtAPIResponse;
 import com.scaledrop.sdbff.application.component.UserContext;
 import com.scaledrop.sdbff.application.port.in.IAMUseCase;
 import com.scaledrop.sdbff.configuration.annotations.DefaultApiExceptionResponses;
+import com.scaledrop.sdbff.configuration.ratelimit.UserRateLimit;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -40,6 +41,7 @@ public class AccountController {
   private final UserContext userContext;
   private final AccountMapper accountMapper;
 
+  @UserRateLimit(capacity = 5, refillTokens = 5, refillMinutes = 1)
   @PostMapping(
       value = API_V1_PREFIX + "/login",
       consumes = APPLICATION_JSON_VALUE,
@@ -52,10 +54,11 @@ public class AccountController {
   @DefaultApiExceptionResponses
   @ResponseStatus(HttpStatus.OK)
   public JwtAPIResponse login(@Valid @RequestBody LoginAPIRequest request) {
-    log.info("[ACCOUNT] Received login request with Google ID token");
+    log.info("[BFF-CONTROLLER] Received login request with Google ID token");
     return accountMapper.toJwtResponse(iamUseCase.login(request.getGoogleIdToken()));
   }
 
+  @UserRateLimit
   @GetMapping(value = API_V1_PREFIX + "/account", produces = APPLICATION_JSON_VALUE)
   @Operation(
       summary = "Get account information",
@@ -65,10 +68,11 @@ public class AccountController {
   @ResponseStatus(HttpStatus.OK)
   public AccountAPIResponse getAccount() {
     UUID userId = userContext.getUserId();
-    log.info("[ACCOUNT] Received fetch account request for user: {}", userId);
+    log.info("[BFF-CONTROLLER] Received fetch account request for user: {}", userId);
     return accountMapper.toAccountResponse(iamUseCase.getAccountById(userId));
   }
 
+  @UserRateLimit(capacity = 10, refillTokens = 10, refillMinutes = 1)
   @PutMapping(
       value = API_V1_PREFIX + "/account",
       consumes = APPLICATION_JSON_VALUE,
@@ -81,10 +85,11 @@ public class AccountController {
   @ResponseStatus(HttpStatus.OK)
   public AccountAPIResponse updateAccount(@Valid @RequestBody UpdateAccountAPIRequest request) {
     UUID userId = userContext.getUserId();
-    log.info("[ACCOUNT] Received update account request for user: {}", userId);
+    log.info("[BFF-CONTROLLER] Received update account request for user: {}", userId);
     return accountMapper.toAccountResponse(iamUseCase.updateAccount(userId, request));
   }
 
+  @UserRateLimit(capacity = 2, refillTokens = 2, refillMinutes = 1)
   @DeleteMapping(API_V1_PREFIX + "/account")
   @Operation(
       summary = "Deactivate account",
@@ -94,8 +99,8 @@ public class AccountController {
   @ResponseStatus(HttpStatus.OK)
   public void deactivateAccount() {
     UUID userId = userContext.getUserId();
-    log.info("[ACCOUNT] Received deactivate account request for user: {}", userId);
+    log.info("[BFF-CONTROLLER] Received deactivate account request for user: {}", userId);
     iamUseCase.deactivateAccount(userId);
-    log.info("[ACCOUNT] Succesfully deactivated account: {}", userId);
+    log.info("[BFF-CONTROLLER] Successfully deactivated account: {}", userId);
   }
 }

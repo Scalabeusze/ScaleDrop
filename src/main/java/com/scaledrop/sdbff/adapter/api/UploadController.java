@@ -8,6 +8,7 @@ import com.scaledrop.sdbff.adapter.api.model.upload.response.RegisterUploadRespo
 import com.scaledrop.sdbff.application.port.in.UploadUseCase;
 import com.scaledrop.sdbff.configuration.annotations.DefaultApiExceptionResponses;
 import com.scaledrop.sdbff.configuration.annotations.DefaultApiSecurity;
+import com.scaledrop.sdbff.configuration.ratelimit.UserRateLimit;
 import com.scaledrop.sdbff.domain.upload.UploadObject;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -34,6 +35,7 @@ public class UploadController {
   private final UploadUseCase uploadUseCase;
   private final UploadRequestMapper uploadRequestMapper;
 
+  @UserRateLimit(capacity = 10, refillTokens = 10, refillMinutes = 1)
   @PostMapping(UPLOAD_ENDPOINT)
   @Operation(
       summary = "Register upload",
@@ -62,6 +64,7 @@ public class UploadController {
     return uploadUseCase.registerUpload(uploadObject);
   }
 
+  @UserRateLimit
   @PostMapping(UPLOAD_ENDPOINT + "/{fileId}/confirm")
   @Operation(
       summary = "Confirm upload",
@@ -78,6 +81,7 @@ public class UploadController {
     uploadUseCase.confirmUpload(fileId);
   }
 
+  @UserRateLimit
   @DeleteMapping(UPLOAD_ENDPOINT + "/{fileId}")
   @Operation(
       summary = "Delete upload",

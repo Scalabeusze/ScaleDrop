@@ -5,6 +5,7 @@ import static com.scaledrop.sdbff.configuration.Constants.API_V1_PREFIX;
 import com.scaledrop.sdbff.application.port.in.DownloadUseCase;
 import com.scaledrop.sdbff.configuration.annotations.DefaultApiExceptionResponses;
 import com.scaledrop.sdbff.configuration.annotations.DefaultApiSecurity;
+import com.scaledrop.sdbff.configuration.ratelimit.UserRateLimit;
 import com.scaledrop.sdbff.domain.download.FileDownloadHistory;
 import com.scaledrop.sdbff.domain.download.FileObject;
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,6 +39,7 @@ public class DownloadController {
 
   private final DownloadUseCase downloadUseCase;
 
+  @UserRateLimit
   @GetMapping(FILES_ENDPOINT)
   @Operation(
       summary = "List files",
@@ -62,6 +64,7 @@ public class DownloadController {
     return downloadUseCase.listFiles(prefix, ownerId, limit, offset);
   }
 
+  @UserRateLimit
   @GetMapping(FILES_ENDPOINT + "/{fileId}")
   @Operation(summary = "Get file details", description = "Fetches a specific file's metadata.")
   @DefaultApiSecurity
@@ -75,6 +78,7 @@ public class DownloadController {
     return downloadUseCase.getFile(fileId);
   }
 
+  @UserRateLimit(capacity = 10, refillTokens = 10, refillMinutes = 1)
   @GetMapping(FILES_ENDPOINT + "/{fileId}/download")
   @Operation(
       summary = "Download file",
@@ -92,6 +96,7 @@ public class DownloadController {
     return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(downloadUrl)).build();
   }
 
+  @UserRateLimit(capacity = 2, refillTokens = 2, refillMinutes = 1)
   @GetMapping(FILES_ENDPOINT + "/sync")
   @Operation(
       summary = "Sync files",
@@ -107,6 +112,7 @@ public class DownloadController {
     return downloadUseCase.syncFiles();
   }
 
+  @UserRateLimit
   @GetMapping(FILE_DOWNLOADS_ENDPOINT)
   @Operation(
       summary = "List file downloads",

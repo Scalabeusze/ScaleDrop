@@ -63,7 +63,13 @@ public class ApiExceptionResponse {
 
     ExceptionTypeSeverity severity = type.getSeverity();
     switch (severity) {
-      case WARN -> log.warn("{}", this, exception);
+      case WARN -> {
+        if (type == ApiExceptionType.VALIDATION) {
+          log.warn("API Exception [{}]: {}", type, message);
+        } else {
+          log.warn("{}", this, exception);
+        }
+      }
       case ERROR -> log.error("{}", this, exception);
     }
   }

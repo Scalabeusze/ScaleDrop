@@ -76,10 +76,14 @@ dependencies {
   // Spring
   implementation 'org.springframework.boot:spring-boot-starter-web'
   implementation 'org.springframework.boot:spring-boot-starter-actuator'
+  implementation 'org.springframework.boot:spring-boot-starter-aop'
 
   // Security
   implementation 'org.springframework.boot:spring-boot-starter-security'
   implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+
+  // Rate Limiting
+  implementation 'com.bucket4j:bucket4j-core:8.10.0'
 
   // Swagger
   implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springDocVersion}"

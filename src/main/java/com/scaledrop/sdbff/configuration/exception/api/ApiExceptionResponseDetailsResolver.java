@@ -8,6 +8,7 @@ import static com.scaledrop.sdbff.configuration.exception.api.ApiExceptionType.U
 import static com.scaledrop.sdbff.configuration.exception.api.ApiExceptionType.VALIDATION;
 
 import com.google.common.collect.ImmutableMap.Builder;
+import com.scaledrop.sdbff.configuration.exception.RateLimitExceededException;
 import com.scaledrop.sdbff.configuration.exception.SdBffServiceException;
 import com.scaledrop.sdbff.configuration.exception.iam.AccountNotFoundException;
 import com.scaledrop.sdbff.configuration.exception.iam.IAMServiceException;
@@ -65,6 +66,9 @@ public class ApiExceptionResponseDetailsResolver {
                       "Internal server error", INTERNAL_SERVER_ERROR))
               .put(LoginException.class, ApiExceptionResponseDetails.details(UNAUTHORIZED))
               .put(AccountNotFoundException.class, ApiExceptionResponseDetails.details(NOT_FOUND))
+              .put(
+                  RateLimitExceededException.class,
+                  ApiExceptionResponseDetails.details("Ratelimit exeded", VALIDATION))
               .put(
                   IAMServiceException.class,
                   ApiExceptionResponseDetails.details(EXTERNAL_SERVER_ERROR))

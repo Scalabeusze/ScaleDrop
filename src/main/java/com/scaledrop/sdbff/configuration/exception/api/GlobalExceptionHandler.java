@@ -62,9 +62,9 @@ public class GlobalExceptionHandler {
     return buildApiExceptionResponse(ex);
   }
 
-  @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-  @ExceptionHandler(Exception.class)
-  public ApiExceptionResponse handleGenericException(Exception ex) {
+  @ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
+  @ExceptionHandler(com.scaledrop.sdbff.configuration.exception.RateLimitExceededException.class)
+  public ApiExceptionResponse handleRateLimitException(Exception ex) {
     return buildApiExceptionResponse(ex);
   }
 

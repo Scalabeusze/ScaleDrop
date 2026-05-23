@@ -5,7 +5,7 @@ import static com.scaledrop.sdbff.configuration.Constants.API_V1_PREFIX;
 import com.scaledrop.sdbff.adapter.api.mapper.UploadRequestMapper;
 import com.scaledrop.sdbff.adapter.api.model.upload.request.RegisterUploadRequest;
 import com.scaledrop.sdbff.adapter.api.model.upload.response.RegisterUploadResponse;
-import com.scaledrop.sdbff.application.port.in.upload.UploadUseCase;
+import com.scaledrop.sdbff.application.port.in.UploadUseCase;
 import com.scaledrop.sdbff.configuration.annotations.DefaultApiExceptionResponses;
 import com.scaledrop.sdbff.configuration.annotations.DefaultApiSecurity;
 import com.scaledrop.sdbff.domain.upload.UploadObject;

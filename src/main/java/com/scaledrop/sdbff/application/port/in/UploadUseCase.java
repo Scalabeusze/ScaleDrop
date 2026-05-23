@@ -1,4 +1,4 @@
-package com.scaledrop.sdbff.application.port.in.upload;
+package com.scaledrop.sdbff.application.port.in;
 
 import com.scaledrop.sdbff.adapter.api.model.upload.response.RegisterUploadResponse;
 import com.scaledrop.sdbff.domain.upload.UploadObject;

@@ -1,10 +1,8 @@
 package com.scaledrop.sdbff.adapter.client.download.configuration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.Logger;
 import feign.RequestInterceptor;
 import feign.auth.BasicAuthRequestInterceptor;
-import feign.codec.ErrorDecoder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -21,8 +19,8 @@ public class DownloadClientConfiguration {
   }
 
   @Bean
-  ErrorDecoder downloadErrorDecoder(ObjectMapper objectMapper) {
-    return new DownloadErrorDecoder(objectMapper);
+  public DownloadErrorDecoder downloadErrorDecoder() {
+    return new DownloadErrorDecoder();
   }
 
   @Bean

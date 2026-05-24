@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Box, Typography, Card, Grid, Stack, useTheme } from '@mui/material';
+import { Box, Typography, Card, Stack, useTheme } from '@mui/material';
+import Grid from '@mui/material/Grid';
 import StorageIcon from '@mui/icons-material/Storage';
 import DataSaverOnIcon from '@mui/icons-material/DataSaverOn';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
@@ -71,10 +72,10 @@ export const DiskUsagePage = () => {
             <StorageIcon sx={{ fontSize: 32 }} />
           </Box>
           <Box>
-            <Typography variant="h4" sx={{ fontWeight: 800, letterSpacing: '-0.5px' }}>
+            <Typography variant="h3" sx={{ fontWeight: 800, background: 'linear-gradient(45deg, #1976d2, #9c27b0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.5px' }}>
               Storage Analytics
             </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5 }}>
+            <Typography variant="body1" color="text.secondary" sx={{ mt: 1, fontSize: '1.1rem' }}>
               Deep dive into your file usage and storage distribution.
             </Typography>
           </Box>
@@ -83,7 +84,7 @@ export const DiskUsagePage = () => {
 
       <Box sx={{ mb: 4 }}>
         <Grid container spacing={3} sx={{ mb: 4 }}>
-           <Grid item xs={12} sm={6} md={4} component={motion.div} variants={itemVariants} whileHover={{ scale: 1.02 }} transition={{ type: 'spring', stiffness: 300 }}>
+           <Grid size={{ xs: 12, sm: 6, md: 4 }} component={motion.div} variants={itemVariants} whileHover={{ scale: 1.02 }} transition={{ type: 'spring', stiffness: 300 }}>
                <Card elevation={0} sx={{ 
                  p: 3, borderRadius: 4, 
                  bgcolor: theme.palette.mode === 'dark' ? 'background.paper' : '#f8fafc',
@@ -98,7 +99,7 @@ export const DiskUsagePage = () => {
                    </Stack>
                </Card>
            </Grid>
-           <Grid item xs={12} sm={6} md={4} component={motion.div} variants={itemVariants} whileHover={{ scale: 1.02 }} transition={{ type: 'spring', stiffness: 300 }}>
+           <Grid size={{ xs: 12, sm: 6, md: 4 }} component={motion.div} variants={itemVariants} whileHover={{ scale: 1.02 }} transition={{ type: 'spring', stiffness: 300 }}>
                <Card elevation={0} sx={{ 
                  p: 3, borderRadius: 4, 
                  bgcolor: theme.palette.mode === 'dark' ? 'background.paper' : '#f8fafc',
@@ -113,7 +114,7 @@ export const DiskUsagePage = () => {
                    </Stack>
                </Card>
            </Grid>
-           <Grid item xs={12} md={4} component={motion.div} variants={itemVariants} whileHover={{ scale: 1.02 }} transition={{ type: 'spring', stiffness: 300 }}>
+           <Grid size={{ xs: 12, md: 4 }} component={motion.div} variants={itemVariants} whileHover={{ scale: 1.02 }} transition={{ type: 'spring', stiffness: 300 }}>
                <Card elevation={0} sx={{ 
                  p: 3, borderRadius: 4, height: '100%',
                  background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,

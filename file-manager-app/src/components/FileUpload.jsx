@@ -254,33 +254,37 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-start', mt: 3 }}>
-      <Typography variant="h6">Upload a File</Typography>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, alignItems: 'center', p: 4, width: '100%', boxSizing: 'border-box' }}>
+      <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>Upload a File</Typography>
 
       <Button 
         variant="outlined" 
         component="label"
         disabled={uploading}
+        sx={{ borderRadius: '50px', px: 4, py: 1 }}
       >
         Select File
         <input ref={fileInputRef} type="file" hidden onChange={handleFileChange} onClick={(e) => { e.target.value = null; }} />
       </Button>
       {file && (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, width: '100%', maxWidth: 300 }}>
-          <Typography variant="body2">Selected: {file.name}</Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, width: '100%', maxWidth: 320, mt: 1 }}>
+          <Typography variant="body2" sx={{ textAlign: 'center', color: 'text.secondary' }}>
+            Selected: {file.name}
+          </Typography>
           <TextField 
             label="Upload as (optional)" 
             variant="outlined" 
-            size="small" 
+            size="medium" 
             value={customName}
             onChange={(e) => setCustomName(e.target.value)}
             disabled={uploading}
             fullWidth
+            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
           />
           <TextField
             label="Encryption password (optional)"
             variant="outlined"
-            size="small"
+            size="medium"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={uploading}
@@ -295,6 +299,7 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
               )
             }}
             fullWidth
+            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
           />
         </Box>
       )}
@@ -304,6 +309,7 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
         color="primary" 
         onClick={handleUpload} 
         disabled={!file || uploading}
+        sx={{ borderRadius: '50px', px: 5, py: 1.5, mt: 1, fontWeight: 600, boxShadow: '0 4px 10px rgba(25, 118, 210, 0.2)' }}
       >
         {uploading ? <CircularProgress size={24} color="inherit" /> : 'Upload'}
       </Button>

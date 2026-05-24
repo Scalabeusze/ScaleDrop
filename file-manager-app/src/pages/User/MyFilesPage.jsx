@@ -17,6 +17,7 @@ export const MyFilesPage = () => {
   const [currentPath, setCurrentPath] = useState([]);
   const [items, setItems] = useState([]);
   const [newFolderName, setNewFolderName] = useState('');
+  const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyItem, setHistoryItem] = useState(null);
   const [decryptOpen, setDecryptOpen] = useState(false);
@@ -62,6 +63,7 @@ export const MyFilesPage = () => {
 
     setItems(prev => [...prev, newFolder]);
     setNewFolderName('');
+    setCreateFolderOpen(false);
     toast.fire({
       icon: 'success',
       title: 'Folder Created',
@@ -484,57 +486,50 @@ export const MyFilesPage = () => {
   return (
     <Box 
       component={motion.div} 
-      initial={{ opacity: 0, y: 15 }} 
+      initial={{ opacity: 0, y: 20 }} 
       animate={{ opacity: 1, y: 0 }} 
-      transition={{ duration: 0.3 }}
+      transition={{ duration: 0.4, type: 'spring', stiffness: 100 }}
+      sx={{ maxWidth: 1400, mx: 'auto', p: { xs: 2, md: 4 } }}
     >
-      <Typography variant="h4" gutterBottom>
+      <Typography variant="h3" gutterBottom sx={{ fontWeight: 800, background: 'linear-gradient(45deg, #1976d2, #9c27b0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', mb: 1 }}>
         My Files
       </Typography>
+      <Typography variant="body1" color="text.secondary" paragraph sx={{ mb: 4 }}>
+        Securely manage, organize, and encrypt your personal documents.
+      </Typography>
 
-      <Box sx={{ mt: 4, display: 'flex', gap: 2, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-        <Box sx={{ flex: 1, minWidth: '300px', mt: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Create Folder
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <TextField 
-              size="small" 
-              label="Folder Name" 
-              value={newFolderName}
-              onChange={(e) => setNewFolderName(e.target.value)}
-            />
-            <Button variant="outlined" onClick={handleCreateFolder} disabled={!newFolderName.trim()}>
-              New Folder
-            </Button>
-          </Box>
-        </Box>
-        <Box sx={{ flex: 1, minWidth: '300px' }}>
+      <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+        <Box sx={{ width: '100%', maxWidth: 600, borderRadius: 4, overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.05)', border: '1px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
           <FileUpload onUploadSuccess={handleUploadSuccess} currentPath={currentPath} />
         </Box>
       </Box>
 
-      <Paper component={motion.div} layout transition={{ layout: { duration: 0.4, type: 'spring', stiffness: 200, damping: 20 } }} sx={{ mt: 4, p: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          <IconButton onClick={navigateUp} disabled={currentPath.length === 0} sx={{ mr: 1 }}>
-            <ArrowBackIcon />
-          </IconButton>
-          <Breadcrumbs aria-label="breadcrumb">
-            <Link underline="hover" color="inherit" component="button" onClick={navigateToRoot}>
-              Root
-            </Link>
-            {currentPath.map((part, index) => (
-              <Link 
-                key={index}
-                underline="hover" 
-                color={index === currentPath.length - 1 ? "text.primary" : "inherit"} 
-                component="button" 
-                onClick={() => navigateToBreadcrumb(index)}
-              >
-                {part}
+      <Paper component={motion.div} layout transition={{ layout: { duration: 0.4, type: 'spring', stiffness: 200, damping: 20 } }} sx={{ mt: 5, p: 3, borderRadius: 4, boxShadow: '0 12px 32px rgba(0,0,0,0.05)', border: '1px solid', borderColor: 'divider' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <IconButton onClick={navigateUp} disabled={currentPath.length === 0} sx={{ mr: 1 }}>
+              <ArrowBackIcon />
+            </IconButton>
+            <Breadcrumbs aria-label="breadcrumb">
+              <Link underline="hover" color="inherit" component="button" onClick={navigateToRoot}>
+                Root
               </Link>
-            ))}
-          </Breadcrumbs>
+              {currentPath.map((part, index) => (
+                <Link 
+                  key={index}
+                  underline="hover" 
+                  color={index === currentPath.length - 1 ? "text.primary" : "inherit"} 
+                  component="button" 
+                  onClick={() => navigateToBreadcrumb(index)}
+                >
+                  {part}
+                </Link>
+              ))}
+            </Breadcrumbs>
+          </Box>
+          <Button variant="contained" onClick={() => setCreateFolderOpen(true)} sx={{ borderRadius: '50px', px: 3, py: 1, boxShadow: '0 4px 10px rgba(25, 118, 210, 0.2)' }}>
+            + New Folder
+          </Button>
         </Box>
 
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2, ml: 1 }}>
@@ -607,6 +602,26 @@ export const MyFilesPage = () => {
           <Button variant="outlined" onClick={() => { loadSharesFromLocal(); setManageSharesOpen(true); }}>Manage Shares</Button>
         </Box>
       </Paper>
+
+      <Dialog open={createFolderOpen} onClose={() => setCreateFolderOpen(false)} PaperProps={{ sx: { borderRadius: 3, p: 1 } }}>
+        <DialogTitle sx={{ fontWeight: 700 }}>Create New Folder</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Folder Name"
+            fullWidth
+            variant="outlined"
+            value={newFolderName}
+            onChange={(e) => setNewFolderName(e.target.value)}
+            sx={{ mt: 1, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setCreateFolderOpen(false)} sx={{ borderRadius: '50px', px: 3 }}>Cancel</Button>
+          <Button onClick={handleCreateFolder} variant="contained" disabled={!newFolderName.trim()} sx={{ borderRadius: '50px', px: 4, boxShadow: '0 4px 10px rgba(25, 118, 210, 0.2)' }}>Create</Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={decryptOpen} onClose={() => setDecryptOpen(false)}>
         <DialogTitle>Decrypt File</DialogTitle>

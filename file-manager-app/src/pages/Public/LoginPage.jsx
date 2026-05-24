@@ -57,27 +57,27 @@ export const LoginPage = () => {
   return (
     <Box 
       component={motion.div} 
-      initial={{ opacity: 0, y: 15 }} 
-      animate={{ opacity: 1, y: 0 }} 
-      transition={{ duration: 0.3 }}
-      sx={{ display: 'flex', justifyContent: 'center', mt: 10 }}
+      initial={{ opacity: 0, scale: 0.95, y: 20 }} 
+      animate={{ opacity: 1, scale: 1, y: 0 }} 
+      transition={{ type: 'spring', stiffness: 100, damping: 15 }}
+      sx={{ display: 'flex', justifyContent: 'center', mt: 10, px: 2 }}
     >
-      <Paper sx={{ p: 4, textAlign: 'center', width: '400px' }}>
-        <Typography variant="h4" gutterBottom>
-          Login
+      <Paper sx={{ p: { xs: 4, md: 6 }, textAlign: 'center', width: '450px', borderRadius: 4, boxShadow: '0 12px 40px rgba(0,0,0,0.08)', border: '1px solid', borderColor: 'divider' }}>
+        <Typography variant="h3" gutterBottom sx={{ fontWeight: 800, background: 'linear-gradient(45deg, #1976d2, #9c27b0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', mb: 1 }}>
+          Welcome Back
         </Typography>
-        <Typography variant="body1" color="text.secondary" paragraph>
+        <Typography variant="body1" color="text.secondary" paragraph sx={{ mb: 4 }}>
           Zaloguj się, aby uzyskać dostęp do swoich plików.
         </Typography>
 
         {errorMsg && (
-          <Alert severity="error" sx={{ mb: 3 }}>
+          <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
             {errorMsg}
           </Alert>
         )}
 
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 4 }}>
-          <Button variant="contained" color="primary" onClick={() => handleMockLogin('user')}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 2 }}>
+          <Button variant="contained" color="primary" size="large" onClick={() => handleMockLogin('user')} sx={{ borderRadius: '50px', py: 1.5, fontSize: '1.1rem', boxShadow: '0 8px 16px rgba(25, 118, 210, 0.3)' }}>
             Login as User
           </Button>
           

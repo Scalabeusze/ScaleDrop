@@ -22,11 +22,16 @@ const itemVariants = {
 export const SharedFilesPage = () => {
   const shares = JSON.parse(localStorage.getItem('shared_files') || '[]');
   return (
-    <Box>
-      <Typography variant="h4" gutterBottom>
-        Shared With Me
-      </Typography>
-      <Paper sx={{ mt: 3, p: 3 }} component={motion.div} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+    <Box sx={{ maxWidth: 1200, mx: 'auto', p: { xs: 2, md: 4 } }}>
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+        <Typography variant="h3" gutterBottom sx={{ fontWeight: 800, background: 'linear-gradient(45deg, #1976d2, #9c27b0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', mb: 1 }}>
+          Shared With Me
+        </Typography>
+        <Typography variant="body1" color="text.secondary" paragraph sx={{ mb: 4 }}>
+          View and manage files that others have shared with you.
+        </Typography>
+      </motion.div>
+      <Paper sx={{ mt: 2, p: 3, borderRadius: 4, boxShadow: '0 8px 32px rgba(0,0,0,0.05)', border: '1px solid', borderColor: 'divider' }} component={motion.div} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, type: 'spring', stiffness: 100 }}>
         <List component={motion.ul} variants={containerVariants} initial="hidden" animate="visible">
           <AnimatePresence>
             {shares.length === 0 ? (

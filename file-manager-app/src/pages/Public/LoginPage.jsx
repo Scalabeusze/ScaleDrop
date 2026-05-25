@@ -62,8 +62,8 @@ export const LoginPage = () => {
       transition={{ type: 'spring', stiffness: 100, damping: 15 }}
       sx={{ display: 'flex', justifyContent: 'center', mt: 10, px: 2 }}
     >
-      <Paper sx={{ p: { xs: 4, md: 6 }, textAlign: 'center', width: '450px', borderRadius: 4, boxShadow: '0 12px 40px rgba(0,0,0,0.08)', border: '1px solid', borderColor: 'divider' }}>
-        <Typography variant="h3" gutterBottom sx={{ fontWeight: 800, background: 'linear-gradient(45deg, #1976d2, #9c27b0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', mb: 1 }}>
+      <Paper sx={{ p: { xs: 4, md: 6 }, textAlign: 'center', width: '450px', borderRadius: 4, boxShadow: (theme) => theme.palette.customShadows.paper, border: '1px solid', borderColor: 'divider' }}>
+        <Typography variant="h3" gutterBottom sx={{ fontWeight: 800, background: (theme) => theme.palette.gradients.primary, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', mb: 1 }}>
           Welcome Back
         </Typography>
         <Typography variant="body1" color="text.secondary" paragraph sx={{ mb: 4 }}>
@@ -77,7 +77,7 @@ export const LoginPage = () => {
         )}
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, mt: 2 }}>
-          <Button variant="contained" color="primary" size="large" onClick={() => handleMockLogin('user')} sx={{ borderRadius: '50px', py: 1.5, fontSize: '1.1rem', boxShadow: '0 8px 16px rgba(25, 118, 210, 0.3)' }}>
+          <Button variant="contained" color="primary" size="large" onClick={() => handleMockLogin('user')} sx={{ borderRadius: '50px', py: 1.5, fontSize: '1.1rem', boxShadow: (theme) => theme.palette.customShadows.buttonHover }}>
             Login as User
           </Button>
           

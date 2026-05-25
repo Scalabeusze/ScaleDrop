@@ -317,7 +317,7 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
         color="primary" 
         onClick={handleUpload} 
         disabled={!file || !password || uploading}
-        sx={{ borderRadius: '50px', px: 5, py: 1.5, mt: 1, fontWeight: 600, boxShadow: '0 4px 10px rgba(25, 118, 210, 0.2)' }}
+        sx={{ borderRadius: '50px', px: 5, py: 1.5, mt: 1, fontWeight: 600, boxShadow: (theme) => theme.palette.customShadows.button }}
       >
         {uploading ? <CircularProgress size={24} color="inherit" /> : 'Upload'}
       </Button>

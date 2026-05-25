@@ -24,7 +24,7 @@ export const SharedFilesPage = () => {
   return (
     <Box sx={{ maxWidth: 1200, mx: 'auto', p: { xs: 2, md: 4 } }}>
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-        <Typography variant="h3" gutterBottom sx={{ fontWeight: 800, background: 'linear-gradient(45deg, #1976d2, #9c27b0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', mb: 1 }}>
+        <Typography variant="h3" gutterBottom sx={{ fontWeight: 800, background: (theme) => theme.palette.gradients.primary, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', mb: 1 }}>
           Shared With Me
         </Typography>
         <Typography variant="body1" color="text.secondary" paragraph sx={{ mb: 4 }}>

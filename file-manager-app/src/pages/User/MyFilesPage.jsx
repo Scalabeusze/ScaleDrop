@@ -509,7 +509,7 @@ export const MyFilesPage = () => {
       transition={{ duration: 0.4, type: 'spring', stiffness: 100 }}
       sx={{ maxWidth: 1400, mx: 'auto', p: { xs: 2, md: 4 } }}
     >
-      <Typography variant="h3" gutterBottom sx={{ fontWeight: 800, background: 'linear-gradient(45deg, #1976d2, #9c27b0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', mb: 1 }}>
+      <Typography variant="h3" gutterBottom sx={{ fontWeight: 800, background: (theme) => theme.palette.gradients.primary, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', mb: 1 }}>
         My Files
       </Typography>
       <Typography variant="body1" color="text.secondary" paragraph sx={{ mb: 4 }}>

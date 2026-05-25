@@ -72,7 +72,7 @@ export const DiskUsagePage = () => {
             <StorageIcon sx={{ fontSize: 32 }} />
           </Box>
           <Box>
-            <Typography variant="h3" sx={{ fontWeight: 800, background: 'linear-gradient(45deg, #1976d2, #9c27b0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.5px' }}>
+            <Typography variant="h3" sx={{ fontWeight: 800, background: (theme) => theme.palette.gradients.primary, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', letterSpacing: '-0.5px' }}>
               Storage Analytics
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ mt: 1, fontSize: '1.1rem' }}>

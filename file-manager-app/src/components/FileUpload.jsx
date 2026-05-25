@@ -27,6 +27,14 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
 
   const handleUpload = async () => {
     if (!file) return;
+    if (!password) {
+      swal.fire({
+        title: 'Password Required',
+        text: 'An encryption password is required to upload files.',
+        icon: 'warning'
+      });
+      return;
+    }
     setUploading(true);
 
     const finalName = customName.trim() || file.name;
@@ -78,39 +86,34 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
       }
       const { uploadUrl, fileId } = await requestResponse.json();
 
-      // If password provided, encrypt file locally before uploading
-      let uploadBlob = file;
-      let cryptoMeta = null;
-      if (password) {
-        const { ciphertext, ivBase64, saltBase64 } = await encryptFile(file, password);
-        // compute hash over ciphertext to detect versions
-        const hash = await hashBuffer(ciphertext);
-        const versionId = Date.now().toString();
-        const versionKey = `${fileId}:${versionId}`;
-        // ciphertext is an ArrayBuffer — create Blob directly
-        uploadBlob = new Blob([ciphertext], { type: 'application/octet-stream' });
-        cryptoMeta = { ivBase64, saltBase64, versionId, versionKey, hash };
-        // persist ciphertext to IndexedDB under versionKey so downloads work even for large files
-        try {
-          await saveEncryptedFile(versionKey, { name: finalName, type: file.type, size: file.size, ivBase64, saltBase64, versionId, hash }, ciphertext);
-          // update files_meta store
-          const existing = await getFileMeta(fileId).catch(() => null);
-          const fileMeta = existing || { fileId, name: finalName, path: [...currentPath], versions: [] };
-          fileMeta.name = finalName; // keep name updated
-          fileMeta.versions = fileMeta.versions || [];
-          // Always record a new version for this upload (allow identical files to create new versions)
-          fileMeta.versions.push({ versionId, versionKey, uploadedAt: new Date().toISOString(), size: file.size, hash });
-          await saveFileMeta(fileId, fileMeta);
-        } catch (err) {
-          console.error('Failed to save encrypted file to IndexedDB:', err);
-          swal.fire({
-            title: 'Failed to save encrypted file to IndexedDB',
-            text: err.message,
-            icon: 'error'
-          })
-        }
+      // Encrypt file locally before uploading
+      const { ciphertext, ivBase64, saltBase64 } = await encryptFile(file, password);
+      // compute hash over ciphertext to detect versions
+      const hash = await hashBuffer(ciphertext);
+      const versionId = Date.now().toString();
+      const versionKey = `${fileId}:${versionId}`;
+      // ciphertext is an ArrayBuffer — create Blob directly
+      const uploadBlob = new Blob([ciphertext], { type: 'application/octet-stream' });
+      const cryptoMeta = { ivBase64, saltBase64, versionId, versionKey, hash };
+      // persist ciphertext to IndexedDB under versionKey so downloads work even for large files
+      try {
+        await saveEncryptedFile(versionKey, { name: finalName, type: file.type, size: file.size, ivBase64, saltBase64, versionId, hash }, ciphertext);
+        // update files_meta store
+        const existing = await getFileMeta(fileId).catch(() => null);
+        const fileMeta = existing || { fileId, name: finalName, path: [...currentPath], versions: [] };
+        fileMeta.name = finalName; // keep name updated
+        fileMeta.versions = fileMeta.versions || [];
+        // Always record a new version for this upload (allow identical files to create new versions)
+        fileMeta.versions.push({ versionId, versionKey, uploadedAt: new Date().toISOString(), size: file.size, hash });
+        await saveFileMeta(fileId, fileMeta);
+      } catch (err) {
+        console.error('Failed to save encrypted file to IndexedDB:', err);
+        swal.fire({
+          title: 'Failed to save encrypted file to IndexedDB',
+          text: err.message,
+          icon: 'error'
+        });
       }
-
 
       // 2. Upload file directly to the provided Signed URL
       const uploadResponse = await fetch(uploadUrl, {
@@ -167,70 +170,59 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
         icon: 'error'
       })
       // Fallback: mock local storage of file content for UI/demo
-      let localMeta = { encrypted: false };
+      let localMeta = { encrypted: true };
       try {
-        if (password) {
-          const { ciphertext, ivBase64, saltBase64 } = await encryptFile(file, password);
-          // For small files only, keep base64 in-memory for demo; avoid OOM on large files
-          const MAX_LOCAL_STORE = 5 * 1024 * 1024; // 5 MB
-          if (file.size <= MAX_LOCAL_STORE) {
-            const bytes = new Uint8Array(ciphertext);
-            let binary = '';
-            for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-            const ciphertextBase64 = btoa(binary);
-            // also generate a version and persist
-            const hash = await hashBuffer(ciphertext);
-            const versionId = Date.now().toString();
-            const versionKey = `${fileId}:${versionId}`;
-            localMeta = { fileId, encrypted: true, ciphertextBase64, ivBase64, saltBase64, versionId, versionKey, hash };
-            try {
-              await saveEncryptedFile(versionKey, { name: finalName, type: file.type, size: file.size, ivBase64, saltBase64, versionId, hash }, ciphertext);
-              // ensure files_meta is updated for fallback/mock path as well
-              const existing = await getFileMeta(fileId).catch(() => null);
-              const fileMeta = existing || { fileId, name: finalName, path: [...currentPath], versions: [] };
-              fileMeta.name = finalName;
-              fileMeta.versions = fileMeta.versions || [];
-              fileMeta.versions.push({ versionId, versionKey, uploadedAt: new Date().toISOString(), size: file.size, hash });
-              await saveFileMeta(fileId, fileMeta);
-            } catch (err) { 
-              console.error('IDB save failed:', err); 
-              swal.fire({
-                title: 'Failed to save encrypted file to IndexedDB',
-                text: err.message,
-                icon: 'error'
-              });
-            }
-          } else {
-            const hash = await hashBuffer(ciphertext);
-            const versionId = Date.now().toString();
-            const versionKey = `${fileId}:${versionId}`;
-            localMeta = { fileId, encrypted: true, ivBase64, saltBase64, ciphertextAvailable: false, versionId, versionKey, hash };
-            try {
-              await saveEncryptedFile(versionKey, { name: finalName, type: file.type, size: file.size, ivBase64, saltBase64, versionId, hash }, ciphertext);
-              const existing = await getFileMeta(fileId).catch(() => null);
-              const fileMeta = existing || { fileId, name: finalName, path: [...currentPath], versions: [] };
-              fileMeta.name = finalName;
-              fileMeta.versions = fileMeta.versions || [];
-              fileMeta.versions.push({ versionId, versionKey, uploadedAt: new Date().toISOString(), size: file.size, hash });
-              await saveFileMeta(fileId, fileMeta);
-            } catch (err) { 
-              console.error('IDB save failed:', err); 
-              swal.fire({
-                title: 'Failed to save encrypted file to IndexedDB',
-                text: err.message,
-                icon: 'error'
-              });
-            }
+        const { ciphertext, ivBase64, saltBase64 } = await encryptFile(file, password);
+        // For small files only, keep base64 in-memory for demo; avoid OOM on large files
+        const MAX_LOCAL_STORE = 5 * 1024 * 1024; // 5 MB
+        if (file.size <= MAX_LOCAL_STORE) {
+          const bytes = new Uint8Array(ciphertext);
+          let binary = '';
+          for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+          const ciphertextBase64 = btoa(binary);
+          // also generate a version and persist
+          const hash = await hashBuffer(ciphertext);
+          const versionId = Date.now().toString();
+          const versionKey = `${fileId}:${versionId}`;
+          localMeta = { fileId, encrypted: true, ciphertextBase64, ivBase64, saltBase64, versionId, versionKey, hash };
+          try {
+            await saveEncryptedFile(versionKey, { name: finalName, type: file.type, size: file.size, ivBase64, saltBase64, versionId, hash }, ciphertext);
+            // ensure files_meta is updated for fallback/mock path as well
+            const existing = await getFileMeta(fileId).catch(() => null);
+            const fileMeta = existing || { fileId, name: finalName, path: [...currentPath], versions: [] };
+            fileMeta.name = finalName;
+            fileMeta.versions = fileMeta.versions || [];
+            fileMeta.versions.push({ versionId, versionKey, uploadedAt: new Date().toISOString(), size: file.size, hash });
+            await saveFileMeta(fileId, fileMeta);
+          } catch (err) { 
+            console.error('IDB save failed:', err); 
+            swal.fire({
+              title: 'Failed to save encrypted file to IndexedDB',
+              text: err.message,
+              icon: 'error'
+            });
           }
         } else {
-          // read file as data URL (small files are ok)
-          const reader = await new Promise((res, rej) => {
-            const r = new FileReader();
-            r.onload = () => res(r.result);
-            r.onerror = rej;
-            r.readAsDataURL(file);
-          });
-          localMeta = { encrypted: false, dataUrl: reader };
+          const hash = await hashBuffer(ciphertext);
+          const versionId = Date.now().toString();
+          const versionKey = `${fileId}:${versionId}`;
+          localMeta = { fileId, encrypted: true, ivBase64, saltBase64, ciphertextAvailable: false, versionId, versionKey, hash };
+          try {
+            await saveEncryptedFile(versionKey, { name: finalName, type: file.type, size: file.size, ivBase64, saltBase64, versionId, hash }, ciphertext);
+            const existing = await getFileMeta(fileId).catch(() => null);
+            const fileMeta = existing || { fileId, name: finalName, path: [...currentPath], versions: [] };
+            fileMeta.name = finalName;
+            fileMeta.versions = fileMeta.versions || [];
+            fileMeta.versions.push({ versionId, versionKey, uploadedAt: new Date().toISOString(), size: file.size, hash });
+            await saveFileMeta(fileId, fileMeta);
+          } catch (err) { 
+            console.error('IDB save failed:', err); 
+            swal.fire({
+              title: 'Failed to save encrypted file to IndexedDB',
+              text: err.message,
+              icon: 'error'
+            });
+          }
         }
       } catch (err) {
         console.error('Local mock storage failed:', err);
@@ -282,7 +274,8 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
             sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
           />
           <TextField
-            label="Encryption password (optional)"
+            label="Encryption password (mandatory)"
+            required
             variant="outlined"
             size="medium"
             value={password}
@@ -308,7 +301,7 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
         variant="contained" 
         color="primary" 
         onClick={handleUpload} 
-        disabled={!file || uploading}
+        disabled={!file || !password || uploading}
         sx={{ borderRadius: '50px', px: 5, py: 1.5, mt: 1, fontWeight: 600, boxShadow: '0 4px 10px rgba(25, 118, 210, 0.2)' }}
       >
         {uploading ? <CircularProgress size={24} color="inherit" /> : 'Upload'}

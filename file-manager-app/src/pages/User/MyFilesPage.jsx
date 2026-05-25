@@ -3,7 +3,7 @@ import { Typography, Box, Paper, Button, TextField, List, ListItem, ListItemButt
 import DownloadIcon from '@mui/icons-material/Download';
 import ShareIcon from '@mui/icons-material/Share';
 import DeleteIcon from '@mui/icons-material/Delete';
-import HistoryIcon from '@mui/icons-material/History';
+import InfoIcon from '@mui/icons-material/Info';
 import { motion, AnimatePresence } from 'motion/react';
 import { FileUpload } from '../../components/FileUpload';
 import { FileIcon } from '../../components/Shared/FileIcon';
@@ -18,8 +18,8 @@ export const MyFilesPage = () => {
   const [items, setItems] = useState([]);
   const [newFolderName, setNewFolderName] = useState('');
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const [historyItem, setHistoryItem] = useState(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsItem, setDetailsItem] = useState(null);
   const [decryptOpen, setDecryptOpen] = useState(false);
   const [decryptItemId, setDecryptItemId] = useState(null);
   const [decryptPassword, setDecryptPassword] = useState('');
@@ -103,7 +103,7 @@ export const MyFilesPage = () => {
                 ivBase64: latest.ivBase64 || null,
                 saltBase64: latest.saltBase64 || null,
                 uploadDate: latest.uploadedAt || meta.uploadDate || new Date().toISOString(),
-                downloadCount: latest.downloads || 0,
+                downloadCount: meta.downloadCount || latest.downloads || 0,
                 versions: meta.versions || [],
               };
             });
@@ -141,7 +141,7 @@ export const MyFilesPage = () => {
               ivBase64: latest.ivBase64 || fileData.ivBase64,
               saltBase64: latest.saltBase64 || fileData.saltBase64,
               uploadDate: latest.uploadedAt || fileData.uploadDate || new Date().toISOString(),
-              downloadCount: latest.downloads || fileData.downloadCount || 0,
+              downloadCount: (meta && meta.downloadCount) || latest.downloads || fileData.downloadCount || 0,
               versions: (meta && meta.versions) || [],
             }];
           });
@@ -186,6 +186,11 @@ export const MyFilesPage = () => {
     setSharesList(existing);
   };
 
+  const getSharesCount = (fileId) => {
+    const existing = JSON.parse(localStorage.getItem('shared_files') || '[]');
+    return existing.filter(s => s.fileId === fileId).length;
+  };
+
   const revokeShare = (shareId) => {
     const key = 'shared_files';
     const existing = JSON.parse(localStorage.getItem(key) || '[]');
@@ -211,6 +216,19 @@ export const MyFilesPage = () => {
   };
 
   const handleCancelRevoke = () => { setRevokeConfirmOpen(false); setRevokeTargetId(null); };
+
+  const incrementDownloadCount = async (itemId) => {
+    try {
+      const meta = await getFileMeta(itemId).catch(() => null);
+      if (meta) {
+        meta.downloadCount = (meta.downloadCount || 0) + 1;
+        await saveFileMeta(itemId, meta);
+      }
+    } catch (e) {
+      console.error('Failed to update download count in IDB', e);
+    }
+    setItems(prev => prev.map(i => i.id === itemId ? { ...i, downloadCount: (i.downloadCount || 0) + 1 } : i));
+  };
 
   const handleDownload = (itemId) => {
     const item = items.find(i => i.id === itemId);
@@ -240,7 +258,7 @@ export const MyFilesPage = () => {
         a.click();
         a.remove();
         URL.revokeObjectURL(url);
-        setItems(prev => prev.map(i => i.id === itemId ? { ...i, downloadCount: (i.downloadCount || 0) + 1 } : i));
+        await incrementDownloadCount(itemId);
         toast.fire({
           icon: 'success',
           title: 'Download Started',
@@ -342,7 +360,7 @@ export const MyFilesPage = () => {
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      setItems(prev => prev.map(i => i.id === decryptItemId ? { ...i, downloadCount: (i.downloadCount || 0) + 1 } : i));
+      await incrementDownloadCount(decryptItemId);
       toast.fire({
         icon: 'success',
         title: 'Decryption Successful',
@@ -451,14 +469,14 @@ export const MyFilesPage = () => {
     }
   };
 
-  const openHistory = (itemId) => {
+  const openDetails = (itemId) => {
     const item = items.find(i => i.id === itemId);
     if (!item) return;
-    setHistoryItem(item);
-    setHistoryOpen(true);
+    setDetailsItem(item);
+    setDetailsOpen(true);
   };
 
-  const closeHistory = () => { setHistoryOpen(false); setHistoryItem(null); };
+  const closeDetails = () => { setDetailsOpen(false); setDetailsItem(null); };
 
   const navigateToFolder = (folderName) => {
     setCurrentPath(prev => [...prev, folderName]);
@@ -564,11 +582,11 @@ export const MyFilesPage = () => {
                       <DeleteIcon />
                     </IconButton>
                   }>
-                    <ListItemButton onClick={() => navigateToFolder(item.name)}>
+                    <ListItemButton onClick={() => navigateToFolder(item.name)} sx={{ pr: 6 }}>
                       <ListItemIcon>
                         <FileIcon isFolder={true} />
                       </ListItemIcon>
-                      <ListItemText primary={item.name} />
+                      <ListItemText primary={item.name} primaryTypographyProps={{ noWrap: true, title: item.name }} />
                     </ListItemButton>
                   </ListItem>
                 </motion.div>
@@ -581,17 +599,21 @@ export const MyFilesPage = () => {
                   layout
                 >
                   <ListItem secondaryAction={(
-                    <Box>
+                    <Box sx={{ display: 'flex' }}>
                       <IconButton edge="end" onClick={() => handleDownload(item.id)} title="Download"><DownloadIcon /></IconButton>
                       <IconButton edge="end" onClick={() => handleShare(item.id)} title="Share"><ShareIcon /></IconButton>
-                      <IconButton edge="end" onClick={() => openHistory(item.id)} title="History"><HistoryIcon /></IconButton>
+                      <IconButton edge="end" onClick={() => openDetails(item.id)} title="Version Details"><InfoIcon /></IconButton>
                       <IconButton edge="end" onClick={() => handleDelete(item.id)} title="Delete"><DeleteIcon /></IconButton>
                     </Box>
                   )}>
                     <ListItemIcon>
                       <FileIcon filename={item.name} />
                     </ListItemIcon>
-                    <ListItemText primary={item.name} secondary={`${(item.size||0)} bytes — downloads: ${item.downloadCount||0}`} />
+                    <ListItemText 
+                      primary={item.name} 
+                      primaryTypographyProps={{ noWrap: true, title: item.name }} 
+                      sx={{ pr: { xs: 16, sm: 20 } }} 
+                    />
                   </ListItem>
                 </motion.div>
               ))
@@ -679,7 +701,7 @@ export const MyFilesPage = () => {
                 meta.versions = meta.versions.filter(v => v.versionKey !== target.versionKey);
                 await saveFileMeta(target.fileId, meta);
                 setItems(prev => prev.map(i => i.id === target.fileId ? { ...i, versions: meta.versions, size: (meta.versions && meta.versions[meta.versions.length-1] && meta.versions[meta.versions.length-1].size) || i.size } : i));
-                if (historyItem && historyItem.id === target.fileId) setHistoryItem(prev => ({ ...prev, versions: meta.versions }));
+                if (detailsItem && detailsItem.id === target.fileId) setDetailsItem(prev => ({ ...prev, versions: meta.versions }));
                 toast.fire({
                   icon: 'success',
                   title: 'Version Deleted'
@@ -711,7 +733,7 @@ export const MyFilesPage = () => {
                 <ListItem key={s.id} secondaryAction={(
                   <Button color="error" size="small" variant="outlined" onClick={() => handleRevokeClick(s.id)}>Revoke</Button>
                 )}>
-                  <ListItemText primary={`${s.name || s.fileId} → ${s.recipient}`} secondary={`Versions: ${s.versionKeys ? s.versionKeys.join(', ') : s.includeVersions}`} />
+                  <ListItemText primary={`${s.name || s.fileId} → ${s.recipient}`} secondary={`Shared on: ${new Date(s.date).toLocaleString()}`} />
                 </ListItem>
               ))}
             </List>
@@ -732,49 +754,26 @@ export const MyFilesPage = () => {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={historyOpen} onClose={closeHistory}>
-        <DialogTitle>File History</DialogTitle>
+      <Dialog open={detailsOpen} onClose={closeDetails}>
+        <DialogTitle>File Version Details</DialogTitle>
         <DialogContent>
-          {historyItem ? (
+          {detailsItem ? (
             <Box>
-              <Typography><strong>Name:</strong> {historyItem.name}</Typography>
-              <Typography><strong>Uploaded:</strong> {historyItem.uploadDate}</Typography>
-              <Typography><strong>Downloads:</strong> {historyItem.downloadCount || 0}</Typography>
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="subtitle2">Versions</Typography>
-                {(historyItem.versions && historyItem.versions.length > 0) ? (
-                  <List>
-                    {historyItem.versions.map(v => (
-                      <ListItem key={v.versionKey}>
-                        <ListItemText primary={`Version ${v.versionId}`} secondary={`${v.uploadedAt} — ${v.size || 'N/A'} bytes`} />
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                          <Button size="small" variant="outlined" onClick={() => {
-                            setDecryptItemId(historyItem.id);
-                            setDecryptVersionKey(v.versionKey);
-                            setDecryptPassword('');
-                            setDecryptOpen(true);
-                            setHistoryOpen(false);
-                          }}>Download</Button>
-                          <Button size="small" color="error" variant="outlined" onClick={() => {
-                            setDeleteVersionTarget({ fileId: historyItem.id, versionKey: v.versionKey });
-                            setConfirmDeleteVersionOpen(true);
-                            setHistoryOpen(false);
-                          }}>Delete</Button>
-                        </Box>
-                      </ListItem>
-                    ))}
-                  </List>
-                ) : (
-                  <Typography>No versions available.</Typography>
-                )}
+              <Box sx={{ mb: 3, p: 2, bgcolor: 'background.default', borderRadius: 2 }}>
+                <Typography variant="body1" sx={{ mb: 1 }}><strong>Name:</strong> {detailsItem.name}</Typography>
+                <Typography variant="body1" sx={{ mb: 1 }}><strong>Uploaded:</strong> {new Date(detailsItem.uploadDate).toLocaleString()}</Typography>
+                <Typography variant="body1" sx={{ mb: 1 }}><strong>Total Downloads:</strong> {detailsItem.downloadCount || 0}</Typography>
+                <Typography variant="body1" sx={{ mb: 1 }}><strong>Total Shares:</strong> {getSharesCount(detailsItem.id)}</Typography>
+                <Typography variant="body1"><strong>File Size:</strong> {detailsItem.size || 0} bytes</Typography>
               </Box>
             </Box>
           ) : null}
         </DialogContent>
         <DialogActions>
-          <Button onClick={closeHistory}>Close</Button>
+          <Button onClick={closeDetails}>Close</Button>
         </DialogActions>
       </Dialog>
     </Box>
   );
 };
+

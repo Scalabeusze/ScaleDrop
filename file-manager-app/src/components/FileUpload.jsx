@@ -37,20 +37,35 @@ export const FileUpload = ({ onUploadSuccess, currentPath = [] }) => {
     }
     setUploading(true);
 
-    const finalName = customName.trim() || file.name;
-    // If a logical file with same name exists in currentPath, reuse its fileId
-    let fileId = null;
+    const baseName = customName.trim() || file.name;
+    let finalName = baseName;
+    const fileId = Date.now().toString();
+
     try {
       const metas = await listAllFileMetas().catch(() => []);
-      const match = metas.find(m => {
-        const meta = m.value || {};
-        const nameMatch = (meta.name === finalName);
-        const pathMatch = JSON.stringify(meta.path || []) === JSON.stringify(currentPath || []);
-        return nameMatch && pathMatch;
-      });
-      fileId = match ? match.id : Date.now().toString();
+      const existingNames = metas
+        .filter(m => {
+          const meta = m.value || {};
+          return JSON.stringify(meta.path || []) === JSON.stringify(currentPath || []);
+        })
+        .map(m => (m.value || {}).name);
+
+      if (existingNames.includes(finalName)) {
+        const lastDotIndex = finalName.lastIndexOf('.');
+        let base = finalName;
+        let ext = '';
+        if (lastDotIndex > 0) {
+          base = finalName.substring(0, lastDotIndex);
+          ext = finalName.substring(lastDotIndex);
+        }
+        let counter = 1;
+        while (existingNames.includes(`${base} (${counter})${ext}`)) {
+          counter++;
+        }
+        finalName = `${base} (${counter})${ext}`;
+      }
     } catch {
-      fileId = Date.now().toString();
+      // ignore
     }
 
     try {

@@ -118,7 +118,7 @@ export const MyFilesPage = () => {
         })
       }
     })();
-  }, []);
+  }, [swal]);
 
   const handleUploadSuccess = (fileData) => {
     // If fileId present, load the file meta from IDB to populate versions and latest info

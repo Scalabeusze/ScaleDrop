@@ -11,11 +11,10 @@ export const ProfilePage = () => {
       initial={{ opacity: 0, scale: 0.95, y: 20 }} 
       animate={{ opacity: 1, scale: 1, y: 0 }} 
       transition={{ type: 'spring', stiffness: 100, damping: 15 }}
-      sx={{ maxWidth: 800, mx: 'auto', width: '100%', mt: { xs: 4, md: 8 }, p: { xs: 2, md: 4 } }}
+      sx={{ maxWidth: 800, mx: 'auto', width: '100%', mt: { xs: 4, md: 8 }, p: { xs: 2, md: 4 } }}>
     <Typography variant="h3" gutterBottom sx={{ fontWeight: 800, background: (theme) => theme.palette.gradients.primary, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', textAlign: 'center', mb: 5 }}>
       Profile Settings
     </Typography>
-
     <Paper sx={{ p: { xs: 3, md: 5 }, borderRadius: 4, boxShadow: (theme) => theme.palette.customShadows.paper, border: '1px solid', borderColor: 'divider' }}>
       <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 4, alignItems: { xs: 'center', md: 'flex-start' } }}>
         <Avatar sx={{ width: 80, height: 80, fontSize: '2rem', background: (theme) => theme.palette.gradients.avatar, boxShadow: '0 8px 16px rgba(25, 118, 210, 0.25)' }}>{user?.name?.[0]}</Avatar>

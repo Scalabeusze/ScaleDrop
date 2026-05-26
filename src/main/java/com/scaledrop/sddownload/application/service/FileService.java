@@ -263,6 +263,6 @@ public class FileService {
   }
 
   private String resolveKey(FileMetadataEvent event) {
-      return event.ownerId().toString() + "/" + event.fileId().toString();
-    }
+    return event.ownerId().toString() + "/" + event.fileId().toString();
+  }
 }

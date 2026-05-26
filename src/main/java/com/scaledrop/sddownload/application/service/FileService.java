@@ -367,10 +367,6 @@ public class FileService {
   }
 
   private String resolveKey(FileMetadataEvent event) {
-    String key = StringUtils.defaultString(event.location()) + event.name();
-    if (key.startsWith("/")) {
-      return key.substring(1);
-    }
-    return key;
+    return event.ownerId().toString() + "/" + event.fileId().toString();
   }
 }

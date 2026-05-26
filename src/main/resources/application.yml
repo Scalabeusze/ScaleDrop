@@ -94,3 +94,20 @@ springdoc:
   show-actuator: true
   api-docs:
     version: openapi_3_0
+
+resilience4j:
+  retry:
+    instances:
+      awsService:
+        maxAttempts: 3
+        waitDuration: 1s
+        retryExceptions:
+          - software.amazon.awssdk.core.exception.SdkClientException
+          - java.util.concurrent.TimeoutException
+  circuitbreaker:
+    instances:
+      awsService:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 15s
+        permittedNumberOfCallsInHalfOpenState: 3

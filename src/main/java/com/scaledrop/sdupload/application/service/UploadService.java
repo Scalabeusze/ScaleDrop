@@ -59,8 +59,7 @@ public class UploadService implements UploadUseCase {
     String uploadUrl = null;
 
     if (request.getType() == UploadType.FILE) {
-      String s3Key = ownerId.toString() + "/" + fileId.toString();
-      uploadUrl = s3Adapter.generatePreSignedUploadUrl(fileId, request.getContentType(), "", s3Key);
+      uploadUrl = s3Adapter.generatePreSignedUploadUrl(ownerId, fileId, request.getContentType());
     }
 
     FileEntity fileEntity = fileEntityMapper.toEntity(request, fileId, ownerId, status);

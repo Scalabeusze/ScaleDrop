@@ -21,10 +21,12 @@ import com.gruelbox.transactionoutbox.TransactionOutbox;
 import com.scaledrop.sdupload.configuration.aws.sns.AmazonSnsProperties;
 import com.scaledrop.sdupload.configuration.exception.SdUploadServiceException;
 import com.scaledrop.sdupload.domain.upload.FileMetadata;
-import jakarta.transaction.Transactional;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.services.sns.SnsClient;
 import software.amazon.awssdk.services.sns.model.PublishRequest;
 
@@ -43,7 +45,9 @@ public class UploadPublisher {
     transactionOutbox.schedule(this.getClass()).sendEventToTopic(fileMetadata);
   }
 
-  void sendEventToTopic(FileMetadata eventPayload) {
+  @Retry(name = "awsService")
+  @CircuitBreaker(name = "awsService")
+  public void sendEventToTopic(FileMetadata eventPayload) {
     try {
       String message = objectMapper.writeValueAsString(eventPayload);
       PublishRequest publishRequest =

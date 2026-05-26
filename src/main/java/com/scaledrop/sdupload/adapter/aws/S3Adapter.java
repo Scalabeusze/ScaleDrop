@@ -18,6 +18,8 @@ package com.scaledrop.sdupload.adapter.aws;
 
 import com.scaledrop.sdupload.configuration.aws.s3.AmazonS3Properties;
 import com.scaledrop.sdupload.configuration.exception.SdUploadServiceException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import java.time.Duration;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -39,9 +41,9 @@ public class S3Adapter {
   private final S3Client s3Client;
   private final AmazonS3Properties amazonS3Properties;
 
-  public String generatePreSignedUploadUrl(
-      UUID fileId, String contentType, String location, String fileName) {
-    String s3Key = sanitizeKey(location + fileName);
+  public String generatePreSignedUploadUrl(UUID ownerId, UUID fileId, String contentType) {
+
+    String s3Key = ownerId.toString() + "/" + fileId.toString();
     String bucketName = amazonS3Properties.getFileserver().getBucket();
 
     log.info(
@@ -69,32 +71,23 @@ public class S3Adapter {
     }
   }
 
+  @Retry(name = "awsService")
+  @CircuitBreaker(name = "awsService")
   public void deleteFile(String s3Key) {
     String bucketName = amazonS3Properties.getFileserver().getBucket();
-    String sanitizedKey = sanitizeKey(s3Key);
 
-    log.info(
-        "[S3-ADAPTER] Deleting file from S3 with key: {} from bucket: {}",
-        sanitizedKey,
-        bucketName);
+    log.info("[S3-ADAPTER] Deleting file from S3 with key: {} from bucket: {}", s3Key, bucketName);
 
     try {
       DeleteObjectRequest deleteObjectRequest =
-          DeleteObjectRequest.builder().bucket(bucketName).key(sanitizedKey).build();
+          DeleteObjectRequest.builder().bucket(bucketName).key(s3Key).build();
 
       s3Client.deleteObject(deleteObjectRequest);
       log.info("[S3-ADAPTER] Successfully deleted file from S3");
 
     } catch (Exception ex) {
-      log.error("[S3-ADAPTER] Failed to delete file from S3 for key: {}", sanitizedKey, ex);
+      log.error("[S3-ADAPTER] Failed to delete file from S3 for key: {}", s3Key, ex);
       throw new SdUploadServiceException("Could not delete file from S3", ex);
     }
-  }
-
-  private String sanitizeKey(String rawKey) {
-    if (rawKey.startsWith("/")) {
-      return rawKey.substring(1);
-    }
-    return rawKey;
   }
 }

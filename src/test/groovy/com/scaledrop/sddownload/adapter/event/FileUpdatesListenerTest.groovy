@@ -71,7 +71,7 @@ class FileUpdatesListenerTest extends IntegrationTestBase {
     then:
     conditions.eventually {
       def file = fileRepository.findById(fileId).orElseThrow()
-      assert file.key == "exports/report.csv"
+      assert file.key == "${ownerId}/${fileId}"
       assert file.ownerId == ownerId
       assert file.name == "report.csv"
       assert file.location == "/exports/"
@@ -86,7 +86,8 @@ class FileUpdatesListenerTest extends IntegrationTestBase {
   def "should create file row from sns envelope event"() {
     given:
     def fileId = UUID.randomUUID()
-    def event = uploadEvent(fileId, UUID.randomUUID(), "archive.zip", "exports/", "application/zip", 456L, "hash-2", "UPLOADED", "FILE")
+    def ownerId = UUID.randomUUID()
+    def event = uploadEvent(fileId, ownerId, "archive.zip", "exports/", "application/zip", 456L, "hash-2", "UPLOADED", "FILE")
     def envelope = [
       Type   : "Notification",
       Message: toJson(event)
@@ -98,7 +99,7 @@ class FileUpdatesListenerTest extends IntegrationTestBase {
     then:
     conditions.eventually {
       def file = fileRepository.findById(fileId).orElseThrow()
-      assert file.key == "exports/archive.zip"
+      assert file.key == "${ownerId}/${fileId}"
       assert file.size == 456L
       assert file.eTag == "hash-2"
     }
@@ -128,17 +129,18 @@ class FileUpdatesListenerTest extends IntegrationTestBase {
 
   def "should reconcile same key row to upload file id"() {
     given:
-    def syncFile = persistFile("exports/report.csv")
+    def ownerId = UUID.randomUUID()
     def uploadFileId = UUID.randomUUID()
+    def syncFile = persistFile("${ownerId}/${uploadFileId}")
 
     when:
-    sendMessage(toJson(uploadEvent(uploadFileId, UUID.randomUUID(), "report.csv", "/exports/", "text/csv", 123L, "hash-1", "UPLOADED", "FILE")))
+    sendMessage(toJson(uploadEvent(uploadFileId, ownerId, "report.csv", "/exports/", "text/csv", 123L, "hash-1", "UPLOADED", "FILE")))
 
     then:
     conditions.eventually {
       assert !fileRepository.findById(syncFile.id).isPresent()
       def file = fileRepository.findById(uploadFileId).orElseThrow()
-      assert file.key == "exports/report.csv"
+      assert file.key == "${ownerId}/${uploadFileId}"
       assert file.eTag == "hash-1"
     }
   }
@@ -218,7 +220,7 @@ class FileUpdatesListenerTest extends IntegrationTestBase {
 
     then:
     def exception = thrown(FileUpdateEventException)
-    exception.message == "Invalid uploaded file event, missing required fields: size, hash"
+    exception.message == "Invalid uploaded file event, missing required fields: ownerId, size, hash"
     fileRepository.findAll().isEmpty()
   }
 

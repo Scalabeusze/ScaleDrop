@@ -326,6 +326,9 @@ public class FileService {
     if (event.fileId() == null) {
       missingFields.add("fileId");
     }
+    if (event.ownerId() == null) {
+      missingFields.add("ownerId");
+    }
     if (StringUtils.isBlank(event.name())) {
       missingFields.add("name");
     }

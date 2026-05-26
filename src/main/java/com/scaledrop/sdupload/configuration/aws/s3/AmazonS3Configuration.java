@@ -28,7 +28,6 @@ import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
-import software.amazon.awssdk.awscore.client.builder.AwsClientBuilder;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -50,19 +49,36 @@ public class AmazonS3Configuration {
 
   @Bean
   public S3Client s3Client() {
-    return apply(amazonS3Properties.getFileserver().getEndpoint(), S3Client.builder())
-        .region(Region.of(amazonS3Properties.getFileserver().getRegion()))
-        .credentialsProvider(buildCredentialsProvider())
-        .build();
+    var builder =
+        S3Client.builder()
+            .region(Region.of(amazonS3Properties.getFileserver().getRegion()))
+            .credentialsProvider(buildCredentialsProvider())
+            .serviceConfiguration(s3ServiceConfiguration());
+
+    if (isCustomEndpointConfigured()) {
+      builder.endpointOverride(URI.create(amazonS3Properties.getFileserver().getEndpoint()));
+    }
+
+    return builder.build();
   }
 
   @Bean
   public S3AsyncClient s3AsyncClient(AwsCredentialsProvider awsCredentialsProvider) {
-    return apply(amazonS3Properties.getFileserver().getEndpoint(), S3AsyncClient.builder())
-        .region(Region.of(amazonS3Properties.getFileserver().getRegion()))
-        .credentialsProvider(awsCredentialsProvider)
-        .serviceConfiguration(builder -> builder.checksumValidationEnabled(false))
-        .build();
+    var builder =
+        S3AsyncClient.builder()
+            .region(Region.of(amazonS3Properties.getFileserver().getRegion()))
+            .credentialsProvider(awsCredentialsProvider)
+            .serviceConfiguration(
+                configuration ->
+                    configuration
+                        .checksumValidationEnabled(false)
+                        .pathStyleAccessEnabled(isCustomEndpointConfigured()));
+
+    if (isCustomEndpointConfigured()) {
+      builder.endpointOverride(URI.create(amazonS3Properties.getFileserver().getEndpoint()));
+    }
+
+    return builder.build();
   }
 
   @Bean
@@ -96,19 +112,25 @@ public class AmazonS3Configuration {
     S3Presigner.Builder builder =
         S3Presigner.builder()
             .region(Region.of(amazonS3Properties.getFileserver().getRegion()))
-            .credentialsProvider(awsCredentialsProvider);
+            .credentialsProvider(awsCredentialsProvider)
+            .serviceConfiguration(s3ServiceConfiguration());
 
-    String endpoint = amazonS3Properties.getFileserver().getEndpoint();
-
-    if (StringUtils.isNotBlank(endpoint)) {
-      log.info("[S3-CONFIG] Applying local endpoint override: {}", endpoint);
-      builder.endpointOverride(URI.create(endpoint));
-
-      S3Configuration s3Config = S3Configuration.builder().pathStyleAccessEnabled(true).build();
-      builder.serviceConfiguration(s3Config);
+    if (isCustomEndpointConfigured()) {
+      log.info(
+          "[S3-CONFIG] Applying local endpoint override: {}",
+          amazonS3Properties.getFileserver().getEndpoint());
+      builder.endpointOverride(URI.create(amazonS3Properties.getFileserver().getEndpoint()));
     }
 
     return builder.build();
+  }
+
+  private S3Configuration s3ServiceConfiguration() {
+    return S3Configuration.builder().pathStyleAccessEnabled(isCustomEndpointConfigured()).build();
+  }
+
+  private boolean isCustomEndpointConfigured() {
+    return StringUtils.isNotBlank(amazonS3Properties.getFileserver().getEndpoint());
   }
 
   private AwsCredentialsProvider buildCredentialsProvider() {
@@ -119,23 +141,5 @@ public class AmazonS3Configuration {
               amazonProperties.getAccessKeyId(), amazonProperties.getSecretKey());
     }
     return DefaultCredentialsProvider.builder().asyncCredentialUpdateEnabled(true).build();
-  }
-
-  /**
-   * Works like filter - apply common logic with overriding endpoint for all
-   * builders that extends AwsClientBuilder
-   *
-   * @param endpoint endpoint which overrides default AWS endpoint
-   * @param builder  Aws client builder that extends AwsClientBuilder
-   * @param <T>      - BuilderT generic version
-   * @param <C>      - ClientT generic version
-   * @return AwsClientBuilder
-   */
-  private <T extends AwsClientBuilder<T, C>, C> AwsClientBuilder<T, C> apply(
-      String endpoint, AwsClientBuilder<T, C> builder) {
-    if (StringUtils.isNotBlank(endpoint)) {
-      builder.endpointOverride(URI.create(endpoint));
-    }
-    return builder;
   }
 }

@@ -25,6 +25,8 @@ import com.scaledrop.sddownload.adapter.db.FileDownloadEntity
 import com.scaledrop.sddownload.adapter.db.FileDownloadRepository
 import com.scaledrop.sddownload.adapter.db.FileEntity
 import com.scaledrop.sddownload.adapter.db.FileRepository
+import com.scaledrop.sddownload.adapter.db.FileShareEntity
+import com.scaledrop.sddownload.adapter.db.FileShareRepository
 import com.scaledrop.sddownload.utilities.Initializer
 import groovy.json.JsonSlurper
 import java.net.URLDecoder
@@ -47,7 +49,11 @@ class FileControllerTest extends WiremockTestBase {
   @Autowired
   FileDownloadRepository fileDownloadRepository
 
+  @Autowired
+  FileShareRepository fileShareRepository
+
   def setup() {
+    fileShareRepository.deleteAll()
     fileDownloadRepository.deleteAll()
     fileRepository.deleteAll()
   }
@@ -403,7 +409,8 @@ class FileControllerTest extends WiremockTestBase {
       "exports/sync/archive.csv",
       staleFile.key
     ])
-    fileRepository.findById(staleFile.id).isPresent()
+    def deletedStaleFile = fileRepository.findById(staleFile.id).orElseThrow()
+    deletedStaleFile.status == "DELETED"
 
     and:
     def report = fileRepository.findByKey("exports/sync/report.csv").orElseThrow()
@@ -421,9 +428,13 @@ class FileControllerTest extends WiremockTestBase {
     syncedResponse.location == null
     syncedResponse.contentType == null
     syncedResponse.status == null
+
+    and:
+    def staleResponse = response.find { it.fileId == staleFile.id.toString() }
+    staleResponse.status == "DELETED"
   }
 
-  def "should keep stale files with download history during sync"() {
+  def "should mark stale files with download history as deleted during sync"() {
     given:
     def staleFile = persistFile("exports/stale/downloaded.csv")
 
@@ -438,9 +449,64 @@ class FileControllerTest extends WiremockTestBase {
         .andExpect(status().isOk())
 
     then:
-    fileRepository.findById(staleFile.id).isPresent()
+    fileRepository.findById(staleFile.id).orElseThrow().status == "DELETED"
     fileDownloadRepository.findAll().size() == 1
     fileDownloadRepository.findAll().first().fileId == staleFile.id
+  }
+
+  def "should remove stale file shares during sync"() {
+    given:
+    def ownerId = UUID.randomUUID()
+    def staleFile = persistFile("exports/stale/shared.csv", ownerId)
+    persistShare(staleFile, ownerId, UUID.randomUUID())
+
+    when:
+    mockMvc.perform(get("${FILES_ENDPOINT}/sync")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+
+    then:
+    fileRepository.findById(staleFile.id).orElseThrow().status == "DELETED"
+    fileShareRepository.findAll().isEmpty()
+  }
+
+  def "should return deleted file by id"() {
+    given:
+    def deletedFile = persistFile("exports/deleted/details.csv")
+    deletedFile.status = "DELETED"
+    fileRepository.save(deletedFile)
+
+    when:
+    def result = mockMvc.perform(get("${FILES_ENDPOINT}/${deletedFile.id}")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+        .andReturn()
+
+    def response = parseJson(result.response.contentAsString)
+
+    then:
+    response.fileId == deletedFile.id.toString()
+    response.status == "DELETED"
+  }
+
+  def "should return not found when downloading deleted file"() {
+    given:
+    def deletedFile = persistFile("exports/deleted/download.csv")
+    deletedFile.status = "DELETED"
+    fileRepository.save(deletedFile)
+
+    when:
+    def result = mockMvc.perform(get("${FILES_ENDPOINT}/${deletedFile.id}/download")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isNotFound())
+        .andReturn()
+
+    def response = parseJson(result.response.contentAsString)
+
+    then:
+    response.type == "NOT_FOUND"
+    response.message == "File not found"
+    fileDownloadRepository.findAll().isEmpty()
   }
 
   def "should list file download history newest first"() {
@@ -679,6 +745,15 @@ class FileControllerTest extends WiremockTestBase {
         .fileId(file.id)
         .requestedAt(requestedAt)
         .expiresAt(requestedAt.plusHours(1))
+        .build())
+  }
+
+  private FileShareEntity persistShare(FileEntity file, UUID fromId, UUID toId) {
+    fileShareRepository.save(FileShareEntity.builder()
+        .id(UUID.randomUUID())
+        .fileId(file.id)
+        .fromId(fromId)
+        .toId(toId)
         .build())
   }
 

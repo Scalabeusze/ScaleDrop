@@ -18,8 +18,12 @@ package com.scaledrop.sddownload.adapter.event
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.scaledrop.sddownload.IntegrationTestBase
+import com.scaledrop.sddownload.adapter.db.FileDownloadEntity
+import com.scaledrop.sddownload.adapter.db.FileDownloadRepository
 import com.scaledrop.sddownload.adapter.db.FileEntity
 import com.scaledrop.sddownload.adapter.db.FileRepository
+import com.scaledrop.sddownload.adapter.db.FileShareEntity
+import com.scaledrop.sddownload.adapter.db.FileShareRepository
 import com.scaledrop.sddownload.adapter.event.listener.FileUpdatesListener
 import com.scaledrop.sddownload.configuration.exception.FileUpdateEventException
 import com.scaledrop.sddownload.utilities.Initializer
@@ -37,6 +41,12 @@ class FileUpdatesListenerTest extends IntegrationTestBase {
   FileRepository fileRepository
 
   @Autowired
+  FileDownloadRepository fileDownloadRepository
+
+  @Autowired
+  FileShareRepository fileShareRepository
+
+  @Autowired
   ObjectMapper objectMapper
 
   @Autowired
@@ -45,6 +55,8 @@ class FileUpdatesListenerTest extends IntegrationTestBase {
   PollingConditions conditions = new PollingConditions(timeout: 8)
 
   def setup() {
+    fileShareRepository.deleteAll()
+    fileDownloadRepository.deleteAll()
     fileRepository.deleteAll()
   }
 
@@ -142,6 +154,59 @@ class FileUpdatesListenerTest extends IntegrationTestBase {
     }
   }
 
+  def "should mark file deleted from delete event and remove shares"() {
+    given:
+    def ownerId = UUID.randomUUID()
+    def file = persistFile("exports/delete/report.csv", ownerId)
+    persistShare(file, ownerId, UUID.randomUUID())
+    persistDownload(file)
+
+    when:
+    sendMessage(toJson(uploadEvent(file.id, ownerId, "report.csv", "/exports/delete/", "text/csv", 123L, "hash-1", "DELETED", "FILE")))
+
+    then:
+    conditions.eventually {
+      def deletedFile = fileRepository.findById(file.id).orElseThrow()
+      assert deletedFile.status == "DELETED"
+      assert fileShareRepository.findAll().isEmpty()
+      assert fileDownloadRepository.findAll().size() == 1
+      assert fileDownloadRepository.findAll().first().fileId == file.id
+    }
+  }
+
+  def "should ignore delete event for unknown file"() {
+    when:
+    sendMessage(toJson(uploadEvent(UUID.randomUUID(), UUID.randomUUID(), "missing.csv", "/exports/delete/", "text/csv", 123L, "hash-1", "DELETED", "FILE")))
+
+    then:
+    conditions.eventually {
+      assert fileRepository.findAll().isEmpty()
+    }
+  }
+
+  def "should reject deleted file event without file id"() {
+    when:
+    fileUpdatesListener.onEvent(toJson([
+      status: "DELETED",
+      type  : "FILE"
+    ]))
+
+    then:
+    def exception = thrown(FileUpdateEventException)
+    exception.message == "Invalid deleted file event, missing required fields: fileId"
+    fileRepository.findAll().isEmpty()
+  }
+
+  def "should ignore deleted folder event"() {
+    when:
+    sendMessage(toJson(uploadEvent(UUID.randomUUID(), UUID.randomUUID(), "folder", "/exports/", null, 0L, "hash-1", "DELETED", "FOLDER")))
+
+    then:
+    conditions.eventually {
+      assert fileRepository.findAll().isEmpty()
+    }
+  }
+
   def "should not create row from invalid uploaded file event"() {
     when:
     fileUpdatesListener.onEvent(toJson([
@@ -200,12 +265,36 @@ class FileUpdatesListenerTest extends IntegrationTestBase {
   }
 
   private FileEntity persistFile(String key) {
+    persistFile(key, UUID.randomUUID())
+  }
+
+  private FileEntity persistFile(String key, UUID ownerId) {
     fileRepository.save(FileEntity.builder()
         .id(UUID.randomUUID())
+        .ownerId(ownerId)
         .key(key)
         .size(1024L)
         .lastModified(OffsetDateTime.parse("2026-05-15T10:00:00Z"))
         .eTag(UUID.randomUUID().toString())
+        .status("UPLOADED")
+        .build())
+  }
+
+  private FileShareEntity persistShare(FileEntity file, UUID fromId, UUID toId) {
+    fileShareRepository.save(FileShareEntity.builder()
+        .id(UUID.randomUUID())
+        .fileId(file.id)
+        .fromId(fromId)
+        .toId(toId)
+        .build())
+  }
+
+  private FileDownloadEntity persistDownload(FileEntity file) {
+    fileDownloadRepository.save(FileDownloadEntity.builder()
+        .id(UUID.randomUUID())
+        .fileId(file.id)
+        .requestedAt(OffsetDateTime.parse("2026-05-15T10:00:00Z"))
+        .expiresAt(OffsetDateTime.parse("2026-05-15T11:00:00Z"))
         .build())
   }
 }

@@ -19,11 +19,13 @@ package com.scaledrop.sddownload.configuration.exception.api;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCauseMessage;
 import static org.springframework.core.Ordered.HIGHEST_PRECEDENCE;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.METHOD_NOT_ALLOWED;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
+import com.scaledrop.sddownload.configuration.exception.ConflictException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import java.io.IOException;
@@ -54,9 +56,17 @@ public class GlobalExceptionHandler {
     ConstraintViolationException.class,
     MethodArgumentNotValidException.class,
     HttpMessageNotReadableException.class,
-    MissingServletRequestParameterException.class
+    MissingServletRequestParameterException.class,
+    IllegalArgumentException.class
   })
   public ApiExceptionResponse handleBadRequest(Exception ex) {
+    return buildApiExceptionResponse(ex);
+  }
+
+  @Order(HIGHEST_PRECEDENCE)
+  @ResponseStatus(CONFLICT)
+  @ExceptionHandler(ConflictException.class)
+  public ApiExceptionResponse handleConflict(Exception ex) {
     return buildApiExceptionResponse(ex);
   }
 

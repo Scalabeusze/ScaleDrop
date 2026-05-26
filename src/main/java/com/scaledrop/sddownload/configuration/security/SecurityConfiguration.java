@@ -19,7 +19,9 @@ package com.scaledrop.sddownload.configuration.security;
 import static com.scaledrop.sddownload.configuration.Constants.API_V1_PREFIX;
 import static com.scaledrop.sddownload.configuration.security.role.ApiUserRole.DOCUMENTATION;
 import static com.scaledrop.sddownload.configuration.security.role.ApiUserRole.INTERNAL;
+import static org.springframework.http.HttpMethod.DELETE;
 import static org.springframework.http.HttpMethod.GET;
+import static org.springframework.http.HttpMethod.POST;
 import static org.springframework.security.crypto.factory.PasswordEncoderFactories.createDelegatingPasswordEncoder;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -100,7 +102,13 @@ public class SecurityConfiguration {
                           GET,
                           API_V1_PREFIX + "/files",
                           API_V1_PREFIX + "/files/**",
-                          API_V1_PREFIX + "/file-downloads")
+                          API_V1_PREFIX + "/file-downloads",
+                          API_V1_PREFIX + "/file-shares",
+                          API_V1_PREFIX + "/file-shares/**")
+                      .hasAnyRole(INTERNAL.name())
+                      .requestMatchers(POST, API_V1_PREFIX + "/file-shares")
+                      .hasAnyRole(INTERNAL.name())
+                      .requestMatchers(DELETE, API_V1_PREFIX + "/file-shares/**")
                       .hasAnyRole(INTERNAL.name()))
           .httpBasic(
               customizer -> customizer.authenticationEntryPoint(basicAuthenticationEntryPoint))

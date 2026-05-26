@@ -24,9 +24,12 @@ import com.scaledrop.sddownload.adapter.db.FileDownloadHistoryProjection;
 import com.scaledrop.sddownload.adapter.db.FileDownloadRepository;
 import com.scaledrop.sddownload.adapter.db.FileEntity;
 import com.scaledrop.sddownload.adapter.db.FileRepository;
+import com.scaledrop.sddownload.adapter.db.FileShareEntity;
+import com.scaledrop.sddownload.adapter.db.FileShareRepository;
 import com.scaledrop.sddownload.adapter.db.OffsetBasedPageRequest;
 import com.scaledrop.sddownload.adapter.event.model.FileMetadataEvent;
 import com.scaledrop.sddownload.configuration.aws.s3.AmazonS3Properties;
+import com.scaledrop.sddownload.configuration.exception.ConflictException;
 import com.scaledrop.sddownload.configuration.exception.DownloadServiceException;
 import com.scaledrop.sddownload.configuration.exception.FileUpdateEventException;
 import com.scaledrop.sddownload.domain.file.FileObject;
@@ -61,12 +64,18 @@ public class FileService {
   private static final int S3_MAX_KEYS = 1000;
   private static final String LIST_FILES_ERROR_MESSAGE = "Could not list files";
   private static final String FILE_NOT_FOUND = "File not found";
+  private static final String FILE_SHARE_NOT_FOUND = "File share not found";
+  private static final String FILE_SHARE_ALREADY_EXISTS = "File share already exists";
+  private static final String FILE_SHARE_FROM_ID_OWNER_MISMATCH =
+      "File share fromId must match file ownerId";
   private static final String UPLOADED_STATUS = "UPLOADED";
+  private static final String DELETED_STATUS = "DELETED";
 
   private final S3Client s3Client;
   private final AmazonS3Properties amazonS3Properties;
   private final FileRepository fileRepository;
   private final FileDownloadRepository fileDownloadRepository;
+  private final FileShareRepository fileShareRepository;
   private final S3DownloadAdapter s3DownloadAdapter;
   private final Clock clock;
 
@@ -94,6 +103,22 @@ public class FileService {
   }
 
   @Transactional(readOnly = true)
+  public List<FileShareEntity> listFileShares(
+      UUID fromId, UUID toId, Integer limit, Integer offset) {
+    Pageable pageable = new OffsetBasedPageRequest(limit, offset);
+    if (fromId != null && toId != null) {
+      return fileShareRepository.findByFromIdAndToIdOrderByIdAsc(fromId, toId, pageable);
+    }
+    if (fromId != null) {
+      return fileShareRepository.findByFromIdOrderByIdAsc(fromId, pageable);
+    }
+    if (toId != null) {
+      return fileShareRepository.findByToIdOrderByIdAsc(toId, pageable);
+    }
+    return fileShareRepository.findAllByOrderByIdAsc(pageable);
+  }
+
+  @Transactional(readOnly = true)
   public FileEntity getFile(UUID fileId) {
     return fileRepository
         .findById(fileId)
@@ -103,6 +128,9 @@ public class FileService {
   @Transactional
   public URI createDownloadUrl(UUID fileId) {
     FileEntity fileEntity = getFile(fileId);
+    if (DELETED_STATUS.equals(fileEntity.getStatus())) {
+      throw new EntityNotFoundException(FILE_NOT_FOUND);
+    }
     URI downloadUrl = s3DownloadAdapter.generatePresignedDownloadUrl(fileEntity);
     OffsetDateTime requestedAt = OffsetDateTime.now(clock);
 
@@ -118,11 +146,44 @@ public class FileService {
   }
 
   @Transactional
+  public FileShareEntity createFileShare(UUID fileId, UUID fromId, UUID toId) {
+    FileEntity fileEntity = getFile(fileId);
+    if (!fromId.equals(fileEntity.getOwnerId())) {
+      throw new IllegalArgumentException(FILE_SHARE_FROM_ID_OWNER_MISMATCH);
+    }
+
+    fileShareRepository
+        .findByFileIdAndFromIdAndToId(fileId, fromId, toId)
+        .ifPresent(
+            existingShare -> {
+              throw new ConflictException(FILE_SHARE_ALREADY_EXISTS);
+            });
+
+    return fileShareRepository.save(
+        FileShareEntity.builder()
+            .id(UUID.randomUUID())
+            .fileId(fileId)
+            .fromId(fromId)
+            .toId(toId)
+            .build());
+  }
+
+  @Transactional
+  public void deleteFileShare(UUID shareId) {
+    FileShareEntity fileShareEntity =
+        fileShareRepository
+            .findById(shareId)
+            .orElseThrow(() -> new EntityNotFoundException(FILE_SHARE_NOT_FOUND));
+    fileShareRepository.delete(fileShareEntity);
+  }
+
+  @Transactional
   public List<FileEntity> syncFiles() {
     List<FileObject> s3Files = listS3Files();
     Map<String, FileEntity> existingFiles =
         fileRepository.findAll().stream()
             .collect(Collectors.toMap(FileEntity::getKey, Function.identity()));
+    List<String> s3FileKeys = s3Files.stream().map(FileObject::key).toList();
 
     for (FileObject s3File : s3Files) {
       FileEntity fileEntity =
@@ -132,8 +193,13 @@ public class FileService {
       fileEntity.setSize(s3File.size());
       fileEntity.setLastModified(s3File.lastModified());
       fileEntity.setETag(s3File.eTag());
+      fileEntity.setStatus(null);
       fileRepository.save(fileEntity);
     }
+
+    existingFiles.values().stream()
+        .filter(fileEntity -> !s3FileKeys.contains(fileEntity.getKey()))
+        .forEach(this::markFileDeleted);
 
     return fileRepository.findAllByOrderByKeyAsc();
   }
@@ -145,7 +211,14 @@ public class FileService {
     }
     validateEventRoutingFields(event);
 
-    if (event.type() != FILE || !UPLOADED_STATUS.equals(event.status())) {
+    if (event.type() != FILE) {
+      return;
+    }
+    if (DELETED_STATUS.equals(event.status())) {
+      deleteFileFromUploadEvent(event);
+      return;
+    }
+    if (!UPLOADED_STATUS.equals(event.status())) {
       return;
     }
     validateUploadEvent(event);
@@ -157,6 +230,14 @@ public class FileService {
 
     updateFileEntityFromUploadEvent(fileEntity, event);
     fileRepository.save(fileEntity);
+  }
+
+  private void deleteFileFromUploadEvent(FileMetadataEvent event) {
+    validateDeleteEvent(event);
+    fileRepository
+        .findById(event.fileId())
+        .or(() -> findFileByEventKey(event))
+        .ifPresent(this::markFileDeleted);
   }
 
   private List<FileObject> listS3Files() {
@@ -197,6 +278,22 @@ public class FileService {
 
   private String normalizeETag(String eTag) {
     return eTag.replace("\"", "");
+  }
+
+  private void markFileDeleted(FileEntity fileEntity) {
+    if (!DELETED_STATUS.equals(fileEntity.getStatus())) {
+      fileEntity.setStatus(DELETED_STATUS);
+      fileEntity.setLastModified(OffsetDateTime.now(clock));
+      fileRepository.save(fileEntity);
+    }
+    fileShareRepository.deleteByFileId(fileEntity.getId());
+  }
+
+  private java.util.Optional<FileEntity> findFileByEventKey(FileMetadataEvent event) {
+    if (StringUtils.isBlank(event.name())) {
+      return java.util.Optional.empty();
+    }
+    return fileRepository.findByKey(resolveKey(event));
   }
 
   private FileEntity resolveFileEntityForUploadEvent(FileMetadataEvent event) {
@@ -243,6 +340,13 @@ public class FileService {
       throw new FileUpdateEventException(
           "Invalid uploaded file event, missing required fields: "
               + String.join(", ", missingFields));
+    }
+  }
+
+  private void validateDeleteEvent(FileMetadataEvent event) {
+    if (event.fileId() == null) {
+      throw new FileUpdateEventException(
+          "Invalid deleted file event, missing required fields: fileId");
     }
   }
 

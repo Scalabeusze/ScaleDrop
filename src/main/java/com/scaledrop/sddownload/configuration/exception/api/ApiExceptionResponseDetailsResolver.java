@@ -16,12 +16,14 @@
 
 package com.scaledrop.sddownload.configuration.exception.api;
 
+import static com.scaledrop.sddownload.configuration.exception.api.ApiExceptionType.CONFLICT;
 import static com.scaledrop.sddownload.configuration.exception.api.ApiExceptionType.FORBIDDEN;
 import static com.scaledrop.sddownload.configuration.exception.api.ApiExceptionType.INTERNAL_SERVER_ERROR;
 import static com.scaledrop.sddownload.configuration.exception.api.ApiExceptionType.NOT_FOUND;
 import static com.scaledrop.sddownload.configuration.exception.api.ApiExceptionType.VALIDATION;
 
 import com.google.common.collect.ImmutableMap.Builder;
+import com.scaledrop.sddownload.configuration.exception.ConflictException;
 import com.scaledrop.sddownload.configuration.exception.DownloadServiceException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;
@@ -67,6 +69,7 @@ public class ApiExceptionResponseDetailsResolver {
                   ConstraintViolationException.class,
                   ApiExceptionResponseDetails.details(VALIDATION_ERROR, VALIDATION))
               .put(IllegalArgumentException.class, ApiExceptionResponseDetails.details(VALIDATION))
+              .put(ConflictException.class, ApiExceptionResponseDetails.details(CONFLICT))
               .put(
                   MethodArgumentTypeMismatchException.class,
                   ApiExceptionResponseDetails.details(VALIDATION))

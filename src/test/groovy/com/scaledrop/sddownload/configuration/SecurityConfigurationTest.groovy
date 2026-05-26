@@ -16,11 +16,15 @@
 
 package com.scaledrop.sddownload.configuration
 
+import static org.springframework.http.MediaType.APPLICATION_JSON
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 import com.scaledrop.sddownload.WiremockTestBase
+import java.util.UUID
 
 class SecurityConfigurationTest extends WiremockTestBase {
 
@@ -29,6 +33,7 @@ class SecurityConfigurationTest extends WiremockTestBase {
   private static final String SWAGGER_PATH = "/swagger-ui/index.html"
   private static final String FILES_ENDPOINT = "/api/v1/files"
   private static final String FILE_DOWNLOADS_ENDPOINT = "/api/v1/file-downloads"
+  private static final String FILE_SHARES_ENDPOINT = "/api/v1/file-shares"
 
   // ACTUATOR
   def "should be able to access actuator endpoints"() {
@@ -119,5 +124,48 @@ class SecurityConfigurationTest extends WiremockTestBase {
     mockMvc.perform(get(FILE_DOWNLOADS_ENDPOINT)
         .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
         .andExpect(status().isOk())
+  }
+
+  // FILE SHARES
+  def 'should not allow access to file shares endpoint without credentials'() {
+    expect:
+    mockMvc.perform(get(FILE_SHARES_ENDPOINT))
+        .andExpect(status().isUnauthorized())
+  }
+
+  def 'should not allow access to file shares endpoint with invalid credentials'() {
+    expect:
+    mockMvc.perform(get(FILE_SHARES_ENDPOINT)
+        .with(httpBasic(WRONG_USER, WRONG_PASSWORD)))
+        .andExpect(status().isUnauthorized())
+  }
+
+  def 'should not allow access to file shares endpoint with documentation credentials'() {
+    expect:
+    mockMvc.perform(get(FILE_SHARES_ENDPOINT)
+        .with(httpBasic(DOCUMENTATION_USERNAME, DOCUMENTATION_PASSWORD)))
+        .andExpect(status().isForbidden())
+  }
+
+  def 'should allow access to file shares get endpoint with internal credentials'() {
+    expect:
+    mockMvc.perform(get(FILE_SHARES_ENDPOINT)
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isOk())
+  }
+
+  def 'should allow access to file shares post endpoint with internal credentials'() {
+    expect:
+    mockMvc.perform(post(FILE_SHARES_ENDPOINT)
+        .contentType(APPLICATION_JSON)
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isBadRequest())
+  }
+
+  def 'should allow access to file shares delete endpoint with internal credentials'() {
+    expect:
+    mockMvc.perform(delete("${FILE_SHARES_ENDPOINT}/${UUID.randomUUID()}")
+        .with(httpBasic(INTERNAL_USERNAME, INTERNAL_PASSWORD)))
+        .andExpect(status().isNotFound())
   }
 }

@@ -29,5 +29,5 @@ import org.springframework.stereotype.Component;
 public class JwtProperties {
 
   private String secret;
-  private Duration ttl = Duration.ofHours(24);
+  private Duration ttl = Duration.ofHours(1);
 }

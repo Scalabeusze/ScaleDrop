@@ -56,7 +56,7 @@ management:
 security:
   jwt:
     secret: ${SECURITY_JWT_SECRET}
-    ttl: ${SECURITY_JWT_TTL:PT24H}
+    ttl: ${SECURITY_JWT_TTL:PT1H}
   access:
     documentation:
       username: ${SECURITY_ACCESS_DOCUMENTATION_USERNAME:documentation}

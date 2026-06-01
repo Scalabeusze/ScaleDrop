@@ -2,6 +2,7 @@ package com.scaledrop.sdbff.application.port.in;
 
 import com.scaledrop.sdbff.domain.download.FileDownloadHistory;
 import com.scaledrop.sdbff.domain.download.FileObject;
+import com.scaledrop.sdbff.domain.download.FileShare;
 import java.util.List;
 import java.util.UUID;
 
@@ -16,4 +17,10 @@ public interface DownloadUseCase {
 
   List<FileDownloadHistory> listFileDownloads(
       UUID fileId, UUID ownerId, Integer limit, Integer offset);
+
+  List<FileShare> listFileShares(UUID fromId, UUID toId, Integer limit, Integer offset);
+
+  FileShare createFileShare(UUID fileId, UUID fromId, UUID toId);
+
+  void deleteFileShare(UUID shareId);
 }

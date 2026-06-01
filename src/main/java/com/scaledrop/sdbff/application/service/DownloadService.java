@@ -4,6 +4,7 @@ import com.scaledrop.sdbff.application.port.in.DownloadUseCase;
 import com.scaledrop.sdbff.application.port.out.DownloadRepository;
 import com.scaledrop.sdbff.domain.download.FileDownloadHistory;
 import com.scaledrop.sdbff.domain.download.FileObject;
+import com.scaledrop.sdbff.domain.download.FileShare;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -46,5 +47,32 @@ public class DownloadService implements DownloadUseCase {
   public List<FileObject> syncFiles() {
     log.info("[BFF-SERVICE] Triggering manual file synchronization");
     return downloadRepository.syncFiles();
+  }
+
+  @Override
+  public List<FileShare> listFileShares(UUID fromId, UUID toId, Integer limit, Integer offset) {
+    log.info(
+        "[BFF-SERVICE] Listing file shares. fromId: {}, toId: {}, limit: {}, offset: {}",
+        fromId,
+        toId,
+        limit,
+        offset);
+    return downloadRepository.listFileShares(fromId, toId, limit, offset);
+  }
+
+  @Override
+  public FileShare createFileShare(UUID fileId, UUID fromId, UUID toId) {
+    log.info(
+        "[BFF-SERVICE] Creating file share for fileId: {} from user: {} to user: {}",
+        fileId,
+        fromId,
+        toId);
+    return downloadRepository.createFileShare(fileId, fromId, toId);
+  }
+
+  @Override
+  public void deleteFileShare(UUID shareId) {
+    log.info("[BFF-SERVICE] Deleting file share with ID: {}", shareId);
+    downloadRepository.deleteFileShare(shareId);
   }
 }

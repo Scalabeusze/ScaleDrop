@@ -86,6 +86,12 @@ public class GlobalExceptionHandler {
         .build();
   }
 
+  @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+  @ExceptionHandler(Exception.class)
+  public ApiExceptionResponse handleGenericException(Exception ex) {
+    return buildApiExceptionResponse(ex);
+  }
+
   private ApiExceptionResponse buildApiExceptionResponse(Exception ex) {
     return apiExceptionResponseDetailsResolver.buildApiExceptionResponse(ex);
   }

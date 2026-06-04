@@ -172,12 +172,13 @@ def render_full_profile(user_data):
             "This user does not currently have any files in the system."
         )
     else:
-        files_df["readable_size"] = files_df["size"].apply(format_size)
+        view_df = files_df[["name", "size", "content_type", "last_modified"]]
+        styled_df = view_df.style.format({
+            "size": format_size
+        })
 
         st.dataframe(
-            files_df[
-                ["name", "readable_size", "content_type", "last_modified"]
-            ],
+            styled_df,
             use_container_width=True,
             hide_index=True,
             column_config={

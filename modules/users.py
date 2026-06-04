@@ -75,10 +75,9 @@ def fetch_user_files(owner_id):
             name, 
             size, 
             content_type, 
-            status, 
             last_modified
         FROM sd_download.files
-        WHERE owner_id = %s
+        WHERE owner_id = %s AND status != 'DELETED'
         ORDER BY last_modified DESC;
     """
     try:
@@ -177,7 +176,7 @@ def render_full_profile(user_data):
 
         st.dataframe(
             files_df[
-                ["name", "readable_size", "content_type", "status", "last_modified"]
+                ["name", "readable_size", "content_type", "last_modified"]
             ],
             use_container_width=True,
             hide_index=True,
@@ -185,7 +184,6 @@ def render_full_profile(user_data):
                 "name": "File name",
                 "readable_size": "Size",
                 "content_type": "Type",
-                "status": "Status",
                 "last_modified": st.column_config.DatetimeColumn(
                     "Last modification", format="YYYY-MM-DD HH:mm"
                 ),

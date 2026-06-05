@@ -41,6 +41,7 @@ def fetch_accounts():
             created_at, 
             updated_at
         FROM sd_iam.accounts
+        WHERE status = 'ACTIVE'
         ORDER BY created_at DESC;
     """
     try:
@@ -116,11 +117,6 @@ def render_full_profile(user_data):
 
     with col_title:
         st.title(user_data["username"])
-        status = user_data["status"]
-        status_color = (
-            "green" if status == "ACTIVE" else "red" if status == "LOCKED" else "orange"
-        )
-        st.markdown(f"**Status:** :{status_color}[{status}]")
         st.caption(f"Internal ID: {user_data['id']}")
 
     st.write("")
@@ -183,7 +179,7 @@ def render_full_profile(user_data):
             hide_index=True,
             column_config={
                 "name": "File name",
-                "readable_size": "Size",
+                "size": "Size",
                 "content_type": "Type",
                 "last_modified": st.column_config.DatetimeColumn(
                     "Last modification", format="YYYY-MM-DD HH:mm"
@@ -223,10 +219,7 @@ def display():
     with filter_col1:
         search_term = st.text_input("Search (Username):")
     with filter_col2:
-        available_statuses = df["status"].unique().tolist()
-        status_filter = st.multiselect(
-            "Filter Status:", options=available_statuses, default=available_statuses
-        )
+        pass
     with filter_col3:
         st.write("")
         st.write("")
@@ -239,8 +232,6 @@ def display():
         filtered_df = filtered_df[
             filtered_df["username"].str.contains(search_term, case=False, na=False)
         ]
-    if status_filter:
-        filtered_df = filtered_df[filtered_df["status"].isin(status_filter)]
 
     st.divider()
 
@@ -262,7 +253,7 @@ def display():
         f"Showing users {start_idx + 1} - {min(end_idx, len(filtered_df))} z {len(filtered_df)}"
     )
 
-    view_cols = ["username", "status", "created_at", "last_login_at", "id"]
+    view_cols = ["username", "created_at", "last_login_at", "id"]
 
     event = st.dataframe(
         page_df[view_cols],
@@ -273,7 +264,6 @@ def display():
         column_config={
             "id": None,  # Hide ID column
             "username": "Username",
-            "status": "Status",
             "created_at": st.column_config.DatetimeColumn(
                 "Created At", format="YYYY-MM-DD HH:mm"
             ),

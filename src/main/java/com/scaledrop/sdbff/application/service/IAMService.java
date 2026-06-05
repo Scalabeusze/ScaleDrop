@@ -6,6 +6,8 @@ import com.scaledrop.sdbff.adapter.client.iam.model.request.IAMUpdateAccountRequ
 import com.scaledrop.sdbff.adapter.client.iam.model.response.IAMAccountResponse;
 import com.scaledrop.sdbff.application.port.in.IAMUseCase;
 import com.scaledrop.sdbff.application.port.out.IAMRepository;
+import com.scaledrop.sdbff.domain.account.AccountSearchResult;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,5 +38,10 @@ public class IAMService implements IAMUseCase {
   @Override
   public void deactivateAccount(UUID accountId) {
     iamRepository.deleteAccountById(accountId);
+  }
+
+  @Override
+  public List<AccountSearchResult> searchAccounts(String query, Integer limit) {
+    return iamRepository.searchAccounts(query, limit);
   }
 }

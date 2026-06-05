@@ -1,10 +1,12 @@
 package com.scaledrop.sdbff.adapter.client.iam;
 
+import com.scaledrop.sdbff.adapter.api.model.account.response.AccountSearchAPIResponse;
 import com.scaledrop.sdbff.adapter.client.iam.configuration.IAMClientConfiguration;
 import com.scaledrop.sdbff.adapter.client.iam.model.request.IAMLoginRequest;
 import com.scaledrop.sdbff.adapter.client.iam.model.request.IAMUpdateAccountRequest;
 import com.scaledrop.sdbff.adapter.client.iam.model.response.IAMAccountResponse;
 import com.scaledrop.sdbff.adapter.client.iam.model.response.IAMJWTResponse;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
@@ -38,4 +40,9 @@ public interface IAMClient {
 
   @DeleteMapping("/api/v1/accounts/{accountId}")
   void deleteAccount(@PathVariable UUID accountId);
+
+  @GetMapping("/api/v1/accounts/search")
+  List<AccountSearchAPIResponse> searchAccounts(
+      @RequestParam("query") String query,
+      @RequestParam(value = "limit", required = false) Integer limit);
 }

@@ -8,15 +8,20 @@ import com.scaledrop.sdbff.adapter.api.mapper.AccountMapper;
 import com.scaledrop.sdbff.adapter.api.model.account.request.LoginAPIRequest;
 import com.scaledrop.sdbff.adapter.api.model.account.request.UpdateAccountAPIRequest;
 import com.scaledrop.sdbff.adapter.api.model.account.response.AccountAPIResponse;
+import com.scaledrop.sdbff.adapter.api.model.account.response.AccountSearchAPIResponse;
 import com.scaledrop.sdbff.adapter.api.model.account.response.JwtAPIResponse;
 import com.scaledrop.sdbff.application.component.UserContext;
 import com.scaledrop.sdbff.application.port.in.IAMUseCase;
 import com.scaledrop.sdbff.configuration.annotations.DefaultApiExceptionResponses;
+import com.scaledrop.sdbff.configuration.annotations.DefaultApiSecurity;
 import com.scaledrop.sdbff.configuration.ratelimit.UserRateLimit;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +32,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -102,5 +108,26 @@ public class AccountController {
     log.info("[BFF-CONTROLLER] Received deactivate account request for user: {}", userId);
     iamUseCase.deactivateAccount(userId);
     log.info("[BFF-CONTROLLER] Successfully deactivated account: {}", userId);
+  }
+
+  @UserRateLimit(capacity = 50, refillTokens = 50, refillMinutes = 1)
+  @GetMapping("/search")
+  @Operation(
+      summary = "Search accounts",
+      description = "Autocomplete endpoint for finding users by username or email snippet.")
+  @DefaultApiSecurity
+  @DefaultApiExceptionResponses
+  @ApiResponse(responseCode = "200", description = "Successfully found matching accounts")
+  @ResponseStatus(HttpStatus.OK)
+  public List<AccountSearchAPIResponse> searchAccounts(
+      @RequestParam("query") @Size(min = 2, max = 100) String query,
+      @RequestParam(value = "limit", required = false, defaultValue = "10") Integer limit) {
+
+    log.info(
+        "[BFF-CONTROLLER] Received account search request for query: '{}', limit: {}",
+        query,
+        limit);
+
+    return iamUseCase.searchAccounts(query, limit).stream().map(accountMapper::toResponse).toList();
   }
 }

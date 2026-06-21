@@ -1,0 +1,140 @@
+plugins {
+  id 'java'
+  id 'groovy'
+  id 'jacoco'
+//  id "com.gorylenko.gradle-git-properties" version "${gradleGitPropertiesVersion}"
+  id 'org.springframework.boot' version "${springBootVersion}"
+  id 'io.spring.dependency-management' version "${springDependencyManagementVersion}"
+  id 'com.diffplug.spotless' version "8.4.0"
+}
+
+group = 'com.scaledrop'
+
+java {
+  toolchain {
+    languageVersion = JavaLanguageVersion.of(25)
+  }
+}
+
+if (project.hasProperty('projectVersion')) {
+  project.version = project.projectVersion
+}
+
+springBoot {
+  buildInfo()
+}
+
+//gitProperties {
+//  extProperty = 'gitProps'
+//  keys = ['git.branch','git.commit.id','git.commit.time', 'git.build.version', 'git.closest.tag.name', 'git.commit.message.full']
+//  customProperty 'appName', project.name
+//  customProperty 'appVersion', { "${project.version}" }
+//}
+
+
+configurations {
+  compileOnly {
+    extendsFrom annotationProcessor
+  }
+}
+
+jar {
+  enabled = false
+}
+
+
+test {
+  useJUnitPlatform()
+  jvmArgs = ['-Xms512m', '-Xmx2g']
+}
+
+jacocoTestReport {
+  executionData.setFrom(fileTree(layout.buildDirectory).include("jacoco/test.exec"))
+  classDirectories.setFrom(files(sourceSets.main.output))
+  sourceDirectories.setFrom(files(sourceSets.main.allSource.srcDirs))
+
+  reports {
+    xml.required = true
+    html.required = true
+  }
+}
+
+test.finalizedBy jacocoTestReport
+
+repositories {
+  mavenCentral()
+}
+
+dependencyManagement {
+  imports {
+    mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springBootCloudVersion}"
+    mavenBom "org.testcontainers:testcontainers-bom:${testContainersVersion}"
+  }
+}
+
+dependencies {
+  // Spring
+  implementation 'org.springframework.boot:spring-boot-starter-web'
+  implementation 'org.springframework.boot:spring-boot-starter-actuator'
+  implementation 'org.springframework.boot:spring-boot-starter-aop'
+
+  // Security
+  implementation 'org.springframework.boot:spring-boot-starter-security'
+  implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+
+  // Rate Limiting
+  implementation 'com.bucket4j:bucket4j-core:8.10.0'
+
+  // Swagger
+  implementation "org.springdoc:springdoc-openapi-starter-webmvc-ui:${springDocVersion}"
+  implementation "org.springdoc:springdoc-openapi-starter-webmvc-api:${springDocVersion}"
+
+  // Feign
+  implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+  implementation "io.github.openfeign:feign-hc5:${feignHttpClientVersion}"
+
+  // Redis
+  implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+  // Utilities
+  implementation "com.google.guava:guava:${guavaVersion}"
+  implementation "org.apache.commons:commons-lang3:${apacheCommonsVersion}"
+  implementation "commons-io:commons-io:${commonsIoVersion}"
+  implementation 'io.micrometer:micrometer-registry-prometheus'
+  compileOnly 'org.projectlombok:lombok'
+  annotationProcessor 'org.projectlombok:lombok'
+  implementation "org.mapstruct:mapstruct:${mapstructVersion}"
+  annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
+
+  // Test
+  testImplementation "org.apache.groovy:groovy-all:${groovyVersion}"
+  testImplementation "org.spockframework:spock-core:${spockVersion}"
+  testImplementation "org.spockframework:spock-spring:${spockVersion}"
+  testImplementation "org.springframework.security:spring-security-test"
+  testImplementation "org.springframework.boot:spring-boot-starter-test"
+  testImplementation "org.testcontainers:postgresql"
+  testImplementation "org.testcontainers:localstack"
+  testImplementation "org.springframework.cloud:spring-cloud-contract-wiremock"
+  testImplementation "org.projectlombok:lombok"
+  testAnnotationProcessor "org.projectlombok:lombok"
+}
+
+
+tasks.register('copyToLib', Copy) {
+  into layout.buildDirectory.dir("dependencies/libs")
+  from configurations.compileClasspath
+}
+build.dependsOn(copyToLib)
+
+spotless {
+  format 'misc', {
+    target '*.gradle', '.gitattributes', '.gitignore'
+    trimTrailingWhitespace()
+    endWithNewline()
+  }
+  java {
+    removeUnusedImports()
+    googleJavaFormat().reflowLongStrings().reorderImports(true).skipJavadocFormatting()
+    formatAnnotations()
+  }
+}

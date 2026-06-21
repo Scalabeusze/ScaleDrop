@@ -1,0 +1,37 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: sd_redis
+    ports:
+      - "6379:6379"
+
+  sd-bff:
+    image: sd-bff:local
+    build:
+      context: .
+    container_name: sd_bff
+    depends_on:
+      - redis
+    ports:
+      - "8080:8080"
+    environment:
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ""
+      
+      SECURITY_ACCESS_DOCUMENTATION_PASSWORD: ${SECURITY_ACCESS_DOCUMENTATION_PASSWORD:?SECURITY_ACCESS_DOCUMENTATION_PASSWORD is required}
+      SECURITY_ACCESS_INTERNAL_PASSWORD: ${SECURITY_ACCESS_INTERNAL_PASSWORD:?SECURITY_ACCESS_INTERNAL_PASSWORD is required}
+      
+      IAM_SERVICE_URL: ${IAM_SERVICE_URL:-http://host.docker.internal:7300/sd-iam}
+      UPLOAD_SERVICE_URL: ${UPLOAD_SERVICE_URL:-http://host.docker.internal:8081/sd-upload}
+      DOWNLOAD_SERVICE_URL: ${DOWNLOAD_SERVICE_URL:-http://host.docker.internal:8082/sd-download}
+      
+      IAM_SERVICE_PASSWORD: ${IAM_SERVICE_PASSWORD:-scaledrop}
+      UPLOAD_SERVICE_PASSWORD: ${UPLOAD_SERVICE_PASSWORD:-scaledrop}
+      DOWNLOAD_SERVICE_PASSWORD: ${DOWNLOAD_SERVICE_PASSWORD:-scaledrop}
+      
+    healthcheck:
+      test: [ "CMD-SHELL", "curl --fail --silent http://127.0.0.1:8080/sd-bff/actuator/health >/dev/null" ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 45s

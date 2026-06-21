@@ -1,0 +1,24 @@
+services:
+  sd-iam:
+    image: sd-iam:local
+    build:
+      context: .
+    container_name: sd_iam
+    ports:
+      - "7300:7300"
+    env_file: .env
+    environment:
+      DB_URL: ${DB_URL:?DB_URL must point to an external PostgreSQL instance}
+      DB_USERNAME: ${DB_USERNAME:?DB_USERNAME is required}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      SECURITY_JWT_SECRET: ${SECURITY_JWT_SECRET:?SECURITY_JWT_SECRET is required}
+      SECURITY_ACCESS_DOCUMENTATION_PASSWORD: ${SECURITY_ACCESS_DOCUMENTATION_PASSWORD:?SECURITY_ACCESS_DOCUMENTATION_PASSWORD is required}
+      SECURITY_ACCESS_INTERNAL_PASSWORD: ${SECURITY_ACCESS_INTERNAL_PASSWORD:?SECURITY_ACCESS_INTERNAL_PASSWORD is required}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?GOOGLE_CLIENT_ID is required}
+      GOOGLE_SECRET: ${GOOGLE_SECRET:?GOOGLE_SECRET is required}
+    healthcheck:
+      test: [ "CMD-SHELL", "curl --fail --silent http://127.0.0.1:7300/sd-iam/actuator/health >/dev/null" ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 45s

@@ -1,0 +1,20 @@
+name: "Deploy to AWS"
+
+on:
+  push:
+    branches:
+      - main # Automatically deploy on push to main
+  workflow_dispatch:
+
+jobs:
+  deploy-to-ecs:
+    uses: Scalabeusze/sd-docs/.github/workflows/deploy-ecs-reusable.yml@main
+    with:
+      ecr_repository: sd-iam
+      ecs_cluster: sd-cluster-dev
+      ecs_service: sd-iam-service
+      container_name: sd-iam
+      task_family: sd-iam-task
+    secrets:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

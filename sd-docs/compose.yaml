@@ -1,0 +1,105 @@
+services:
+  redis:
+    image: "bitnami/redis:latest"
+    container_name: sd-redis
+    ports:
+      - "6379:6379"
+    environment:
+      - REDIS_PASSWORD=password
+    networks:
+      - main
+
+  postgres-db:
+    container_name: sd-postgres-db
+    image: postgres:15.2-alpine
+    environment:
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    expose:
+      - "5432"
+    networks:
+      - main
+
+  localstack:
+    container_name: sd-localstack
+    image: localstack/localstack:latest
+    env_file: .env
+    environment:
+      - EDGE_PORT=4566
+      - SERVICES=s3,sns,sqs
+      - AWS_DEFAULT_REGION=eu-west-1
+      - AWS_ACCESS_KEY_ID=dummyaccess
+      - AWS_SECRET_ACCESS_KEY=dummysecret
+      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN- }
+    ports:
+      - '4566-4583:4566-4583'
+    volumes:
+      - "${TEMPDIR:-/tmp/localstack}:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          python3 -c 'import json, sys, urllib.request;
+
+          data = json.load(urllib.request.urlopen("http://localhost:4566/_localstack/health", timeout=2));
+
+          services = data.get("services", {});
+          required = ("s3", "sns", "sqs");
+
+          sys.exit(0 if all(services.get(service) in ("available", "running") for service in required) else 1)'
+      interval: 1s
+      timeout: 3s
+      retries: 60
+      start_period: 2s
+    networks:
+      - main
+    profiles:
+      - full
+
+  setup-resources:
+    container_name: sd-setup-resources
+    image: mesosphere/aws-cli
+    environment:
+      - AWS_ACCESS_KEY_ID=dummyaccess
+      - AWS_SECRET_ACCESS_KEY=dummysecret
+      - AWS_DEFAULT_REGION=eu-west-1
+    entrypoint: [ "/bin/sh", "-c" ]
+    command:
+      - |
+        set -eu
+
+        # Create S3 bucket
+        aws --endpoint-url=http://localstack:4566 s3 mb s3://example-bucket
+
+        # Create SNS topic
+        TOPIC_ARN=$$(aws --endpoint-url=http://localstack:4566 sns create-topic --name file-updates-topic --query 'TopicArn' --output text)
+
+        # Create SQS queue
+        QUEUE_URL=$$(aws --endpoint-url=http://localstack:4566 sqs create-queue --queue-name file-event --query 'QueueUrl' --output text)
+
+        # Get Queue ARN
+        QUEUE_ARN=$$(aws --endpoint-url=http://localstack:4566 sqs get-queue-attributes --queue-url "$$QUEUE_URL" --attribute-names QueueArn --query 'Attributes.QueueArn' --output text)
+
+        # Allow SNS to publish to SQS (QUEUE POLICY)
+        aws --endpoint-url=http://localstack:4566 sqs set-queue-attributes \
+          --queue-url "$$QUEUE_URL" \
+          --attributes "{\"Policy\":\"{\\\"Version\\\":\\\"2012-10-17\\\",\\\"Statement\\\":[{\\\"Effect\\\":\\\"Allow\\\",\\\"Principal\\\":{\\\"Service\\\":\\\"sns.amazonaws.com\\\"},\\\"Action\\\":\\\"sqs:SendMessage\\\",\\\"Resource\\\":\\\"$$QUEUE_ARN\\\",\\\"Condition\\\":{\\\"ArnEquals\\\":{\\\"aws:SourceArn\\\":\\\"$$TOPIC_ARN\\\"}}}]}\"}"
+
+        # Subscribe SQS to SNS
+        aws --endpoint-url=http://localstack:4566 sns subscribe \
+          --topic-arn "$$TOPIC_ARN" \
+          --protocol sqs \
+          --notification-endpoint "$$QUEUE_ARN"
+    networks:
+      - main
+    profiles:
+      - full
+    depends_on:
+      localstack:
+        condition: service_healthy
+
+networks:
+  main:
+    driver: bridge

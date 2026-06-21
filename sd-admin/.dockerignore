@@ -1,0 +1,6 @@
+.git
+.github
+terraform/
+.env
+__pycache__/
+*.pyc

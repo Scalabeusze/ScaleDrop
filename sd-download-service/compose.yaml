@@ -1,0 +1,23 @@
+services:
+  sd-download:
+    image: sd-download:local
+    build:
+      context: .
+    container_name: sd_download
+    ports:
+      - "8080:8080"
+    environment:
+      DB_URL: ${DB_URL:?DB_URL must point to an external PostgreSQL instance}
+      DB_USERNAME: ${DB_USERNAME:?DB_USERNAME is required}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      SECURITY_ACCESS_DOCUMENTATION_PASSWORD: ${SECURITY_ACCESS_DOCUMENTATION_PASSWORD:?SECURITY_ACCESS_DOCUMENTATION_PASSWORD is required}
+      SECURITY_ACCESS_INTERNAL_PASSWORD: ${SECURITY_ACCESS_INTERNAL_PASSWORD:?SECURITY_ACCESS_INTERNAL_PASSWORD is required}
+      AWS_REGION: ${AWS_REGION:-eu-north-1}
+      AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME:-sd-fileserver-local}
+      AWS_FILE_UPDATES_SQS_QUEUE_URL: ${AWS_FILE_UPDATES_SQS_QUEUE_URL:-}
+    healthcheck:
+      test: [ "CMD-SHELL", "curl --fail --silent http://127.0.0.1:8080/sd-download/actuator/health >/dev/null" ]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 45s

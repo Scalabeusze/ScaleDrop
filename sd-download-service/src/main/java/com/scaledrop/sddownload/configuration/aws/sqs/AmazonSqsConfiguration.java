@@ -1,0 +1,62 @@
+/*
+ * Copyright 2026-present Scalabeusze
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *          http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing
+ * permissions and limitations under the License.
+ */
+
+package com.scaledrop.sddownload.configuration.aws.sqs;
+
+import static org.apache.commons.lang3.ObjectUtils.allNotNull;
+
+import com.scaledrop.sddownload.configuration.aws.AmazonProperties;
+import lombok.RequiredArgsConstructor;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.sqs.SqsAsyncClient;
+
+@Configuration
+@RequiredArgsConstructor
+@EnableConfigurationProperties(AmazonSqsProperties.class)
+public class AmazonSqsConfiguration {
+
+  private final AmazonSqsProperties amazonSqsProperties;
+  private final AmazonProperties amazonProperties;
+
+  @Bean
+  public SqsAsyncClient sqsAsyncClient() {
+    var builder =
+        SqsAsyncClient.builder()
+            .region(Region.of(amazonProperties.getRegion()))
+            .credentialsProvider(buildCredentialsProvider());
+
+    if (amazonSqsProperties.getEndpoint() != null) {
+      builder.endpointOverride(amazonSqsProperties.getEndpoint());
+    }
+
+    return builder.build();
+  }
+
+  protected AwsCredentialsProvider buildCredentialsProvider() {
+    if (allNotNull(amazonProperties.getAccessKeyId(), amazonProperties.getSecretKey())) {
+      return () ->
+          AwsBasicCredentials.create(
+              amazonProperties.getAccessKeyId(), amazonProperties.getSecretKey());
+    }
+    return DefaultCredentialsProvider.builder().asyncCredentialUpdateEnabled(true).build();
+  }
+}

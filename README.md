@@ -1,6 +1,8 @@
-# ERSMS 26L
+# ScaleDrop
 
-Zespół A \- Scalabeusze
+**Reliable, Scalable and Maintainable IT Systems**
+
+Zespół (A) Scalabeusze
 
 Marcin Bagnowski  
 Piotr Jabłoński  
